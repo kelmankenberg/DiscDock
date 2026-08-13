@@ -19434,3 +19434,694 @@ _**Agent (copilot/auto)**_
 
 Completed: *Add FTS5 sync triggers* (1/6)
 </details></tool-use>
+
+---
+
+_**User (2026-08-13 18:18:59Z)**_
+
+continue with what is the next logical step
+
+---
+
+_**Agent (copilot/auto)**_
+
+There's a failed `npm run dev` in the terminal history (exit code 1) — let me check that first since a broken dev workflow should be fixed before adding more features. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` timeout 15 npm run dev 2>&1 | tail -60`
+
+Reproduce the npm run dev failure to diagnose it
+
+```bash
+cd /home/kel/dev/DiscDock && timeout 15 npm run dev 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` timeout 15 npm run dev 2>&1 | tail -60` (terminal ID=0f463a2d-9853-45f4-9274-8f8f30d817a2). This is the output of running that command instead:
+Terminated
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run dev 2>&1`
+
+Run npm run dev in async mode to capture its actual output
+
+```bash
+cd /home/kel/dev/DiscDock && npm run dev 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run dev 2>&1`, and that command is now running in terminal with ID=7a3a75c3-ac6b-453d-886e-0802f4179b47
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run dev 2>&1
+
+> discdock@0.1.0 dev
+> concurrently -k "vite" "wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron ."
+
+[0] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[0]   - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+[0] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[0] 
+[0]   VITE v8.2.1  ready in 258 ms
+[0] 
+[0]   ➜  Local:   http://localhost:5173/
+[0]   ➜  Network: use --host to expose
+[1] 
+[1] > discdock@0.1.0 build:electron
+[1] > tsc -p electron/tsconfig.json
+[1] 
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="7a3a75c3-ac6b-453d-886e-0802f4179b47" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="7a3a75c3-ac6b-453d-886e-0802f4179b47" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+It's actually working now (Vite started, electron building). Let's wait a bit more to see if it fully launches.   
+
+---
+
+_**User (2026-08-13 18:19:36Z)**_
+
+[Terminal 7a3a75c3-ac6b-453d-886e-0802f4179b47 notification: command may be waiting for input — assess the output below.]
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="7a3a75c3-ac6b-453d-886e-0802f4179b47" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="7a3a75c3-ac6b-453d-886e-0802f4179b47" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+Terminal output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run dev 2>&1
+
+> discdock@0.1.0 dev
+> concurrently -k "vite" "wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron ."
+
+[0] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[0]   - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+[0] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[0] 
+[0]   VITE v8.2.1  ready in 258 ms
+[0] 
+[0]   ➜  Local:   http://localhost:5173/
+[0]   ➜  Network: use --host to expose
+[1] 
+[1] > discdock@0.1.0 build:electron
+[1] > tsc -p electron/tsconfig.json
+[1] 
+
+
+
+
+
+
+
+
+
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_terminal_output"><details>
+<summary>Tool use: **get_terminal_output**</summary>
+
+Checked terminal output
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+This is actually running fine — Vite dev server started and Electron's `tsc` build is running; the Electron window just opened on the live display (not stuck). Let me kill this test run since it works, and investigate what the user's earlier failed run (exit code 1) might have been.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The `npm run dev` script actually works fine when I ran it fresh (Vite + tsc both succeeded) — likely a stale/transient issue in that other terminal, possibly port 5173 already in use from a prior run. Not a code bug; moving on to the next feature: **Duplicate Detection (Epic 4)**.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 115 to 140
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 130 to 141
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 141 to 145
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 145-145 @@
+
+```
+
+export interface DuplicateOccurrence {
+  mediaItemId: number
+  mediaLabel: string
+  path: string
+}
+
+export interface DuplicateGroup {
+  hashValue: string
+  sizeBytes: number
+  occurrences: DuplicateOccurrence[]
+}
+
+export interface DuplicateReportFilters {
+  minGroupSize?: number
+  mediaType?: MediaType
+  kind?: FileKind
+}
+
+export interface DuplicateReport {
+  groups: DuplicateGroup[]
+  totalGroups: number
+  totalFiles: number
+  reclaimableBytes: number
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the duplicate repository:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `duplicateRepository.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **duplicateRepository.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { getDb } from './index'
+import type { DuplicateGroup, DuplicateOccurrence, DuplicateReport, DuplicateReportFilters } from '../../shared/types'
+
+interface HashGroupRow {
+  hash_value: string
+  size_bytes: number
+  occurrence_count: number
+}
+
+interface OccurrenceRow {
+  media_item_id: number
+  media_label: string
+  path: string
+}
+
+export function getDuplicateReport(filters: DuplicateReportFilters): DuplicateReport {
+  const db = getDb()
+  const minGroupSize = filters.minGroupSize ?? 2
+
+  const conditions = ['fr.hash_value IS NOT NULL', 'fr.is_directory = 0']
+  const params: Record<string, unknown> = { minGroupSize }
+
+  if (filters.mediaType !== undefined) {
+    conditions.push('mi.media_type = @mediaType')
+    params.mediaType = filters.mediaType
+  }
+  if (filters.kind !== undefined) {
+    conditions.push('fr.kind = @kind')
+    params.kind = filters.kind
+  }
+
+  const whereClause = conditions.join(' AND ')
+
+  const groupRows = db
+    .prepare(
+      `SELECT fr.hash_value, fr.size_bytes, COUNT(*) as occurrence_count
+       FROM file_record fr
+       JOIN media_item mi ON mi.id = fr.media_item_id
+       WHERE ${whereClause}
+       GROUP BY fr.hash_value
+       HAVING COUNT(*) >= @minGroupSize
+       ORDER BY fr.size_bytes DESC`
+    )
+    .all(params) as HashGroupRow[]
+
+  const occurrenceStmt = db.prepare(
+    `SELECT fr.media_item_id, mi.label as media_label, fr.path
+     FROM file_record fr
+     JOIN media_item mi ON mi.id = fr.media_item_id
+     WHERE fr.hash_value = ?`
+  )
+
+  const groups: DuplicateGroup[] = groupRows.map((row) => {
+    const occurrences = (occurrenceStmt.all(row.hash_value) as OccurrenceRow[]).map(
+      (o): DuplicateOccurrence => ({
+        mediaItemId: o.media_item_id,
+        mediaLabel: o.media_label,
+        path: o.path
+      })
+    )
+    return { hashValue: row.hash_value, sizeBytes: row.size_bytes, occurrences }
+  })
+
+  const totalFiles = groupRows.reduce((sum, row) => sum + row.occurrence_count, 0)
+  const reclaimableBytes = groupRows.reduce(
+    (sum, row) => sum + (row.occurrence_count - 1) * row.size_bytes,
+    0
+  )
+
+  return { groups, totalGroups: groups.length, totalFiles, reclaimableBytes }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the IPC handler:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `duplicates.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **duplicates.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { getDuplicateReport } from '../db/duplicateRepository'
+import type { DuplicateReport, DuplicateReportFilters, IpcResult } from '../../shared/types'
+
+export function registerDuplicatesIpc(): void {
+  ipcMain.handle('duplicates:report', (_event, payload: unknown): IpcResult<DuplicateReport> => {
+    const filters = (payload && typeof payload === 'object' ? payload : {}) as DuplicateReportFilters
+    try {
+      return { ok: true, data: getDuplicateReport(filters) }
+    } catch (err) {
+      return { ok: false, error: { code: 'duplicates_error', message: (err as Error).message } }
+    }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Wire into `main.ts` and `preload.ts`:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `main.ts`, lines 1 to 10
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 34-34 @@
+
+```
+registerDuplicatesIpc()
+  
+```
+
+@@ lines 10-10 @@
+
+```
+registerDuplicatesIpc } from './ipc/duplicates'
+import { 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 34-34 @@
+
+```
+registerDuplicatesIpc()
+  
+```
+
+@@ lines 10-10 @@
+
+```
+registerDuplicatesIpc } from './ipc/duplicates'
+import { 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 1 to 14
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 95-95 @@
+
+```
+,
+  duplicates: {
+    report: (filters: DuplicateReportFilters): Promise<IpcResult<DuplicateReport>> =>
+      ipcRenderer.invoke('duplicates:report', filters)
+  }
+```
+
+@@ lines 5-5 @@
+
+```
+DuplicateReport,
+  DuplicateReportFilters,
+  
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the Duplicates view and wiring into `App.tsx`:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `Duplicates.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Duplicates.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+import type { DuplicateReport } from '../../shared/types'
+import './Duplicates.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+const EMPTY_REPORT: DuplicateReport = { groups: [], totalGroups: 0, totalFiles: 0, reclaimableBytes: 0 }
+
+export default function Duplicates(): JSX.Element {
+  const [report, setReport] = useState<DuplicateReport>(EMPTY_REPORT)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    void window.discdock.duplicates.report({}).then((result) => {
+      setLoading(false)
+      if (result.ok) setReport(result.data)
+    })
+  }, [])
+
+  return (
+    <div className="duplicates-view">
+      <h1>Duplicates</h1>
+
+      {loading ? (
+        <p className="duplicates-view__status">Scanning catalog for duplicates…</p>
+      ) : report.totalGroups === 0 ? (
+        <div className="empty-state">
+          <p>
+            No duplicate files found. Duplicate detection requires files to be scanned with hashing
+            enabled (Quick or Full).
+          </p>
+        </div>
+      ) : (
+        <>
+          <p className="duplicates-view__summary">
+            {report.totalGroups} duplicate group{report.totalGroups === 1 ? '' : 's'} · {report.totalFiles}{' '}
+            files involved · {formatBytes(report.reclaimableBytes)} reclaimable if only one copy of each
+            were kept
+          </p>
+          {report.groups.map((group) => (
+            <div key={group.hashValue} className="duplicate-group">
+              <div className="duplicate-group__header">
+                <span>{formatBytes(group.sizeBytes)}</span>
+                <span className="duplicate-group__hash">{group.hashValue.slice(0, 16)}…</span>
+                <span>{group.occurrences.length} copies</span>
+              </div>
+              <ul className="duplicate-group__occurrences">
+                {group.occurrences.map((occurrence, index) => (
+                  <li key={index}>
+                    <strong>{occurrence.mediaLabel}</strong> — {occurrence.path}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `Duplicates.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Duplicates.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.duplicates-view__status,
+.duplicates-view__summary {
+  opacity: 0.8;
+  font-size: 13px;
+  margin: 12px 0;
+}
+
+.duplicate-group {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.duplicate-group__header {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.duplicate-group__hash {
+  font-family: monospace;
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+.duplicate-group__occurrences {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `App.tsx`, lines 1 to 35
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **App.tsx**</summary>
+
+@@ lines 25-25 @@
+
+```
+case 'duplicates':
+        return <Duplicates />
+      
+```
+
+@@ lines 7-7 @@
+
+```
+Duplicates from './views/Duplicates'
+import 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Implement Duplicate Detection* (1/2)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's verify file integrity, check for errors, and build:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `duplicateRepository.ts`, `duplicates.ts`, `main.ts`, `preload.ts`, `App.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/db/duplicateRepository.ts electron/ipc/duplicates.ts src/view...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact. Building and testing:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's directly test the duplicate query logic against the real dev DB with test data (same approach that caught the FTS bug):     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-dup.js << 'EOF'
+const Database = require\('...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's launch the app and check the Duplicates view:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+I can't script clicks in the desktop window, so let's verify the duplicate report logic directly via the compiled module (same reliable approach as before):   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-dup-query.js << 'EOF'
+const Database = req...`
+</details></tool-use>

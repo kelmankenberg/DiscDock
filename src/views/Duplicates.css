@@ -1,0 +1,32 @@
+.duplicates-view__status,
+.duplicates-view__summary {
+  opacity: 0.8;
+  font-size: 13px;
+  margin: 12px 0;
+}
+
+.duplicate-group {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.duplicate-group__header {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.duplicate-group__hash {
+  font-family: monospace;
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+.duplicate-group__occurrences {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}

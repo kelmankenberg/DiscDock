@@ -142,3 +142,28 @@ export interface SearchResultPage {
   results: FileSearchResult[]
   total: number
 }
+
+export interface DuplicateOccurrence {
+  mediaItemId: number
+  mediaLabel: string
+  path: string
+}
+
+export interface DuplicateGroup {
+  hashValue: string
+  sizeBytes: number
+  occurrences: DuplicateOccurrence[]
+}
+
+export interface DuplicateReportFilters {
+  minGroupSize?: number
+  mediaType?: MediaType
+  kind?: FileKind
+}
+
+export interface DuplicateReport {
+  groups: DuplicateGroup[]
+  totalGroups: number
+  totalFiles: number
+  reclaimableBytes: number
+}

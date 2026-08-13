@@ -2,6 +2,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type {
   DashboardSummary,
   DetectedDevice,
+  DuplicateReport,
+  DuplicateReportFilters,
   HashMode,
   IpcResult,
   MediaItem,
@@ -92,6 +94,10 @@ const api = {
   search: {
     query: (text: string, filters: SearchFilters, page: number): Promise<IpcResult<SearchResultPage>> =>
       ipcRenderer.invoke('search:query', { text, filters, page })
+  },
+  duplicates: {
+    report: (filters: DuplicateReportFilters): Promise<IpcResult<DuplicateReport>> =>
+      ipcRenderer.invoke('duplicates:report', filters)
   }
 }
 

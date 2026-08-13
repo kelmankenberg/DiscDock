@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar'
 import Dashboard from './views/Dashboard'
 import MediaLibrary from './views/MediaLibrary'
 import Search from './views/Search'
+import Duplicates from './views/Duplicates'
 import PlaceholderView from './views/PlaceholderView'
 import { NAV_ITEMS } from './components/Sidebar'
 
@@ -22,6 +23,8 @@ export default function App(): JSX.Element {
         return <MediaLibrary />
       case 'search':
         return <Search />
+      case 'duplicates':
+        return <Duplicates />
       default:
         return <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
     }
