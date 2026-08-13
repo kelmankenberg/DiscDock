@@ -63,12 +63,21 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     }
   }
 
-  const sortedItems = [...items].sort((a, b) => {
+  const sortedItems = [...filteredItems].sort((a, b) => {
     const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
     return sortAsc ? result : -result
   })
   const [devices, setDevices] = useState<DetectedDevice[]>([])
   const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
+  const [containerFilter, setContainerFilter] = useState<string>('')
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
+  const [editingLocationValue, setEditingLocationValue] = useState('')
+
+  const knownLocations = Array.from(
+    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
+  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+
+  const filteredItems = containerFilter ? items.filter((item) => item.physicalLocation === containerFilter) : items
 
   const loadItems = (): void => {
     void window.discdock.media.list().then((result) => {
@@ -211,6 +220,19 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     if (scan) void window.discdock.scan.cancel(scan.jobId)
   }
 
+  const startEditingLocation = (item: MediaItem): void => {
+    setEditingLocationId(item.id)
+    setEditingLocationValue(item.physicalLocation ?? '')
+  }
+
+  const saveEditingLocation = (id: number): void => {
+    const value = editingLocationValue.trim() || null
+    setEditingLocationId(null)
+    void window.discdock.media.update(id, { physicalLocation: value }).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
   return (
     <div className="media-library">
       <div className="media-library__header">
@@ -265,13 +287,19 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
             </select>
           </label>
           <label>
-            Physical Location
+            Container / Physical Location
             <input
               type="text"
+              list="location-suggestions"
               value={form.physicalLocation ?? ''}
               onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
-              placeholder="e.g. Garage > Box 3 > Shelf B"
+              placeholder="e.g. CD Spindle #2, Garage / Box 3"
             />
+            <datalist id="location-suggestions">
+              {knownLocations.map((loc) => (
+                <option key={loc} value={loc} />
+              ))}
+            </datalist>
           </label>
           <label>
             Notes
@@ -303,7 +331,23 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
           <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
         </div>
       ) : (
-        <table className="media-table">
+        <>
+          {knownLocations.length > 0 && (
+            <div className="container-filter">
+              <label>
+                Container
+                <select value={containerFilter} onChange={(e) => setContainerFilter(e.target.value)}>
+                  <option value="">All containers</option>
+                  {knownLocations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          <table className="media-table">
           <thead>
             <tr>
               {COLUMNS.map((col) => (
@@ -328,7 +372,27 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                     </button>
                   </td>
                   <td>{mediaTypeLabel(item.mediaType)}</td>
-                  <td>{item.physicalLocation ?? '—'}</td>
+                  <td>
+                    {editingLocationId === item.id ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        list="location-suggestions"
+                        className="media-table__location-input"
+                        value={editingLocationValue}
+                        onChange={(e) => setEditingLocationValue(e.target.value)}
+                        onBlur={() => saveEditingLocation(item.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditingLocation(item.id)
+                          if (e.key === 'Escape') setEditingLocationId(null)
+                        }}
+                      />
+                    ) : (
+                      <button type="button" className="link-button" onClick={() => startEditingLocation(item)}>
+                        {item.physicalLocation ?? 'Set container…'}
+                      </button>
+                    )}
+                  </td>
                   <td>
                     <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
                   </td>
@@ -368,7 +432,8 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
               )
             })}
           </tbody>
-        </table>
+          </table>
+        </>
       )}
     </div>
   )
