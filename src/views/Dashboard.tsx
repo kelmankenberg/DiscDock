@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Disc3, Usb } from 'lucide-react'
 import type { DashboardSummary, DetectedDevice, MediaItem } from '../../shared/types'
 
 const EMPTY_SUMMARY: DashboardSummary = {
@@ -182,6 +183,7 @@ export default function Dashboard(): JSX.Element {
         <table className="device-table">
           <thead>
             <tr>
+              <th></th>
               <th>Label</th>
               <th>Mount Point</th>
               <th>Filesystem</th>
@@ -195,6 +197,13 @@ export default function Dashboard(): JSX.Element {
               const matched = findMediaForDevice(device)
               return (
                 <tr key={device.devicePath}>
+                  <td>
+                    {device.isOptical ? (
+                      <Disc3 size={16} aria-hidden="true" />
+                    ) : (
+                      <Usb size={16} aria-hidden="true" />
+                    )}
+                  </td>
                   <td>{device.label ?? '(unlabeled)'}</td>
                   <td>{device.mountPoint}</td>
                   <td>{device.fsType ?? '—'}</td>

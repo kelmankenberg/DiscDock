@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Scan, CircleX, Archive, Trash2, Eject as EjectIcon } from 'lucide-react'
+import { Scan, CircleX, Archive, Trash2, Eject as EjectIcon, Disc3, Usb } from 'lucide-react'
 import { MEDIA_TYPES } from '../../shared/types'
 import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
 import './MediaLibrary.css'
@@ -340,8 +340,9 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
           {unregisteredDevices.map((device) => (
             <div key={device.devicePath} className="new-media-banner__item">
               <span>
-                {device.isOptical ? '💿' : '💾'} New media detected:{' '}
-                <strong>{device.label ?? device.mountPoint.split('/').pop()}</strong> — not yet registered.
+                {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />} New
+                media detected: <strong>{device.label ?? device.mountPoint.split('/').pop()}</strong> — not yet
+                registered.
               </span>
               <button
                 type="button"
@@ -370,7 +371,8 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                     className="button button--small"
                     onClick={() => handleUseDevice(device)}
                   >
-                    {device.isOptical ? '💿' : '💾'} {device.label ?? device.mountPoint.split('/').pop()}
+                    {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />}{' '}
+                    {device.label ?? device.mountPoint.split('/').pop()}
                   </button>
                 ))}
               </div>
