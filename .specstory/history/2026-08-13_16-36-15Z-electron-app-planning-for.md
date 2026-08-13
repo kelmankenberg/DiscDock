@@ -41856,14 +41856,89 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` ls node\_modules/lucide-react/dist/esm/icons/ | grep -iE "^more-vertical|^ell...`
+
+Check for a kebab/more-options icon and a restart/dev-tools icon
+
+```bash
+ls node_modules/lucide-react/dist/esm/icons/ | grep -iE "^more-vertical|^ellipsis-vertical|^refresh-cw\.mjs|^bug"
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  ls node_modules/lucide-react/dist/esm/icons/ |
+grep -iE "^more-vertical|^ellipsis-vertical|^refresh-cw\.mjs|^bug"
+bug.mjs
+bug.mjs.map
+bug-off.mjs
+bug-off.mjs.map
+bug-play.mjs
+bug-play.mjs.map
+ellipsis-vertical.mjs
+ellipsis-vertical.mjs.map
+more-vertical.mjs
+more-vertical.mjs.map
+refresh-cw.mjs
+refresh-cw.mjs.map
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `createWindow.ts`, lines 1 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/home/kel/dev/DiscDock/electron/window/createWindow.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { BrowserWindow, shell } from 'electron'
+import path from 'node:path'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export function createMainWindow(): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
+    // Frameless: DiscDock renders its own title bar/toolbar and window controls.
+    frame: false,
+    backgroundColor: '#1e1e1e',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => win.show())
+
+  // Never allow navigation to or opening of remote content from the renderer.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  // DevTools are not opened automatically; toggle manually with Ctrl+Shift+I.
+  // Only react to keyDown — before-input-event also fires on keyUp, which would otherwise
+  // toggle twice per press (open then immediately close again).
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type === 'keyDown' && input.control && input.shift && input.key.toLowerCase() === 'i') {
+      win.webContents.toggleDevTools()
+    }
+  })
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -41925,18 +42000,78 @@ Now let's add IPC handlers for the renderer's More menu (restart + toggle devtoo
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `windowControls.ts`, lines 1 to 30
+
+**Input:**
+
+- endLine: `30`
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/windowControls.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { BrowserWindow, ipcMain } from 'electron'
+import type { IpcResult, WindowState } from '../../shared/types'
+
+// Window-control channels only ever act on the given BrowserWindow instance —
+// no renderer-supplied window handle is ever accepted.
+export function registerWindowControlIpc(win: BrowserWindow): void {
+  ipcMain.handle('window:minimize', (): IpcResult<null> => {
+    win.minimize()
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:maximize', (): IpcResult<null> => {
+    if (win.isMaximized()) {
+      win.unmaximize()
+    } else {
+      win.maximize()
+    }
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:close', (): IpcResult<null> => {
+    win.close()
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:isMaximized', (): IpcResult<WindowState> => {
+    return { ok: true, data: { maximized: win.isMaximized() } }
+  })
+
+  const sendState = (): void => {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `windowControls.ts`, lines 28 to 36
+
+**Input:**
+
+- endLine: `37`
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/windowControls.ts`
+- startLine: `28`
+
+**Result:**
+
+```
+  })
+
+  const sendState = (): void => {
+    win.webContents.send('window:stateChanged', { maximized: win.isMaximized() } satisfies WindowState)
+  }
+  win.on('maximize', sendState)
+  win.on('unmaximize', sendState)
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -41988,34 +42123,119 @@ Now let's expose these in `preload.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `window: {` (`**/electron/preload.ts`), 1 result
+
+**Input:**
+
+- includePattern: `electron/preload.ts`
+- isRegexp: `false`
+- query: `window: {`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "window: {"
+
+electron/preload.ts
+21:  window: {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 18 to 45
+
+**Input:**
+
+- endLine: `45`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `18`
+
+**Result:**
+
+```
+} from '../shared/types'
+
+const api = {
+  window: {
+    minimize: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:minimize'),
+    maximize: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:maximize'),
+    close: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:close'),
+    isMaximized: (): Promise<IpcResult<WindowState>> => ipcRenderer.invoke('window:isMaximized'),
+    onStateChanged: (callback: (state: WindowState) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, state: WindowState): void => callback(state)
+      ipcRenderer.on('window:stateChanged', listener)
+      return () => ipcRenderer.removeListener('window:stateChanged', listener)
+    }
+  },
+  dashboard: {
+    getSummary: (): Promise<IpcResult<DashboardSummary>> => ipcRenderer.invoke('dashboard:summary')
+  },
+  media: {
+    list: (): Promise<IpcResult<MediaItem[]>> => ipcRenderer.invoke('media:list'),
+    get: (id: number): Promise<IpcResult<MediaItem>> => ipcRenderer.invoke('media:get', { id }),
+    create: (input: MediaItemInput): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:create', input),
+    update: (id: number, patch: Partial<MediaItemInput>): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:update', { id, patch }),
+    retire: (id: number): Promise<IpcResult<MediaItem>> => ipcRenderer.invoke('media:retire', { id }),
+    delete: (id: number): Promise<IpcResult<{ deleted: true }>> =>
+      ipcRenderer.invoke('media:delete', { id })
+  },
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `app: {` (`**/electron/preload.ts`), 1 result
+
+**Input:**
+
+- includePattern: `electron/preload.ts`
+- isRegexp: `false`
+- query: `app: {`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "app: {"
+
+electron/preload.ts
+46:  app: {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 46 to 50
+
+**Input:**
+
+- endLine: `50`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `46`
+
+**Result:**
+
+```
+  app: {
+    getVersion: (): Promise<IpcResult<string>> => ipcRenderer.invoke('app:getVersion')
+  },
+  devices: {
+    list: (): Promise<IpcResult<DetectedDevice[]>> => ipcRenderer.invoke('devices:list'),
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -42052,10 +42272,77 @@ Now let's build the "More" menu (kebab) UI in `TitleBar.tsx`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `TitleBar.tsx`, lines 1 to 65
+
+**Input:**
+
+- endLine: `65`
+- filePath: `/home/kel/dev/DiscDock/src/components/TitleBar.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { Disc3, Minus, Square, Copy, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import './TitleBar.css'
+
+interface WindowState {
+  maximized: boolean
+}
+
+interface TitleBarProps {
+  sidebarCollapsed: boolean
+  onToggleSidebar: () => void
+}
+
+// Custom title bar replacing the OS-native one, since the BrowserWindow is created with frame: false.
+export default function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBarProps): JSX.Element {
+  const [maximized, setMaximized] = useState(false)
+
+  useEffect(() => {
+    void window.discdock.window.isMaximized().then((result) => {
+      if (result.ok) setMaximized(result.data.maximized)
+    })
+    return window.discdock.window.onStateChanged((state: WindowState) => setMaximized(state.maximized))
+  }, [])
+
+  return (
+    <header className="title-bar">
+      <div className="title-bar__drag-region">
+        <button
+          type="button"
+          className="title-bar__sidebar-toggle"
+          onClick={onToggleSidebar}
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
+        </button>
+        <Disc3 size={16} className="title-bar__icon" aria-hidden="true" />
+        <span className="title-bar__title">DiscDock</span>
+      </div>
+      <div className="title-bar__controls">
+        <button
+          type="button"
+          className="title-bar__button"
+          aria-label="Minimize"
+          onClick={() => void window.discdock.window.minimize()}
+        >
+          <Minus size={14} />
+        </button>
+        <button
+          type="button"
+          className="title-bar__button"
+          aria-label={maximized ? 'Restore' : 'Maximize'}
+          onClick={() => void window.discdock.window.maximize()}
+        >
+          {maxim
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -42177,10 +42464,75 @@ Now let's add the CSS for the More menu dropdown:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `TitleBar.css`, lines 1 to 55
+
+**Input:**
+
+- endLine: `55`
+- filePath: `/home/kel/dev/DiscDock/src/components/TitleBar.css`
+- startLine: `1`
+
+**Result:**
+
+```
+.title-bar {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  background: var(--color-titlebar-bg);
+  color: var(--color-titlebar-fg);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.title-bar__drag-region {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+  height: 100%;
+  flex: 1;
+}
+
+.title-bar__sidebar-toggle {
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 6px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.title-bar__sidebar-toggle:hover {
+  background: var(--color-titlebar-hover);
+}
+
+.title-bar__icon {
+  font-size: 14px;
+}
+
+.title-bar__title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.title-bar__controls {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -42248,10 +42600,41 @@ Let's check for errors, verify integrity/sync, and build.
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `createWindow.ts`, `windowControls.ts`, `preload.ts`, `TitleBar.tsx`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/electron/window/createWindow.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/windowControls.ts",
+  "/home/kel/dev/DiscDock/electron/preload.ts",
+  "/home/kel/dev/DiscDock/src/components/TitleBar.tsx"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/electron/window/createWindow.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/windowControls.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/preload.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/components/TitleBar.tsx">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -42264,6 +42647,28 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c electron/window/createWindow.ts electron/ipc/windowControls.ts electro...`
+
+Verify edited files have content and check for concurrent commits before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/window/createWindow.ts electron/ipc/windowControls.ts electron/preload.ts src/components/TitleBar.tsx src/components/TitleBar.css && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/window/createWindow.ts electron/ipc/windowControls.ts electron/preload.ts src/components/TitleBar.tsx src/components/TitleBar.css && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1` (terminal ID=817dad57-7199-4022-b525-d88311077b7b). This is the output of running that command instead:
+ 1620 electron/window/createWindow.ts
+ 1388 electron/ipc/windowControls.ts
+ 6386 electron/preload.ts
+ 4767 src/components/TitleBar.tsx
+ 2107 src/components/TitleBar.css
+16268 total
+5783239 (HEAD -> main, origin/main) Fix Ctrl+Shift+I firing twice per press (key
+Down+keyUp), breaking clean DevTools toggle
+5783239 (HEAD -> main, origin/main) Fix Ctrl+Shift+I firing twice per press (key
+Down+keyUp), breaking clean DevTools toggle
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -42276,6 +42681,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with the More menu feature
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=4ac1295d-7188-4bfb-85ac-378433ee4244). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 1813 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-DIit3s4N.css   11.61 kB │ gzip:  2.49 kB
+dist/assets/index-CvCIsn7o.js   234.38 kB │ gzip: 71.90 kB
+
+✓ built in 178ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -42288,6 +42730,52 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app to verify the More menu renders
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=99d0a124-6f7d-4818-8464-1dece4de8e0f
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="99d0a124-6f7d-4818-8464-1dece4de8e0f" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="99d0a124-6f7d-4818-8464-1dece4de8e0f" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -42300,12 +42788,444 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` import -window root /tmp/discdock-more-menu.png && echo done`
+
+Screenshot to verify the More menu kebab icon appears in the title bar
+
+```bash
+import -window root /tmp/discdock-more-menu.png && echo done
+```
+
+**Result:**
+
+```
+done
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_viewImage"><details>
-<summary>Tool use: **copilot_viewImage**</summary>
+<tool-use data-tool-type="generic" data-tool-name="view_image"><details>
+<summary>Tool use: **view_image**</summary>
 
 Viewed image `discdock-more-menu.png`
+
+**Input:**
+
+- filePath: `/tmp/discdock-more-menu.png`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Let's screenshot to see the kebab icon in the title bar.         
+
+Confirmed — the kebab (More) icon appears correctly right before Minimize/Maximize/Close. Closing and committing.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `99d0a124-6f7d-4818-8464-1dece4de8e0f`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 99d0a124-6f7d-4818-8464-1dece4de8e0f. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the More menu feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=118d5c1a-13f4-43d7-8985-06354b30d648). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  390G   45G  90% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  electron/ipc/windowControls.ts
+M  electron/preload.ts
+M  electron/window/createWindow.ts
+M  src/components/TitleBar.css
+M  src/components/TitleBar.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+45G free, healthy.           
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Add More menu \(kebab\) to title bar with Restart DiscDock \(Ctr...`
+
+Commit and push the More menu feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Add More menu (kebab) to title bar with Restart DiscDock (Ctrl+Shift+R) and Show Dev Tools (Ctrl+Shift+I)" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Add More menu (kebab) to title bar with Restart DiscDock (Ctrl+Shift+R) and Show Dev Tools (Ctrl+Shift+I)" 2>&1 | tail -20 && git push 2>&1` (terminal ID=4e78e851-2302-4df7-bd96-8153b32e529f). This is the output of running that command instead:
+kel@kel-EQ-Mint:~/dev/DiscDock$  git commit -m "Add More menu (kebab) to title b
+ar with Restart DiscDock (Ctrl+Shift+R) and Show Dev Tools (Ctrl+Shift+I)" 2>&1
+| tail -20 && git push 2>&1
+[main 58453ed] Add More menu (kebab) to title bar with Restart DiscDock (Ctrl+Sh
+ift+R) and Show Dev Tools (Ctrl+Shift+I)
+ 7 files changed, 835 insertions(+), 18 deletions(-)
+Enumerating objects: 31, done.
+Counting objects: 100% (31/31), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (15/15), done.
+Writing objects: 100% (16/16), 6.14 KiB | 393.00 KiB/s, done.
+Total 16 (delta 10), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (10/10), completed with 10 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   5783239..58453ed  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (45G free, healthy).
+
+**Implemented: More menu (kebab) in the title bar**
+-  icon button placed just before Minimize/Maximize/Close
+- Dropdown with:
+  - **Restart DiscDock** — smaller muted "Ctrl+Shift+R" text next to the label
+  - **Show Dev Tools** — smaller muted "Ctrl+Shift+I" text next to the label
+- Closes on outside click or Escape key
+- `Ctrl+Shift+R` is now also bound as an actual keyboard shortcut in the main process ( + ), alongside the existing `Ctrl+Shift+I` toggle
+- New `app:restart` / `app:toggleDevTools` IPC channels so the menu items trigger the same underlying actions as the shortcuts
+
+Verified visually — the kebab icon renders correctly in the title bar. Restart your `npm run dev` session to pick up the main-process changes.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Add More menu with kebab icon* (1/3)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 21:21:04Z)**_
+
+When I select Restart DiscDock, it shuts down and reruns, but the UI is blank. Is that a dev mode issue that it wouldn't happen in the built version?
+
+---
+
+_**Agent (copilot/auto)**_
+
+Yes — this is a dev-mode-only artifact of how `npm run dev` is wired, not something that will happen in the packaged build. Here's why:
+
+Your `dev` script is:
+```
+concurrently -k "vite" "wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron ."
+```
+
+The `-k` (kill-others) flag means **when either process exits for any reason, concurrently immediately kills the other one too**. When you click "Restart DiscDock," it calls  +  — that  counts as the Electron process "exiting," so concurrently kills the sibling Vite dev server as a side effect.  then spawns a new Electron instance that tries to load `http://localhost:5173`, but Vite is already dead — hence the blank window.
+
+In the packaged/production build, there's no Vite dev server at all — it loads `index.html` directly from disk via , so relaunch has nothing external to depend on and will work fine.
+
+Want me to fix the dev-mode experience too (e.g., have Electron detect Vite is gone and re-point at the built files, or restructure the dev script so restart doesn't kill Vite)? Or is knowing it's dev-only sufficient for now?
+
+---
+
+_**User (2026-08-13 21:23:09Z)**_
+
+now when the app window is resized or its location moved, we need to persist those settings across sessions.
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `createWindow.ts`, lines 1 to 50
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's create a small window-state persistence module:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `windowState.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **windowState.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { app, screen } from 'electron'
+import type { BrowserWindow } from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
+
+interface SavedWindowState {
+  width: number
+  height: number
+  x?: number
+  y?: number
+  maximized: boolean
+}
+
+const DEFAULT_STATE: SavedWindowState = { width: 1280, height: 800, maximized: false }
+const SAVE_DEBOUNCE_MS = 400
+
+function statePath(): string {
+  return path.join(app.getPath('userData'), 'window-state.json')
+}
+
+function isOnScreen(x: number, y: number, width: number, height: number): boolean {
+  return screen.getAllDisplays().some((display) => {
+    const area = display.workArea
+    return x >= area.x && y >= area.y && x + width <= area.x + area.width && y + height <= area.y + area.height
+  })
+}
+
+export function loadWindowState(): SavedWindowState {
+  try {
+    const raw = fs.readFileSync(statePath(), 'utf-8')
+    const parsed = JSON.parse(raw) as Partial<SavedWindowState>
+    const state: SavedWindowState = { ...DEFAULT_STATE, ...parsed }
+
+    // Ignore stale bounds from a display that's no longer connected (e.g. laptop undocked).
+    if (state.x !== undefined && state.y !== undefined && !isOnScreen(state.x, state.y, state.width, state.height)) {
+      return { ...state, x: undefined, y: undefined }
+    }
+    return state
+  } catch {
+    return DEFAULT_STATE
+  }
+}
+
+/** Debounced persistence of window bounds/maximized state, called on resize/move/maximize/unmaximize. */
+export function trackWindowState(win: BrowserWindow): void {
+  let saveTimer: NodeJS.Timeout | null = null
+
+  const save = (): void => {
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      const maximized = win.isMaximized()
+      // While maximized, getBounds() reflects the maximized size — persist the last known
+      // restored bounds instead so un-maximizing later returns to the expected size/position.
+      const bounds = maximized ? win.getNormalBounds() : win.getBounds()
+      const state: SavedWindowState = {
+        width: bounds.width,
+        height: bounds.height,
+        x: bounds.x,
+        y: bounds.y,
+        maximized
+      }
+      try {
+        fs.mkdirSync(path.dirname(statePath()), { recursive: true })
+        fs.writeFileSync(statePath(), JSON.stringify(state, null, 2))
+      } catch {
+        // best-effort persistence — not critical if a write occasionally fails
+      }
+    }, SAVE_DEBOUNCE_MS)
+  }
+
+  win.on('resize', save)
+  win.on('move', save)
+  win.on('maximize', save)
+  win.on('unmaximize', save)
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's wire it into `createWindow.ts`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **createWindow.ts**</summary>
+
+@@ lines 3-24 @@
+
+```
+import { loadWindowState, trackWindowState } from './windowState'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export function createMainWindow(): BrowserWindow {
+  const savedState = loadWindowState()
+
+  const win = new BrowserWindow({
+    width: savedState.width,
+    height: savedState.height,
+    x: savedState.x,
+    y: savedState.y,
+    minWidth: 900,
+    minHeight: 600,
+    // Frameless: DiscDock renders its own title bar/toolbar and window controls.
+    frame: false,
+    backgroundColor: '#1e1e1e',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => {
+    if (savedState.maximized) win.maximize()
+    win.show()
+  })
+
+  trackWindowState(win
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's check for errors, verify integrity/sync, and build.         
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `createWindow.ts`, `windowState.ts`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Verify content and sync.         
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/window/createWindow.ts electron/window/windowState.ts && git ...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact, in sync. Building.             
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's verify the persistence logic end-to-end: launch, programmatically resize/move the window (since I can't drag with a mouse), then check the saved state file and confirm a fresh launch picks it up.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -f /home/kel/.config/discdock/window-state.json
+cat > /home/kel/dev/DiscD...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat /home/kel/.config/discdock/window-state.json 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-window-state.js << 'EOF'
+const \{ app \} = r...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `createWindow.ts`, lines 1 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat /home/kel/.config/Electron/window-state.json 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Confirmed — the save logic works perfectly; the file just landed in the wrong test-harness directory (Electron's default app name) rather than a real bug. Let's clean that up and do one more proper round-trip test with the correct app name to confirm load-on-restart behavior too.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf /home/kel/.config/Electron
+cat > /home/kel/dev/DiscDock/test-window-s...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Full round-trip confirmed: bounds are saved correctly (`x:200, y:100, width:1000, height:750`), and a fresh window creation picks up exactly those persisted bounds. Let's clean up the real dev database's window-state.json (since this test wrote to the actual config path) and do a final GUI smoke test.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -f /home/kel/.config/discdock/window-state.json
+cd /home/kel/dev/DiscDock...`
 </details></tool-use>

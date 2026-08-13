@@ -1,12 +1,17 @@
 import { app, BrowserWindow, shell } from 'electron'
 import path from 'node:path'
+import { loadWindowState, trackWindowState } from './windowState'
 
 const isDev = process.env.NODE_ENV === 'development'
 
 export function createMainWindow(): BrowserWindow {
+  const savedState = loadWindowState()
+
   const win = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    width: savedState.width,
+    height: savedState.height,
+    x: savedState.x,
+    y: savedState.y,
     minWidth: 900,
     minHeight: 600,
     // Frameless: DiscDock renders its own title bar/toolbar and window controls.
@@ -21,7 +26,12 @@ export function createMainWindow(): BrowserWindow {
     }
   })
 
-  win.once('ready-to-show', () => win.show())
+  win.once('ready-to-show', () => {
+    if (savedState.maximized) win.maximize()
+    win.show()
+  })
+
+  trackWindowState(win)
 
   // Never allow navigation to or opening of remote content from the renderer.
   win.webContents.setWindowOpenHandler(({ url }) => {
