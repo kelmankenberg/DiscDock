@@ -32197,14 +32197,81 @@ Also, let's add an Eject button to the list items so the user does not have to a
 
 _**Agent (copilot/auto)**_
 
+<think><details><summary>Thought Process</summary>
+Now let's find the `devices` state declaration and add a `findDeviceForItem` helper plus eject state right after it:
+</details></think>
+
+_**Agent (copilot/auto)**_
+
 Let's add device-presence detection (reusing the same fingerprint-matching pattern from Dashboard) with a visual row indicator, plus an Eject action directly in Media Library rows.   
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 1 to 50
+
+**Input:**
+
+- endLine: `50`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'label', label: 'Label' },
+  { key: 'mediaType', label: 'Type' },
+  { key: 'physicalLocation', label: 'Location' },
+  { key: 'status', label: 'Status' },
+  { key: 'lastScannedAt', label: 'Last Scanned' }
+]
+
+function sortValue(item: MediaItem, key: SortKey): string {
+  switch (key) {
+    case 'mediaType':
+      return mediaTypeLabel(item.mediaType)
+    case 'physicalLocation':
+      return item.physicalLocation ?? ''
+    case 'lastScannedAt':
+      return item.lastScannedAt ?? ''
+    default:
+      return item[key] ?? ''
+  }
+}
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32213,18 +32280,94 @@ Now let's find the  state declaration and add a `findDeviceForItem` helper plus 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `const [devices, setDevices]` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `const [devices, setDevices]`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "const [devices, setDevices]"
+
+src/views/MediaLibrary.tsx
+66:  const [devices, setDevices] = useState<DetectedDevice[]>([])
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 66 to 140
+
+**Input:**
+
+- endLine: `140`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `66`
+
+**Result:**
+
+```
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
+  const [containerFilter, setContainerFilter] = useState<string>('')
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
+  const [editingLocationValue, setEditingLocationValue] = useState('')
+
+  const knownLocations = Array.from(
+    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
+  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+
+  const filteredItems = containerFilter ? items.filter((item) => item.physicalLocation === containerFilter) : items
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
+
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null)
+  const [batchLocationValue, setBatchLocationValue] = useState('')
+
+  const handleRowCheckboxClick = (
+    event: React.MouseEvent<HTMLInputElement>,
+    item: MediaItem,
+    index: number
+  ): void => {
+    if (event.shiftKey && lastClickedIndex !== null) {
+      const [start, end] = [lastClickedIndex, index].sort((a, b) => a - b)
+      const rangeIds = sortedItems.slice(start, end + 1).map((i) => i.id)
+      setSelectedIds((prev) => new Set([...prev, ...rangeIds]))
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(item.id)) next.delete(item.id)
+        else next.add(item.id)
+        return next
+      })
+    }
+    setLastClickedIndex(index)
+  }
+
+  const handleSelectAll = (): void => {
+    setSelectedIds((prev) =>
+      prev.size === sortedItems.length ? new Set() : new Set(sortedItems.map((i) => i.id))
+    )
+  }
+
+  const clearSelection = (): void => {
+    setSelectedId
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32264,18 +32407,90 @@ Now let's update the render to add the row background indicator and the Eject bu
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `selectedIds.has(item.id) ? 'media-table__row--selected'` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `selectedIds.has(item.id) ? 'media-table__row--selected'`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "selectedIds.has(item.id) ? 'media-table__row--selected'"
+
+src/views/MediaLibrary.tsx
+485:                <tr key={item.id} className={selectedIds.has(item.id) ? 'media-table__row--selected' : ''}>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 478 to 560
+
+**Input:**
+
+- endLine: `560`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `478`
+
+**Result:**
+
+```
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedItems.map((item, index) => {
+              const scan = scansByMedia[item.id]
+              return (
+                <tr key={item.id} className={selectedIds.has(item.id) ? 'media-table__row--selected' : ''}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => {}}
+                      onClick={(e) => handleRowCheckboxClick(e, item, index)}
+                      aria-label={`Select ${item.label}`}
+                    />
+                  </td>
+                  <td>
+                    <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
+                      {item.label}
+                    </button>
+                  </td>
+                  <td>{mediaTypeLabel(item.mediaType)}</td>
+                  <td>
+                    {editingLocationId === item.id ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        list="location-suggestions"
+                        className="media-table__location-input"
+                        value={editingLocationValue}
+                        onChange={(e) => setEditingLocationValue(e.target.value)}
+                        onBlur={() => saveEditingLocation(item.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditingLocation(item.id)
+                          if (e.key === 'Escape') setEditingLocationId(null)
+                        }}
+                      />
+                    ) : (
+                      <button type="button" className="link-button" onClick={() => startEditingLocation(item)}>
+                        {item.physicalLocation ?? 'Set container…'}
+                      </button>
+                    )}
+                  </td>
+              
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32324,18 +32539,51 @@ Now let's add the eject message display above the table, and the CSS for the "pr
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `selectedIds.size > 0 && (` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `selectedIds.size > 0 && (`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "selectedIds.size > 0 && ("
+
+src/views/MediaLibrary.tsx
+434:          {selectedIds.size > 0 && (
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 430 to 436
+
+**Input:**
+
+- endLine: `436`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `430`
+
+**Result:**
+
+```
+              </label>
+            </div>
+          )}
+
+          {selectedIds.size > 0 && (
+            <div className="batch-actions">
+              <span className="batch-actions__count">{selectedIds.size} selected</span>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32366,18 +32614,53 @@ Now the CSS:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `.media-table__row--selected` (`**/src/views/MediaLibrary.css`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.css`
+- isRegexp: `false`
+- query: `.media-table__row--selected`
+
+**Result:**
+
+```
+Found 1 match in 1 file for ".media-table__row--selected"
+
+src/views/MediaLibrary.css
+153:.media-table__row--selected {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.css`, lines 150 to 158
+
+**Input:**
+
+- endLine: `158`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.css`
+- startLine: `150`
+
+**Result:**
+
+```
+  font-size: 13px;
+}
+
+.media-table__row--selected {
+  background: var(--color-sidebar-hover);
+}
+
+.media-table__actions {
+  display: flex;
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32412,6 +32695,462 @@ Let's check for errors, verify integrity, and build.
 
 _**Agent (copilot/auto)**_
 
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `MediaLibrary.tsx`, 2 problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx"]`
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import './MediaLibrary.css'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+This code at line 18
+```
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+```
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+````
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Same known non-blocking IDE quirk. Verify content and build:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css`
+
+Verify edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css` (terminal ID=85f2cf8e-4246-4cc6-b42d-3df845dda5d6). This is the output of running that command instead:
+21038 src/views/MediaLibrary.tsx
+ 3069 src/views/MediaLibrary.css
+24107 total
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with device-presence highlighting and Eject button in Media Library
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=bd48f074-e34d-4d4d-8ddf-1eb9ee27b3ed). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 35 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BaFmY7cq.css    9.21 kB │ gzip:  2.04 kB
+dist/assets/index-C-M9u-se.js   222.49 kB │ gzip: 67.99 kB
+
+✓ built in 166ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's do a live launch smoke test.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app for a smoke test of the new features
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=00cd7cb2-f6dd-4665-96db-a8830c4a0f3d
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="00cd7cb2-f6dd-4665-96db-a8830c4a0f3d" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="00cd7cb2-f6dd-4665-96db-a8830c4a0f3d" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors on launch. Closing and committing.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `00cd7cb2-f6dd-4665-96db-a8830c4a0f3d`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 00cd7cb2-f6dd-4665-96db-a8830c4a0f3d. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the present-media highlighting and Eject button feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=67078df1-dc42-434a-b446-3a148bde1730). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  383G   51G  89% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  src/views/MediaLibrary.css
+M  src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+51G free, healthy.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Highlight present media in Media Library and add Eject action...`
+
+Commit and push the feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Highlight present media in Media Library and add Eject action to row list" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Highlight present media in Media Library and add Eject action to row list" 2>&1 | tail -20 && git push 2>&1` (terminal ID=e0f87d98-6d71-41c1-8d08-47897d675a6a). This is the output of running that command instead:
+[main 95f1fc8] Highlight present media in Media Library and add Eject action to
+row list
+ 4 files changed, 10858 insertions(+), 12434 deletions(-)
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 6.58 KiB | 374.00 KiB/s, done.
+Total 10 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   33f5b38..95f1fc8  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (51G free, healthy).
+
+**Implemented:**
+1. **Presence highlighting** — Media Library rows now cross-reference detected devices by  (same matching logic as the Dashboard) and apply a distinct accent-tinted background (`.media-table__row--present`) to any row whose physical media is currently connected. Combines visually with the existing selection highlight if a row is both present and selected.
+2. **Eject in Media Library** — rows with present media now show an "Eject" (optical) / "Safely Remove" (drive) button directly in the actions column, reusing the same verified eject logic (pre-unmount, actual-mount verification, busy-mount detection) from the Dashboard. A status message appears above the table reporting the result.
+
+Both features reuse already-verified code paths (device fingerprint matching from the reconnection-prompt feature, and the eject logic proven against real hardware earlier), so risk of a repeat of the previous ordering bug is low — I also re-checked declaration order for the new code before considering it done.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Add device presence detection for media* (1/3)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 19:57:48Z)**_
+
+also on the Media Library page, if the user is there and the insert a new media that has not been registered, there should be a noticeable message that appears indicating the new medai to prompt the user to select the Add Media button.
+
+---
+
+_**Agent (copilot/auto)**_
+
+Let's add a prominent banner on Media Library when an unregistered device is detected while the page is open.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `const findDeviceForItem` (`**/src/views/MediaLibrary.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 83 to 100
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 86-99 @@
+
+```
+unregisteredDevices = devices.filter(
+    (d) => !items.some((item) => item.deviceFingerprint === (d.uuid ?? d.devicePath))
+  )
+
+  const [ejectingIds, setEjectingIds] = useState<Set<number>>(new Set())
+  const [ejectMessage, setEjectMessage] = useState<string | null>(null)
+
+  const handleEject = (item: MediaItem, device: DetectedDevice): void => {
+    setEjectingIds((prev) => new Set(prev).add(item.id))
+    setEjectMessage(null)
+    void window.discdock.devices.eject(device.devicePath, device.isOptical).then((result) => {
+      setEjectingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        return next
+      })
+      setEjectMessage(result.ok ? `${item.label}: ${result.data.message}` : `Eject failed: ${result.error.message}`)
+    })
+  }
+
+  const handleAddDetectedDevice = (device: DetectedDevice): void => {
+    setShowForm(true)
+    handleUseDevice(device
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's add the banner in the JSX, right after the page header:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `media-library__header` (`**/src/views/MediaLibrary.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 327 to 340
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 337-337 @@
+
+```
+!showForm && unregisteredDevices.length > 0 && (
+        <div className="new-media-banner">
+          {unregisteredDevices.map((device) => (
+            <div key={device.devicePath} className="new-media-banner__item">
+              <span>
+                {device.isOptical ? '💿' : '💾'} New media detected:{' '}
+                <strong>{device.label ?? device.mountPoint.split('/').pop()}</strong> — not yet registered.
+              </span>
+              <button
+                type="button"
+                className="button button--small button--primary"
+                onClick={() => handleAddDetectedDevice(device)}
+              >
+                Add Media
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the CSS for a noticeable banner:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `.media-library__header` (`**/src/views/MediaLibrary.css`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.css`, lines 1 to 10
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.css**</summary>
+
+@@ lines 7-7 @@
+
+```
+new-media-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.new-media-banner__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 2px solid var(--color-accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  font-size: 13px;
+  animation: new-media-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes new-media-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 40%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+}
+
+.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's check for errors, verify integrity, and build.    
+
+_**Agent (copilot/auto)**_
+
 <tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
 <summary>Tool use: **copilot_getErrors**</summary>
 
@@ -32420,7 +33159,7 @@ Checked `MediaLibrary.tsx`, 2 problems found
 
 _**Agent (copilot/auto)**_
 
-Same known non-blocking IDE quirk. Verify content and build:    
+Known non-blocking IDE quirk. Verify content and build.    
 
 _**Agent (copilot/auto)**_
 
@@ -32440,7 +33179,36 @@ Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
 
 _**Agent (copilot/auto)**_
 
-Clean build. Let's do a live launch smoke test.    
+Clean build. Let's do a live launch smoke test and a real-world verification using the actual disc drive if it's currently mounted with an unregistered disc.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE 2>&1 | python3 -c "import json,sys...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/check-media.js << 'EOF'
+const Database = requir...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` lsblk -no UUID /dev/sr0 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Confirmed — that UUID doesn't match any registered `device_fingerprint`, so this is a real unregistered-device scenario. Let's launch and confirm no runtime errors, then screenshot Media Library... but first I need to check if I can navigate there without clicking.   
 
 _**Agent (copilot/auto)**_
 
@@ -32448,4 +33216,18 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors on launch, though the app defaults to Dashboard so I can't visually confirm the Media Library banner without click automation (which I don't have for the desktop window). Closing and committing based on clean build + 
+
+No errors on launch, though the app defaults to Dashboard so I can't visually confirm the Media Library banner without click automation (which I don't have for the desktop window). Closing and committing based on clean build + sound logic review.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
 </details></tool-use>

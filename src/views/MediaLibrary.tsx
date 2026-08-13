@@ -83,6 +83,10 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   const findDeviceForItem = (item: MediaItem): DetectedDevice | undefined =>
     devices.find((d) => item.deviceFingerprint && (d.uuid ?? d.devicePath) === item.deviceFingerprint)
 
+  const unregisteredDevices = devices.filter(
+    (d) => !items.some((item) => item.deviceFingerprint === (d.uuid ?? d.devicePath))
+  )
+
   const [ejectingIds, setEjectingIds] = useState<Set<number>>(new Set())
   const [ejectMessage, setEjectMessage] = useState<string | null>(null)
 
@@ -97,6 +101,11 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
       })
       setEjectMessage(result.ok ? `${item.label}: ${result.data.message}` : `Eject failed: ${result.error.message}`)
     })
+  }
+
+  const handleAddDetectedDevice = (device: DetectedDevice): void => {
+    setShowForm(true)
+    handleUseDevice(device)
   }
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
@@ -324,6 +333,26 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
           Add Media
         </button>
       </div>
+
+      {!showForm && unregisteredDevices.length > 0 && (
+        <div className="new-media-banner">
+          {unregisteredDevices.map((device) => (
+            <div key={device.devicePath} className="new-media-banner__item">
+              <span>
+                {device.isOptical ? '💿' : '💾'} New media detected:{' '}
+                <strong>{device.label ?? device.mountPoint.split('/').pop()}</strong> — not yet registered.
+              </span>
+              <button
+                type="button"
+                className="button button--small button--primary"
+                onClick={() => handleAddDetectedDevice(device)}
+              >
+                Add Media
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {showForm && (
         <form className="media-form" onSubmit={handleSubmit}>
