@@ -14118,3 +14118,1524 @@ _**Agent (copilot/auto)**_
 
 Completed: *Implement Linux device detection module* (1/4)
 </details></tool-use>
+
+---
+
+_**User (2026-08-13 17:58:29Z)**_
+
+why do i see no changes in the git panel?
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git status`
+
+Check current git status to explain why the Source Control panel shows no changes
+
+```bash
+cd /home/kel/dev/DiscDock && git status
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git status` (terminal ID=7a503009-705a-4296-ad43-50c87c9ebc83). This is the output of running that command instead:
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   .specstory/history/2026-08-13_16-36-15Z-electron-app-plannin
+g-for.md
+        modified:   .specstory/statistics.json
+
+no changes added to commit (use "git add" and/or "git commit -a")
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+That's expected — everything from our last commit was already committed and pushed, so the working tree is clean (only the auto-generated `.specstory` session-history files show as modified, which update on their own as we work).
+
+---
+
+_**User (2026-08-13 17:58:59Z)**_
+
+continue with what is the next logical step
+
+---
+
+_**Agent (copilot/auto)**_
+
+Next up: the **scanning engine** (Epic 2) — the core cataloging feature. I'll implement it as an async, yielding walk in the main process (not a full worker-thread yet — noting that simplification), with progress/cancel IPC, DB diffing, and a "Scan" action wired into the Media Library.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 1 to 70
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 70 to 80
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 80-80 @@
+
+```
+
+export type HashMode = 'none' | 'quick' | 'full'
+
+export type ScanStatus = 'queued' | 'running' | 'completed' | 'cancelled' | 'failed' | 'incomplete'
+
+export interface ScanJob {
+  id: number
+  mediaItemId: number
+  status: ScanStatus
+  hashMode: HashMode
+  startedAt: string
+  completedAt: string | null
+  filesAdded: number
+  filesRemoved: number
+  filesModified: number
+  filesUnchanged: number
+  errorCount: number
+}
+
+export interface ScanProgress {
+  jobId: number
+  filesProcessed: number
+  bytesProcessed: number
+  currentPath: string
+}
+
+export interface ScanStartInput {
+  mediaId: number
+  rootPath: string
+  hashMode: HashMode
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the DB repository for scan jobs/errors/file records with diffing:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Create File
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the scan repository (DB layer for scan_job, scan_error, file_record diffing):   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `scanRepository.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanRepository.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { getDb } from './index'
+import type { HashMode, ScanJob, ScanStatus } from '../../shared/types'
+
+interface ScanJobRow {
+  id: number
+  media_item_id: number
+  status: string
+  hash_mode: string
+  started_at: string
+  completed_at: string | null
+  files_added: number
+  files_removed: number
+  files_modified: number
+  files_unchanged: number
+  error_count: number
+}
+
+function toScanJob(row: ScanJobRow): ScanJob {
+  return {
+    id: row.id,
+    mediaItemId: row.media_item_id,
+    status: row.status as ScanStatus,
+    hashMode: row.hash_mode as HashMode,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    filesAdded: row.files_added,
+    filesRemoved: row.files_removed,
+    filesModified: row.files_modified,
+    filesUnchanged: row.files_unchanged,
+    errorCount: row.error_count
+  }
+}
+
+export function createScanJob(mediaItemId: number, hashMode: HashMode): ScanJob {
+  const result = getDb()
+    .prepare(
+      `INSERT INTO scan_job (media_item_id, status, hash_mode) VALUES (?, 'running', ?)`
+    )
+    .run(mediaItemId, hashMode)
+  return getScanJob(Number(result.lastInsertRowid))!
+}
+
+export function getScanJob(id: number): ScanJob | null {
+  const row = getDb().prepare('SELECT * FROM scan_job WHERE id = ?').get(id) as
+    | ScanJobRow
+    | undefined
+  return row ? toScanJob(row) : null
+}
+
+export function listScanJobsForMedia(mediaItemId: number): ScanJob[] {
+  const rows = getDb()
+    .prepare('SELECT * FROM scan_job WHERE media_item_id = ? ORDER BY started_at DESC')
+    .all(mediaItemId) as ScanJobRow[]
+  return rows.map(toScanJob)
+}
+
+export function finalizeScanJob(
+  id: number,
+  status: ScanStatus,
+  counts: {
+    filesAdded: number
+    filesRemoved: number
+    filesModified: number
+    filesUnchanged: number
+    errorCount: number
+  }
+): void {
+  getDb()
+    .prepare(
+      `UPDATE scan_job
+       SET status = @status, completed_at = datetime('now'), files_added = @filesAdded,
+           files_removed = @filesRemoved, files_modified = @filesModified,
+           files_unchanged = @filesUnchanged, error_count = @errorCount
+       WHERE id = @id`
+    )
+    .run({ id, status, ...counts })
+}
+
+export function recordScanError(scanJobId: number, path: string, errorType: string, message: string): void {
+  getDb()
+    .prepare('INSERT INTO scan_error (scan_job_id, path, error_type, message) VALUES (?, ?, ?, ?)')
+    .run(scanJobId, path, errorType, message)
+}
+
+export function markMediaScanned(mediaItemId: number, verified: boolean): void {
+  const db = getDb()
+  if (verified) {
+    db.prepare(
+      "UPDATE media_item SET last_scanned_at = datetime('now'), last_verified_at = datetime('now') WHERE id = ?"
+    ).run(mediaItemId)
+  } else {
+    db.prepare("UPDATE media_item SET last_scanned_at = datetime('now') WHERE id = ?").run(mediaItemId)
+  }
+}
+
+export interface WalkedFile {
+  path: string
+  name: string
+  extension: string | null
+  kind: string
+  sizeBytes: number
+  isDirectory: boolean
+  createdAtSrc: string | null
+  modifiedAtSrc: string | null
+  hashAlgo: string | null
+  hashValue: string | null
+}
+
+interface ExistingFileRow {
+  id: number
+  size_bytes: number
+  modified_at_src: string | null
+  hash_value: string | null
+}
+
+/**
+ * Upserts a single walked file/folder against the prior catalog snapshot for this media item,
+ * classifying it as added/modified/unchanged. Removed-file detection happens after the walk
+ * completes (see pruneUnseenFiles) by comparing last_seen_scan_id.
+ */
+export function upsertFileRecord(
+  mediaItemId: number,
+  scanJobId: number,
+  file: WalkedFile
+): 'added' | 'modified' | 'unchanged' {
+  const db = getDb()
+  const existing = db
+    .prepare('SELECT id, size_bytes, modified_at_src, hash_value FROM file_record WHERE media_item_id = ? AND path = ?')
+    .get(mediaItemId, file.path) as ExistingFileRow | undefined
+
+  if (!existing) {
+    db.prepare(
+      `INSERT INTO file_record
+         (media_item_id, path, name, extension, kind, size_bytes, created_at_src, modified_at_src,
+          hash_algo, hash_value, is_directory, last_seen_scan_id)
+       VALUES (@mediaItemId, @path, @name, @extension, @kind, @sizeBytes, @createdAtSrc, @modifiedAtSrc,
+               @hashAlgo, @hashValue, @isDirectory, @scanJobId)`
+    ).run({
+      mediaItemId,
+      scanJobId,
+      ...file,
+      isDirectory: file.isDirectory ? 1 : 0
+    })
+    return 'added'
+  }
+
+  const changed =
+    existing.size_bytes !== file.sizeBytes ||
+    existing.modified_at_src !== file.modifiedAtSrc ||
+    (file.hashValue !== null && existing.hash_value !== file.hashValue)
+
+  db.prepare(
+    `UPDATE file_record
+     SET size_bytes = @sizeBytes, created_at_src = @createdAtSrc, modified_at_src = @modifiedAtSrc,
+         hash_algo = @hashAlgo, hash_value = @hashValue, last_seen_scan_id = @scanJobId
+     WHERE id = @id`
+  ).run({ id: existing.id, scanJobId, ...file })
+
+  return changed ? 'modified' : 'unchanged'
+}
+
+/** Deletes file_record rows for this media item not touched by the given scan job (i.e. removed from disk). */
+export function pruneUnseenFiles(mediaItemId: number, scanJobId: number): number {
+  const result = getDb()
+    .prepare('DELETE FROM file_record WHERE media_item_id = ? AND (last_seen_scan_id IS NULL OR last_seen_scan_id != ?)')
+    .run(mediaItemId, scanJobId)
+  return result.changes
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the file-kind classifier and the scan engine (async walk + hashing):   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `fileKind.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **fileKind.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import path from 'node:path'
+
+const KIND_BY_EXTENSION: Record<string, string> = {
+  jpg: 'image', jpeg: 'image', png: 'image', gif: 'image', bmp: 'image', webp: 'image', svg: 'image', heic: 'image',
+  mp4: 'video', mkv: 'video', avi: 'video', mov: 'video', wmv: 'video', webm: 'video', m4v: 'video',
+  mp3: 'audio', flac: 'audio', wav: 'audio', aac: 'audio', ogg: 'audio', m4a: 'audio',
+  pdf: 'document', doc: 'document', docx: 'document', txt: 'document', rtf: 'document', odt: 'document',
+  xls: 'document', xlsx: 'document', ppt: 'document', pptx: 'document', csv: 'document',
+  zip: 'archive', rar: 'archive', '7z': 'archive', tar: 'archive', gz: 'archive', iso: 'archive'
+}
+
+export function classifyKind(extension: string | null): string {
+  if (!extension) return 'other'
+  return KIND_BY_EXTENSION[extension.toLowerCase()] ?? 'other'
+}
+
+export function getExtension(fileName: string): string | null {
+  const ext = path.extname(fileName).replace(/^\./, '')
+  return ext ? ext : null
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `scanEngine.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanEngine.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import crypto from 'node:crypto'
+import { createReadStream } from 'node:fs'
+import type { HashMode } from '../../shared/types'
+import { classifyKind, getExtension } from './fileKind'
+import type { WalkedFile } from '../db/scanRepository'
+
+const QUICK_HASH_SAMPLE_BYTES = 65536
+const PROGRESS_YIELD_EVERY = 200
+
+export interface ScanCallbacks {
+  onFile: (file: WalkedFile) => void
+  onProgress: (filesProcessed: number, bytesProcessed: number, currentPath: string) => void
+  onError: (relativePath: string, errorType: string, message: string) => void
+  isCancelled: () => boolean
+}
+
+async function hashFile(absolutePath: string, mode: HashMode, size: number): Promise<string | null> {
+  if (mode === 'none') return null
+
+  if (mode === 'quick') {
+    const handle = await fs.open(absolutePath, 'r')
+    try {
+      const buffer = Buffer.alloc(Math.min(QUICK_HASH_SAMPLE_BYTES, size))
+      await handle.read(buffer, 0, buffer.length, 0)
+      const hash = crypto.createHash('sha256')
+      hash.update(buffer)
+      hash.update(String(size))
+      return hash.digest('hex')
+    } finally {
+      await handle.close()
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256')
+    const stream = createReadStream(absolutePath)
+    stream.on('data', (chunk) => hash.update(chunk))
+    stream.on('end', () => resolve(hash.digest('hex')))
+    stream.on('error', reject)
+  })
+}
+
+/**
+ * Iteratively walks rootPath (stack-based, no recursion) so deep trees can't overflow the call stack.
+ * Runs on the main process event loop but yields periodically so IPC/UI stay responsive (v0.1.0
+ * simplification — see roadmap for moving this to a worker_thread/utility process).
+ */
+export async function walkAndScan(
+  rootPath: string,
+  hashMode: HashMode,
+  callbacks: ScanCallbacks
+): Promise<{ filesProcessed: number; bytesProcessed: number }> {
+  const stack: string[] = [rootPath]
+  let filesProcessed = 0
+  let bytesProcessed = 0
+  let sinceYield = 0
+
+  while (stack.length > 0) {
+    if (callbacks.isCancelled()) break
+    const currentDir = stack.pop() as string
+
+    let entries: string[]
+    try {
+      entries = await fs.readdir(currentDir)
+    } catch (err) {
+      callbacks.onError(currentDir, 'read_dir_failed', (err as Error).message)
+      continue
+    }
+
+    for (const entryName of entries) {
+      if (callbacks.isCancelled()) break
+      const absolutePath = path.join(currentDir, entryName)
+      const relativePath = path.relative(rootPath, absolutePath)
+
+      let stat
+      try {
+        stat = await fs.lstat(absolutePath)
+      } catch (err) {
+        callbacks.onError(relativePath, 'stat_failed', (err as Error).message)
+        continue
+      }
+
+      if (stat.isSymbolicLink()) continue // symlinks not followed by default (FR-2.5)
+
+      if (stat.isDirectory()) {
+        stack.push(absolutePath)
+        callbacks.onFile({
+          path: relativePath,
+          name: entryName,
+          extension: null,
+          kind: 'folder',
+          sizeBytes: 0,
+          isDirectory: true,
+          createdAtSrc: stat.birthtime?.toISOString() ?? null,
+          modifiedAtSrc: stat.mtime?.toISOString() ?? null,
+          hashAlgo: null,
+          hashValue: null
+        })
+        continue
+      }
+
+      const extension = getExtension(entryName)
+      let hashValue: string | null = null
+      try {
+        hashValue = await hashFile(absolutePath, hashMode, stat.size)
+      } catch (err) {
+        callbacks.onError(relativePath, 'hash_failed', (err as Error).message)
+      }
+
+      callbacks.onFile({
+        path: relativePath,
+        name: entryName,
+        extension,
+        kind: classifyKind(extension),
+        sizeBytes: stat.size,
+        isDirectory: false,
+        createdAtSrc: stat.birthtime?.toISOString() ?? null,
+        modifiedAtSrc: stat.mtime?.toISOString() ?? null,
+        hashAlgo: hashMode === 'none' ? null : hashMode === 'quick' ? 'quick' : 'sha256',
+        hashValue
+      })
+
+      filesProcessed += 1
+      bytesProcessed += stat.size
+      sinceYield += 1
+
+      if (sinceYield >= PROGRESS_YIELD_EVERY) {
+        sinceYield = 0
+        callbacks.onProgress(filesProcessed, bytesProcessed, relativePath)
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+    }
+  }
+
+  callbacks.onProgress(filesProcessed, bytesProcessed, rootPath)
+  return { filesProcessed, bytesProcessed }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the scan manager (job queue, orchestration, DB writes, event forwarding):    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Create File
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `scanManager.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanManager.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { BrowserWindow } from 'electron'
+import { walkAndScan } from './scanEngine'
+import {
+  createScanJob,
+  finalizeScanJob,
+  markMediaScanned,
+  pruneUnseenFiles,
+  recordScanError,
+  upsertFileRecord
+} from '../db/scanRepository'
+import type { HashMode, ScanProgress } from '../../shared/types'
+
+interface ActiveJob {
+  cancelled: boolean
+}
+
+const activeJobs = new Map<number, ActiveJob>()
+let win: BrowserWindow | null = null
+
+export function initScanManager(mainWindow: BrowserWindow): void {
+  win = mainWindow
+}
+
+export function cancelScan(jobId: number): boolean {
+  const job = activeJobs.get(jobId)
+  if (!job) return false
+  job.cancelled = true
+  return true
+}
+
+export async function startScan(mediaItemId: number, rootPath: string, hashMode: HashMode): Promise<number> {
+  const job = createScanJob(mediaItemId, hashMode)
+  const state: ActiveJob = { cancelled: false }
+  activeJobs.set(job.id, state)
+
+  let filesAdded = 0
+  let filesModified = 0
+  let filesUnchanged = 0
+  let errorCount = 0
+
+  try {
+    await walkAndScan(rootPath, hashMode, {
+      onFile: (file) => {
+        const outcome = upsertFileRecord(mediaItemId, job.id, file)
+        if (outcome === 'added') filesAdded += 1
+        else if (outcome === 'modified') filesModified += 1
+        else filesUnchanged += 1
+      },
+      onProgress: (filesProcessed, bytesProcessed, currentPath) => {
+        const progress: ScanProgress = { jobId: job.id, filesProcessed, bytesProcessed, currentPath }
+        win?.webContents.send('scan:progress', progress)
+      },
+      onError: (relativePath, errorType, message) => {
+        errorCount += 1
+        recordScanError(job.id, relativePath, errorType, message)
+      },
+      isCancelled: () => state.cancelled
+    })
+
+    const filesRemoved = pruneUnseenFiles(mediaItemId, job.id)
+    const status = state.cancelled ? 'cancelled' : 'completed'
+    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
+    finalizeScanJob(job.id, status, counts)
+    markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0 && !state.cancelled)
+
+    if (status === 'completed') {
+      win?.webContents.send('scan:completed', { jobId: job.id, summary: counts })
+    } else {
+      win?.webContents.send('scan:cancelled', { jobId: job.id })
+    }
+  } catch (err) {
+    finalizeScanJob(job.id, 'failed', { filesAdded, filesRemoved: 0, filesModified, filesUnchanged, errorCount })
+    win?.webContents.send('scan:failed', { jobId: job.id, error: (err as Error).message })
+  } finally {
+    activeJobs.delete(job.id)
+  }
+
+  return job.id
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the IPC layer for scans and a folder-picker dialog:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `scan.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scan.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { cancelScan, startScan } from '../scanning/scanManager'
+import { listScanJobsForMedia } from '../db/scanRepository'
+import type { HashMode, IpcResult, ScanJob } from '../../shared/types'
+
+export function registerScanIpc(): void {
+  ipcMain.handle('scan:start', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
+    const { mediaId, rootPath, hashMode } = (payload ?? {}) as {
+      mediaId?: unknown
+      rootPath?: unknown
+      hashMode?: unknown
+    }
+
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    if (typeof rootPath !== 'string' || !rootPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A rootPath is required' } }
+    }
+    const validModes: HashMode[] = ['none', 'quick', 'full']
+    const mode = validModes.includes(hashMode as HashMode) ? (hashMode as HashMode) : 'none'
+
+    // Fire-and-forget: progress/completion are streamed via scan:progress/scan:completed/scan:failed events.
+    const jobIdPromise = startScan(mediaId, rootPath, mode)
+    void jobIdPromise
+
+    return { ok: true, data: { jobId: -1 } }
+  })
+
+  ipcMain.handle('scan:cancel', (_event, payload: unknown): IpcResult<{ cancelled: boolean }> => {
+    const jobId = (payload as { jobId?: unknown })?.jobId
+    if (typeof jobId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric jobId is required' } }
+    }
+    return { ok: true, data: { cancelled: cancelScan(jobId) } }
+  })
+
+  ipcMain.handle('scan:history', (_event, payload: unknown): IpcResult<ScanJob[]> => {
+    const mediaId = (payload as { mediaId?: unknown })?.mediaId
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    return { ok: true, data: listScanJobsForMedia(mediaId) }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanManager.ts**</summary>
+
+@@ lines 31-78 @@
+
+```
+/** Creates the scan_job row synchronously and runs the walk in the background; returns the job id immediately. */
+export function startScan(mediaItemId: number, rootPath: string, hashMode: HashMode): number {
+  const job = createScanJob(mediaItemId, hashMode)
+  void runScan(job.id, mediaItemId, rootPath, hashMode)
+  return job.id
+}
+
+async function runScan(jobId: number, mediaItemId: number, rootPath: string, hashMode: HashMode): Promise<void> {
+  const state: ActiveJob = { cancelled: false }
+  activeJobs.set(jobId, state)
+
+  let filesAdded = 0
+  let filesModified = 0
+  let filesUnchanged = 0
+  let errorCount = 0
+
+  try {
+    await walkAndScan(rootPath, hashMode, {
+      onFile: (file) => {
+        const outcome = upsertFileRecord(mediaItemId, jobId, file)
+        if (outcome === 'added') filesAdded += 1
+        else if (outcome === 'modified') filesModified += 1
+        else filesUnchanged += 1
+      },
+      onProgress: (filesProcessed, bytesProcessed, currentPath) => {
+        const progress: ScanProgress = { jobId, filesProcessed, bytesProcessed, currentPath }
+        win?.webContents.send('scan:progress', progress)
+      },
+      onError: (relativePath, errorType, message) => {
+        errorCount += 1
+        recordScanError(jobId, relativePath, errorType, message)
+      },
+      isCancelled: () => state.cancelled
+    })
+
+    const filesRemoved = pruneUnseenFiles(mediaItemId, jobId)
+    const status = state.cancelled ? 'cancelled' : 'completed'
+    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
+    finalizeScanJob(jobId, status, counts)
+    markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0 && !state.cancelled)
+
+    if (status === 'completed') {
+      win?.webContents.send('scan:completed', { jobId, summary: counts })
+    } else {
+      win?.webContents.send('scan:cancelled', { jobId })
+    }
+  } catch (err) {
+    finalizeScanJob(jobId, 'failed', { filesAdded, filesRemoved: 0, filesModified, filesUnchanged, errorCount })
+    win?.webContents.send('scan:failed', { jobId, error: (err as Error).message })
+  } finally {
+    activeJobs.delete(jobId)
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update the 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Develop file-kind classifier for scanned files* (3/5)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+IPC handler to use the synchronous `startScan` correctly, and add the folder-picker dialog 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scan.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { cancelScan, startScan } from '../scanning/scanManager'
+import { listScanJobsForMedia } from '../db/scanRepository'
+import type { HashMode, IpcResult, ScanJob } from '../../shared/types'
+
+export function registerScanIpc(): void {
+  ipcMain.handle('scan:start', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
+    const { mediaId, rootPath, hashMode } = (payload ?? {}) as {
+      mediaId?: unknown
+      rootPath?: unknown
+      hashMode?: unknown
+    }
+
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    if (typeof rootPath !== 'string' || !rootPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A rootPath is required' } }
+    }
+    const validModes: HashMode[] = ['none', 'quick', 'full']
+    const mode = validModes.includes(hashMode as HashMode) ? (hashMode as HashMode) : 'none'
+
+    // Fire-and-forget: progress/completion are streamed via scan:progress/scan:completed/scan:failed events.
+    const jobIdPromise = startScan(mediaId, rootPath, mode)
+    void jobIdPromise
+
+    return { ok: true, data: { jobId: -1 } }
+  })
+
+  ipcMain.handle('scan:cancel', (_event, payload: unknown): IpcResult<{ cancelled: boolean }> => {
+    const jobId = (payload as { jobId?: unknown })?.jobId
+    if (typeof jobId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric jobId is required' } }
+    }
+    return { ok: true, data: { cancelled: cancelScan(jobId) } }
+  })
+
+  ipcMain.handle('scan:history', (_event, payload: unknown): IpcResult<ScanJob[]> => {
+    const mediaId = (payload as { mediaId?: unknown })?.mediaId
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    return { ok: true, data: listScanJobsForMedia(mediaId) }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanManager.ts**</summary>
+
+@@ lines 31-78 @@
+
+```
+/** Creates the scan_job row synchronously and runs the walk in the background; returns the job id immediately. */
+export function startScan(mediaItemId: number, rootPath: string, hashMode: HashMode): number {
+  const job = createScanJob(mediaItemId, hashMode)
+  void runScan(job.id, mediaItemId, rootPath, hashMode)
+  return job.id
+}
+
+async function runScan(jobId: number, mediaItemId: number, rootPath: string, hashMode: HashMode): Promise<void> {
+  const state: ActiveJob = { cancelled: false }
+  activeJobs.set(jobId, state)
+
+  let filesAdded = 0
+  let filesModified = 0
+  let filesUnchanged = 0
+  let errorCount = 0
+
+  try {
+    await walkAndScan(rootPath, hashMode, {
+      onFile: (file) => {
+        const outcome = upsertFileRecord(mediaItemId, jobId, file)
+        if (outcome === 'added') filesAdded += 1
+        else if (outcome === 'modified') filesModified += 1
+        else filesUnchanged += 1
+      },
+      onProgress: (filesProcessed, bytesProcessed, currentPath) => {
+        const progress: ScanProgress = { jobId, filesProcessed, bytesProcessed, currentPath }
+        win?.webContents.send('scan:progress', progress)
+      },
+      onError: (relativePath, errorType, message) => {
+        errorCount += 1
+        recordScanError(jobId, relativePath, errorType, message)
+      },
+      isCancelled: () => state.cancelled
+    })
+
+    const filesRemoved = pruneUnseenFiles(mediaItemId, jobId)
+    const status = state.cancelled ? 'cancelled' : 'completed'
+    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
+    finalizeScanJob(jobId, status, counts)
+    markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0 && !state.cancelled)
+
+    if (status === 'completed') {
+      win?.webContents.send('scan:completed', { jobId, summary: counts })
+    } else {
+      win?.webContents.send('scan:cancelled', { jobId })
+    }
+  } catch (err) {
+    finalizeScanJob(jobId, 'failed', { filesAdded, filesRemoved: 0, filesModified, filesUnchanged, errorCount })
+    win?.webContents.send('scan:failed', { jobId, error: (err as Error).message })
+  } finally {
+    activeJobs.delete(jobId)
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update the 
+
+IPC handler to use the synchronous `startScan` correctly, and add the folder-picker dialog IPC:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scan.ts**</summary>
+
+@@ lines 23-27 @@
+
+```
+const jobId = startScan(mediaId, rootPath, mode)
+    return { ok: true, data: { jobId
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `dialogs.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **dialogs.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { BrowserWindow, dialog, ipcMain } from 'electron'
+import type { IpcResult } from '../../shared/types'
+
+export function registerDialogIpc(win: BrowserWindow): void {
+  ipcMain.handle('dialog:pickFolder', async (): Promise<IpcResult<{ path: string | null }>> => {
+    const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
+    if (result.canceled || result.filePaths.length === 0) {
+      return { ok: true, data: { path: null } }
+    }
+    return { ok: true, data: { path: result.filePaths[0] } }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now wire everything into `main.ts`, and expose the new APIs in `preload.ts`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `main.ts`, lines 1 to 42
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 27-27 @@
+
+```
+registerScanIpc()
+  registerDialogIpc(mainWindow)
+  initScanManager(mainWindow)
+  
+```
+
+@@ lines 7-7 @@
+
+```
+registerScanIpc } from './ipc/scan'
+import { registerDialogIpc } from './ipc/dialogs'
+import { initScanManager } from './scanning/scanManager'
+import { 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update `preload.ts`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 1 to 50
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 50 to 60
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 54-54 @@
+
+```
+,
+  scan: {
+    start: (mediaId: number, rootPath: string, hashMode: HashMode): Promise<IpcResult<{ jobId: number }>> =>
+      ipcRenderer.invoke('scan:start', { mediaId, rootPath, hashMode }),
+    cancel: (jobId: number): Promise<IpcResult<{ cancelled: boolean }>> =>
+      ipcRenderer.invoke('scan:cancel', { jobId }),
+    history: (mediaId: number): Promise<IpcResult<ScanJob[]>> =>
+      ipcRenderer.invoke('scan:history', { mediaId }),
+    onProgress: (callback: (progress: ScanProgress) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, progress: ScanProgress): void => callback(progress)
+      ipcRenderer.on('scan:progress', listener)
+      return () => ipcRenderer.removeListener('scan:progress', listener)
+    },
+    onCompleted: (callback: (payload: { jobId: number }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number }): void => callback(payload)
+      ipcRenderer.on('scan:completed', listener)
+      return () => ipcRenderer.removeListener('scan:completed', listener)
+    },
+    onFailed: (callback: (payload: { jobId: number; error: string }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number; error: string }): void =>
+        callback(payload)
+      ipcRenderer.on('scan:failed', listener)
+      return () => ipcRenderer.removeListener('scan:failed', listener)
+    },
+    onCancelled: (callback: (payload: { jobId: number }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number }): void => callback(payload)
+      ipcRenderer.on('scan:cancelled', listener)
+      return () => ipcRenderer.removeListener('scan:cancelled', listener)
+    }
+  },
+  dialogs: {
+    pickFolder: (): Promise<IpcResult<{ path: string | null }>> => ipcRenderer.invoke('dialog:pickFolder')
+  }
+```
+
+@@ lines 5-7 @@
+
+```
+HashMode,
+  IpcResult,
+  MediaItem,
+  MediaItemInput,
+  ScanJob,
+  ScanProgress
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's wire the Media Library UI with Scan action + inline progress:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 1 to 30
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 30 to 168
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 137-161 @@
+
+```
+{
+              const scan = scansByMedia[item.id]
+              return (
+                <tr key={item.id}>
+                  <td>{item.label}</td>
+                  <td>{mediaTypeLabel(item.mediaType)}</td>
+                  <td>{item.physicalLocation ?? '—'}</td>
+                  <td>
+                    <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+                  </td>
+                  <td>
+                    {scan ? (
+                      <span className="scan-progress">
+                        Scanning… {scan.filesProcessed} files
+                      </span>
+                    ) : (
+                      item.lastScannedAt ?? 'Never'
+                    )}
+                  </td>
+                  <td className="media-table__actions">
+                    {scan ? (
+                      <button type="button" className="button button--small" onClick={() => handleCancelScan(item.id)}>
+                        Cancel
+                      </button>
+                    ) : (
+                      <button type="button" className="button button--small" onClick={() => handleScan(item.id)}>
+                        Scan
+                      </button>
+                    )}
+                    {item.status === 'active' && !scan && (
+                      <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
+                        Retire
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="button button--small button--danger"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              )
+            }
+```
+
+@@ lines 57-57 @@
+
+```
+
+
+  const handleScan = (mediaId: number): void => {
+    void window.discdock.dialogs.pickFolder().then((pickResult) => {
+      if (!pickResult.ok || !pickResult.data.path) return
+      void window.discdock.scan.start(mediaId, pickResult.data.path, 'none').then((startResult) => {
+        if (startResult.ok) {
+          const jobId = startResult.data.jobId
+          setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+          setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
+        }
+      })
+    })
+  }
+
+  const handleCancelScan = (mediaId: number): void => {
+    const scan = scansByMedia[mediaId]
+    if (scan) void window.discdock.scan.cancel(scan.jobId)
+  }
+```
+
+@@ lines 3-30 @@
+
+```
+, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
+export default function MediaLibrary(): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+
+  useEffect(() => {
+    const unsubProgress = window.discdock.scan.onProgress((progress: ScanProgress) => {
+      setJobToMedia((current) => {
+        const mediaId = current[progress.jobId]
+        if (mediaId === undefined) return current
+        setScansByMedia((prevScans) => ({
+          ...prevScans,
+          [mediaId]: {
+            jobId: progress.jobId,
+            filesProcessed: progress.filesProcessed,
+            currentPath: progress.currentPath
+          }
+        }))
+        return current
+      })
+    })
+
+    const finishScan = (jobId: number): void => {
+      setJobToMedia((current) => {
+        const mediaId = current[jobId]
+        if (mediaId !== undefined) {
+          setScansByMedia((prevScans) => {
+            const next = { ...prevScans }
+            delete next[mediaId]
+            return next
+          })
+        }
+        const next = { ...current }
+        delete next[jobId]
+        return next
+      })
+      loadItems()
+    }
+
+    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
+    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
+
+    return () => {
+      unsubProgress()
+      unsubCompleted()
+      unsubFailed()
+      unsubCancelled()
+    }
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 137-161 @@
+
+```
+{
+              const scan = scansByMedia[item.id]
+              return (
+                <tr key={item.id}>
+                  <td>{item.label}</td>
+                  <td>{mediaTypeLabel(item.mediaType)}</td>
+                  <td>{item.physicalLocation ?? '—'}</td>
+                  <td>
+                    <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+                  </td>
+                  <td>
+                    {scan ? (
+                      <span className="scan-progress">
+                        Scanning… {scan.filesProcessed} files
+                      </span>
+                    ) : (
+                      item.lastScannedAt ?? 'Never'
+                    )}
+                  </td>
+                  <td className="media-table__actions">
+                    {scan ? (
+                      <button type="button" className="button button--small" onClick={() => handleCancelScan(item.id)}>
+                        Cancel
+                      </button>
+                    ) : (
+                      <button type="button" className="button button--small" onClick={() => handleScan(item.id)}>
+                        Scan
+                      </button>
+                    )}
+                    {item.status === 'active' && !scan && (
+                      <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
+                        Retire
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="button button--small button--danger"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              )
+            }
+```
+
+@@ lines 57-57 @@
+
+```
+
+
+  const handleScan = (mediaId: number): void => {
+    void window.discdock.dialogs.pickFolder().then((pickResult) => {
+      if (!pickResult.ok || !pickResult.data.path) return
+      void window.discdock.scan.start(mediaId, pickResult.data.path, 'none').then((startResult) => {
+        if (startResult.ok) {
+          const jobId = startResult.data.jobId
+          setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+          setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
+        }
+      })
+    })
+  }
+
+  const handleCancelScan = (mediaId: number): void => {
+    const scan = scansByMedia[mediaId]
+    if (scan) void window.discdock.scan.cancel(scan.jobId)
+  }
+```
+
+@@ lines 3-30 @@
+
+```
+, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
+export default function MediaLibrary(): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+
+  useEffect(() => {
+    const unsubProgress = window.discdock.scan.onProgress((progress: ScanProgress) => {
+      setJobToMedia((current) => {
+        const mediaId = current[progress.jobId]
+        if (mediaId === undefined) return current
+        setScansByMedia((prevScans) => ({
+          ...prevScans,
+          [mediaId]: {
+            jobId: progress.jobId,
+            filesProcessed: progress.filesProcessed,
+            currentPath: progress.currentPath
+          }
+        }))
+        return current
+      })
+    })
+
+    const finishScan = (jobId: number): void => {
+      setJobToMedia((current) => {
+        const mediaId = current[jobId]
+        if (mediaId !== undefined) {
+          setScansByMedia((prevScans) => {
+            const next = { ...prevScans }
+            delete next[mediaId]
+            return next
+          })
+        }
+        const next = { ...current }
+        delete next[jobId]
+        return next
+      })
+      loadItems()
+    }
+
+    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
+    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
+
+    return () => {
+      unsubProgress()
+      unsubCompleted()
+      unsubFailed()
+      unsubCancelled()
+    }
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.css`, lines 69 to 69
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.css`, lines 55 to 65
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.css**</summary>
+
+@@ lines 69-69 @@
+
+```
+
+.scan-progress {
+  opacity: 0.8;
+  font-style: italic;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `media-table__actions` (`**/src/views/MediaLibrary.css`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Good, no duplication. Now let's check for type errors and build:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `MediaLibrary.tsx`, `scanEngine.ts`, `scanManager.ts`, `scanRepository.ts`, `scan.ts`, `dialogs.ts`, `main.ts`, `preload.ts`, 2 problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Updated todo list
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+These are pre-existing IDE-only quirks (same non-blocking pattern seen earlier — Vite build doesn't type-check `src`). Let's verify with a real build:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/scanning/\*.ts electron/db/scanRepository.ts electron/ipc/scan...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All files intact. Building:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Now let's smoke test end-to-end: launch, register a media item, scan a real folder, verify progress/completion.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>

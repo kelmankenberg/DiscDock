@@ -77,3 +77,34 @@ export interface DashboardSummary {
   totalSizeBytes: number
   mediaNeedingVerification: number
 }
+
+export type HashMode = 'none' | 'quick' | 'full'
+
+export type ScanStatus = 'queued' | 'running' | 'completed' | 'cancelled' | 'failed' | 'incomplete'
+
+export interface ScanJob {
+  id: number
+  mediaItemId: number
+  status: ScanStatus
+  hashMode: HashMode
+  startedAt: string
+  completedAt: string | null
+  filesAdded: number
+  filesRemoved: number
+  filesModified: number
+  filesUnchanged: number
+  errorCount: number
+}
+
+export interface ScanProgress {
+  jobId: number
+  filesProcessed: number
+  bytesProcessed: number
+  currentPath: string
+}
+
+export interface ScanStartInput {
+  mediaId: number
+  rootPath: string
+  hashMode: HashMode
+}

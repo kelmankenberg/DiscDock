@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { MEDIA_TYPES } from '../../shared/types'
-import type { MediaItem, MediaItemInput, MediaType } from '../../shared/types'
+import type { MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
 import './MediaLibrary.css'
 
 const EMPTY_FORM: MediaItemInput = {
@@ -15,11 +15,19 @@ function mediaTypeLabel(mediaType: MediaType): string {
   return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
 }
 
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
 export default function MediaLibrary(): JSX.Element {
   const [items, setItems] = useState<MediaItem[]>([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
   const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
 
   const loadItems = (): void => {
     void window.discdock.media.list().then((result) => {
@@ -28,6 +36,52 @@ export default function MediaLibrary(): JSX.Element {
   }
 
   useEffect(loadItems, [])
+
+  useEffect(() => {
+    const unsubProgress = window.discdock.scan.onProgress((progress: ScanProgress) => {
+      setJobToMedia((current) => {
+        const mediaId = current[progress.jobId]
+        if (mediaId === undefined) return current
+        setScansByMedia((prevScans) => ({
+          ...prevScans,
+          [mediaId]: {
+            jobId: progress.jobId,
+            filesProcessed: progress.filesProcessed,
+            currentPath: progress.currentPath
+          }
+        }))
+        return current
+      })
+    })
+
+    const finishScan = (jobId: number): void => {
+      setJobToMedia((current) => {
+        const mediaId = current[jobId]
+        if (mediaId !== undefined) {
+          setScansByMedia((prevScans) => {
+            const next = { ...prevScans }
+            delete next[mediaId]
+            return next
+          })
+        }
+        const next = { ...current }
+        delete next[jobId]
+        return next
+      })
+      loadItems()
+    }
+
+    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
+    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
+
+    return () => {
+      unsubProgress()
+      unsubCompleted()
+      unsubFailed()
+      unsubCancelled()
+    }
+  }, [])
 
   const handleSubmit = (event: React.FormEvent): void => {
     event.preventDefault()
@@ -54,6 +108,24 @@ export default function MediaLibrary(): JSX.Element {
     void window.discdock.media.delete(id).then((result) => {
       if (result.ok) loadItems()
     })
+  }
+
+  const handleScan = (mediaId: number): void => {
+    void window.discdock.dialogs.pickFolder().then((pickResult) => {
+      if (!pickResult.ok || !pickResult.data.path) return
+      void window.discdock.scan.start(mediaId, pickResult.data.path, 'none').then((startResult) => {
+        if (startResult.ok) {
+          const jobId = startResult.data.jobId
+          setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+          setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
+        }
+      })
+    })
+  }
+
+  const handleCancelScan = (mediaId: number): void => {
+    const scan = scansByMedia[mediaId]
+    if (scan) void window.discdock.scan.cancel(scan.jobId)
   }
 
   return (
@@ -134,31 +206,51 @@ export default function MediaLibrary(): JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td>{item.label}</td>
-                <td>{mediaTypeLabel(item.mediaType)}</td>
-                <td>{item.physicalLocation ?? '—'}</td>
-                <td>
-                  <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
-                </td>
-                <td>{item.lastScannedAt ?? 'Never'}</td>
-                <td className="media-table__actions">
-                  {item.status === 'active' && (
-                    <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
-                      Retire
+            {items.map((item) => {
+              const scan = scansByMedia[item.id]
+              return (
+                <tr key={item.id}>
+                  <td>{item.label}</td>
+                  <td>{mediaTypeLabel(item.mediaType)}</td>
+                  <td>{item.physicalLocation ?? '—'}</td>
+                  <td>
+                    <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+                  </td>
+                  <td>
+                    {scan ? (
+                      <span className="scan-progress">
+                        Scanning… {scan.filesProcessed} files
+                      </span>
+                    ) : (
+                      item.lastScannedAt ?? 'Never'
+                    )}
+                  </td>
+                  <td className="media-table__actions">
+                    {scan ? (
+                      <button type="button" className="button button--small" onClick={() => handleCancelScan(item.id)}>
+                        Cancel
+                      </button>
+                    ) : (
+                      <button type="button" className="button button--small" onClick={() => handleScan(item.id)}>
+                        Scan
+                      </button>
+                    )}
+                    {item.status === 'active' && !scan && (
+                      <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
+                        Retire
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="button button--small button--danger"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      Delete
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    className="button button--small button--danger"
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       )}

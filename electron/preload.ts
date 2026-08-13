@@ -2,9 +2,12 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type {
   DashboardSummary,
   DetectedDevice,
+  HashMode,
   IpcResult,
   MediaItem,
   MediaItemInput,
+  ScanJob,
+  ScanProgress,
   WindowState
 } from '../shared/types'
 
@@ -51,6 +54,38 @@ const api = {
       ipcRenderer.on('devices:disconnected', listener)
       return () => ipcRenderer.removeListener('devices:disconnected', listener)
     }
+  },
+  scan: {
+    start: (mediaId: number, rootPath: string, hashMode: HashMode): Promise<IpcResult<{ jobId: number }>> =>
+      ipcRenderer.invoke('scan:start', { mediaId, rootPath, hashMode }),
+    cancel: (jobId: number): Promise<IpcResult<{ cancelled: boolean }>> =>
+      ipcRenderer.invoke('scan:cancel', { jobId }),
+    history: (mediaId: number): Promise<IpcResult<ScanJob[]>> =>
+      ipcRenderer.invoke('scan:history', { mediaId }),
+    onProgress: (callback: (progress: ScanProgress) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, progress: ScanProgress): void => callback(progress)
+      ipcRenderer.on('scan:progress', listener)
+      return () => ipcRenderer.removeListener('scan:progress', listener)
+    },
+    onCompleted: (callback: (payload: { jobId: number }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number }): void => callback(payload)
+      ipcRenderer.on('scan:completed', listener)
+      return () => ipcRenderer.removeListener('scan:completed', listener)
+    },
+    onFailed: (callback: (payload: { jobId: number; error: string }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number; error: string }): void =>
+        callback(payload)
+      ipcRenderer.on('scan:failed', listener)
+      return () => ipcRenderer.removeListener('scan:failed', listener)
+    },
+    onCancelled: (callback: (payload: { jobId: number }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number }): void => callback(payload)
+      ipcRenderer.on('scan:cancelled', listener)
+      return () => ipcRenderer.removeListener('scan:cancelled', listener)
+    }
+  },
+  dialogs: {
+    pickFolder: (): Promise<IpcResult<{ path: string | null }>> => ipcRenderer.invoke('dialog:pickFolder')
   }
 }
 

@@ -4,6 +4,9 @@ import { registerWindowControlIpc } from './ipc/windowControls'
 import { registerDashboardIpc } from './ipc/dashboard'
 import { registerMediaIpc } from './ipc/media'
 import { registerDeviceIpc, startDeviceWatcher, stopDeviceWatcher } from './ipc/devices'
+import { registerScanIpc } from './ipc/scan'
+import { registerDialogIpc } from './ipc/dialogs'
+import { initScanManager } from './scanning/scanManager'
 import { getDb, closeDb } from './db'
 import type { IpcResult } from '../shared/types'
 
@@ -24,6 +27,9 @@ app.whenReady().then(() => {
   registerMediaIpc()
   registerDeviceIpc()
   registerAppIpc()
+  registerScanIpc()
+  registerDialogIpc(mainWindow)
+  initScanManager(mainWindow)
   startDeviceWatcher(mainWindow)
 
   app.on('activate', () => {
