@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { MEDIA_TYPES } from '../../shared/types'
-import type { MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
 import './MediaLibrary.css'
 
 const EMPTY_FORM: MediaItemInput = {
@@ -28,6 +28,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   const [error, setError] = useState<string | null>(null)
   const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
   const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
 
   const loadItems = (): void => {
     void window.discdock.media.list().then((result) => {
@@ -36,6 +37,22 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   }
 
   useEffect(loadItems, [])
+
+  useEffect(() => {
+    void window.discdock.devices.list().then((result) => {
+      if (result.ok) setDevices(result.data)
+    })
+    const unsubConnect = window.discdock.devices.onConnected((device) => {
+      setDevices((prev) => [...prev.filter((d) => d.devicePath !== device.devicePath), device])
+    })
+    const unsubDisconnect = window.discdock.devices.onDisconnected((devicePath) => {
+      setDevices((prev) => prev.filter((d) => d.devicePath !== devicePath))
+    })
+    return () => {
+      unsubConnect()
+      unsubDisconnect()
+    }
+  }, [])
 
   useEffect(() => {
     const unsubProgress = window.discdock.scan.onProgress((progress: ScanProgress) => {
@@ -97,6 +114,17 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     })
   }
 
+  const handleUseDevice = (device: DetectedDevice): void => {
+    setForm({
+      label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
+      mediaType: device.isOptical ? 'dvd' : 'external_hdd',
+      capacityBytes: device.sizeBytes,
+      physicalLocation: null,
+      notes: null,
+      deviceFingerprint: device.uuid ?? device.devicePath
+    })
+  }
+
   const handleRetire = (id: number): void => {
     void window.discdock.media.retire(id).then((result) => {
       if (result.ok) loadItems()
@@ -140,6 +168,25 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
       {showForm && (
         <form className="media-form" onSubmit={handleSubmit}>
           {error && <div className="media-form__error">{error}</div>}
+
+          {devices.length > 0 && (
+            <div className="detected-devices-picker">
+              <span className="detected-devices-picker__label">Detected media (click to fill in the form):</span>
+              <div className="detected-devices-picker__list">
+                {devices.map((device) => (
+                  <button
+                    type="button"
+                    key={device.devicePath}
+                    className="button button--small"
+                    onClick={() => handleUseDevice(device)}
+                  >
+                    {device.isOptical ? '💿' : '💾'} {device.label ?? device.mountPoint.split('/').pop()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <label>
             Label
             <input

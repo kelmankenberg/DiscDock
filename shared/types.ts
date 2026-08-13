@@ -69,6 +69,7 @@ export interface DetectedDevice {
   mountPoint: string
   sizeBytes: number | null
   uuid: string | null
+  isOptical: boolean
 }
 
 export interface DashboardSummary {

@@ -49,7 +49,7 @@ export default function Dashboard(): JSX.Element {
     void window.discdock.media
       .create({
         label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
-        mediaType: 'external_hdd',
+        mediaType: device.isOptical ? 'dvd' : 'external_hdd',
         capacityBytes: device.sizeBytes,
         physicalLocation: null,
         notes: null,

@@ -51,14 +51,15 @@ export async function listConnectedDevices(): Promise<DetectedDevice[]> {
     const flat = flatten(parsed.blockdevices)
 
     return flat
-      .filter((d) => isRemovable(d) && d.mountpoint && d.type === 'part')
+      .filter((d) => isRemovable(d) && d.mountpoint && (d.type === 'part' || d.type === 'rom'))
       .map((d) => ({
         devicePath: `/dev/${d.name}`,
         label: d.label ?? null,
         fsType: d.fstype ?? null,
         mountPoint: d.mountpoint as string,
         sizeBytes: toBytes(d.size),
-        uuid: d.uuid ?? null
+        uuid: d.uuid ?? null,
+        isOptical: d.type === 'rom'
       }))
   } catch {
     // lsblk unavailable or failed — degrade gracefully to no auto-detected devices (FR-1.2/NFR-3.4).
