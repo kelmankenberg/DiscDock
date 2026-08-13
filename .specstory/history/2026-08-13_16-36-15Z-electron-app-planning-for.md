@@ -28114,22 +28114,133 @@ I think we would benefit from prompting the user to scan the media once it has b
 
 _**Agent (copilot/auto)**_
 
+<think><details><summary>Thought Process</summary>
+Now add the `deviceMountPoint` state declaration:   
+
+I can't script through the native `confirm()` dialog interaction, but the logic directly mirrors the already-tested scan job tracking pattern from Media Library (same `scan.start` + event-subscription approach, already verified end-to-end). No runtime errors on launch. Closing and committing.
+</details></think>
+
+_**Agent (copilot/auto)**_
+
 Good idea — let's prompt to scan immediately after a media item is added, in both places media gets created (manual Add Media form and Dashboard's "Register as Media").  
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 80 to 140
+
+**Input:**
+
+- endLine: `140`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `80`
+
+**Result:**
+
+```
+            delete next[mediaId]
+            return next
+          })
+        }
+        const next = { ...current }
+        delete next[jobId]
+        return next
+      })
+      loadItems()
+    }
+
+    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
+    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
+
+    return () => {
+      unsubProgress()
+      unsubCompleted()
+      unsubFailed()
+      unsubCancelled()
+    }
+  }, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    setError(null)
+    void window.discdock.media.create(form).then((result) => {
+      if (result.ok) {
+        setForm(EMPTY_FORM)
+        setShowForm(false)
+        loadItems()
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleUseDevice = (device: DetectedDevice): void => {
+    setForm({
+      label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
+      mediaType: device.isOptical ? 'dvd' : 'external_hdd',
+      capacityBytes: device.sizeBytes,
+      physicalLocation: null,
+      notes: null,
+      deviceFingerprint: device.uuid ?? device.devicePath
+    })
+  }
+
+  const handleRetire = (id: number): void => {
+    void window.discdock.media.retire(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const handleDelete = (id: number): void => {
+    if (!window.confirm('Delete this media item and its catalog? This cannot be undone.')) return
+    void window.discdock.media.delete(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 140 to 160
+
+**Input:**
+
+- endLine: `160`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `140`
+
+**Result:**
+
+```
+
+  const handleScan = (mediaId: number): void => {
+    void window.discdock.dialogs.pickFolder().then((pickResult) => {
+      if (!pickResult.ok || !pickResult.data.path) return
+      void window.discdock.scan.start(mediaId, pickResult.data.path).then((startResult) => {
+        if (startResult.ok) {
+          const jobId = startResult.data.jobId
+          setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+          setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
+        }
+      })
+    })
+  }
+
+  const handleCancelScan = (mediaId: number): void => {
+    const scan = scansByMedia[mediaId]
+    if (scan) void window.discdock.scan.cancel(scan.jobId)
+  }
+
+  return (
+    <div className="media-library">
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -28194,10 +28305,25 @@ Now add the  state declaration:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `const [devices, setDevices]` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `const [devices, setDevices]`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "const [devices, setDevices]"
+
+src/views/MediaLibrary.tsx
+31:  const [devices, setDevices] = useState<DetectedDevice[]>([])
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -28215,18 +28341,54 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `onClick={() => setShowForm(false)}` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `onClick={() => setShowForm(false)}`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "onClick={() => setShowForm(false)}"
+
+src/views/MediaLibrary.tsx
+248:            <button type="button" className="button" onClick={() => setShowForm(false)}>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 243 to 252
+
+**Input:**
+
+- endLine: `252`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `243`
+
+**Result:**
+
+```
+          </label>
+          <div className="media-form__actions">
+            <button type="submit" className="button button--primary">
+              Save
+            </button>
+            <button type="button" className="button" onClick={() => setShowForm(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -28262,10 +28424,81 @@ Now update Dashboard's "Register as Media" flow to also prompt for scanning:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Dashboard.tsx`, lines 1 to 65
+
+**Input:**
+
+- endLine: `65`
+- filePath: `/home/kel/dev/DiscDock/src/views/Dashboard.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import type { DashboardSummary, DetectedDevice } from '../../shared/types'
+
+const EMPTY_SUMMARY: DashboardSummary = {
+  totalMediaItems: 0,
+  totalFiles: 0,
+  totalSizeBytes: 0,
+  mediaNeedingVerification: 0
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+export default function Dashboard(): JSX.Element {
+  const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY)
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [registered, setRegistered] = useState<Set<string>>(new Set())
+
+  const refreshSummary = (): void => {
+    void window.discdock.dashboard.getSummary().then((result) => {
+      if (result.ok) setSummary(result.data)
+    })
+  }
+
+  useEffect(() => {
+    refreshSummary()
+    void window.discdock.devices.list().then((result) => {
+      if (result.ok) setDevices(result.data)
+    })
+
+    const unsubConnect = window.discdock.devices.onConnected((device) => {
+      setDevices((prev) => [...prev.filter((d) => d.devicePath !== device.devicePath), device])
+    })
+    const unsubDisconnect = window.discdock.devices.onDisconnected((devicePath) => {
+      setDevices((prev) => prev.filter((d) => d.devicePath !== devicePath))
+    })
+
+    return () => {
+      unsubConnect()
+      unsubDisconnect()
+    }
+  }, [])
+
+  const handleRegister = (device: DetectedDevice): void => {
+    void window.discdock.media
+      .create({
+        label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
+        mediaType: device.isOptical ? 'dvd' : 'external_hdd',
+        capacityBytes: device.sizeBytes,
+        physicalLocation: null,
+        notes: null,
+        deviceFingerprint: device.uuid ?? device.devicePath
+      })
+      .then((result) => {
+     
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -28332,10 +28565,79 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Dashboard.tsx`, lines 1 to 75
+
+**Input:**
+
+- endLine: `75`
+- filePath: `/home/kel/dev/DiscDock/src/views/Dashboard.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import type { DashboardSummary, DetectedDevice } from '../../shared/types'
+
+const EMPTY_SUMMARY: DashboardSummary = {
+  totalMediaItems: 0,
+  totalFiles: 0,
+  totalSizeBytes: 0,
+  mediaNeedingVerification: 0
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+export default function Dashboard(): JSX.Element {
+  const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY)
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [registered, setRegistered] = useState<Set<string>>(new Set())
+  const [scanning, setScanning] = useState<Set<string>>(new Set())
+
+  const refreshSummary = (): void => {
+    void window.discdock.dashboard.getSummary().then((result) => {
+      if (result.ok) setSummary(result.data)
+    })
+  }
+
+  useEffect(() => {
+    refreshSummary()
+    void window.discdock.devices.list().then((result) => {
+      if (result.ok) setDevices(result.data)
+    })
+
+    const unsubConnect = window.discdock.devices.onConnected((device) => {
+      setDevices((prev) => [...prev.filter((d) => d.devicePath !== device.devicePath), device])
+    })
+    const unsubDisconnect = window.discdock.devices.onDisconnected((devicePath) => {
+      setDevices((prev) => prev.filter((d) => d.devicePath !== devicePath))
+    })
+
+    return () => {
+      unsubConnect()
+      unsubDisconnect()
+    }
+  }, [])
+
+  const handleRegister = (device: DetectedDevice): void => {
+    void window.discdock.media
+      .create({
+        label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
+        mediaType: device.isOptical ? 'dvd' : 'external_hdd',
+        capacityBytes: device.sizeBytes,
+        physicalLocation: null,
+        notes: null,
+        deviceFingerprint: device
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -28398,18 +28700,92 @@ Now update the render section to show "Scanning…" status for scanning devices 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Dashboard.tsx`, lines 110 to 150
+
+**Input:**
+
+- endLine: `150`
+- filePath: `/home/kel/dev/DiscDock/src/views/Dashboard.tsx`
+- startLine: `110`
+
+**Result:**
+
+```
+          <span className="card__label">Total Files Catalogued</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{formatBytes(summary.totalSizeBytes)}</span>
+          <span className="card__label">Total Catalogued Size</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{summary.mediaNeedingVerification}</span>
+          <span className="card__label">Media Needing Verification</span>
+        </div>
+      </div>
+
+      <h2>Detected Devices</h2>
+      {devices.length === 0 ? (
+        <p className="dashboard__empty-devices">
+          No removable media currently connected. Insert a USB drive, disc, or external drive to
+          register it here.
+        </p>
+      ) : (
+        <table className="device-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Mount Point</th>
+              <th>Filesystem</th>
+              <th>Size</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {devices.map((device) => (
+              <tr key={device.devicePath}>
+                <td>{device.label ?? '(unlabeled)'}</td>
+                <td>{device.mountPoint}</td>
+                <td>{device.fsType ?? '—'}</td>
+                <td>{device.sizeBytes ? formatBytes(device.sizeBytes) : '—'}</td>
+                <td>
+                  {registered.has(device.devicePath) ? (
+                    <span className="status-badge">Registered</span>
+                  ) : (
+                    <button type="button" className="button button--small" onClick={() => handleRegister(device)}>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Dashboard.tsx`, lines 150 to 160
+
+**Input:**
+
+- endLine: `160`
+- filePath: `/home/kel/dev/DiscDock/src/views/Dashboard.tsx`
+- startLine: `150`
+
+**Result:**
+
+```
+                    <button type="button" className="button button--small" onClick={() => handleRegister(device)}>
+                      Register as Media
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -28432,10 +28808,49 @@ Let's check for errors, verify integrity, and build:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `MediaLibrary.tsx`, `Dashboard.tsx`, 2 problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/src/views/Dashboard.tsx",
+  "/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx"
+]
+```
+
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import './MediaLibrary.css'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+This code at line 18
+```
+interface ActiveScan {
+```
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/views/Dashboard.tsx">
+No errors found
+</errors>
+````
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -28448,6 +28863,21 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c src/views/Dashboard.tsx src/views/MediaLibrary.tsx`
+
+Verify edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/views/Dashboard.tsx src/views/MediaLibrary.tsx
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/views/Dashboard.tsx src/views/MediaLibrary.tsx` (terminal ID=923450b2-c81c-43a6-ad30-085e7b5c7dec). This is the output of running that command instead:
+ 5928 src/views/Dashboard.tsx
+11119 src/views/MediaLibrary.tsx
+17047 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -28456,6 +28886,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with the scan-after-add prompt feature
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=f98f2bff-e8e6-4950-b139-49b51f43f6ad). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 35 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-CQ4LkIOR.css    7.76 kB │ gzip:  1.79 kB
+dist/assets/index-Bn5XThYi.js   216.74 kB │ gzip: 66.55 kB
+
+✓ built in 184ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -28468,4 +28935,611 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app to test the new scan-after-add prompt flow
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=58982cba-d86f-4dae-8ebe-8d4fb93ea95d
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="58982cba-d86f-4dae-8ebe-8d4fb93ea95d" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="58982cba-d86f-4dae-8ebe-8d4fb93ea95d" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+I can't script through the native  dialog interaction, but the logic directly mirrors the already-tested scan job tracking pattern from Media Library (same  + event-subscription approach, already verified end-to-end). No runtime errors on launch. Closing and committing.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `58982cba-d86f-4dae-8ebe-8d4fb93ea95d`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 58982cba-d86f-4dae-8ebe-8d4fb93ea95d. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the scan-prompt feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=ff9e3ed8-50bf-477b-b0a5-aed87c7b525e). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  382G   53G  88% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  src/views/Dashboard.tsx
+M  src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+53G free, healthy.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Prompt to scan immediately after adding media \(Add Media form...`
+
+Commit and push the scan-after-add prompt feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Prompt to scan immediately after adding media (Add Media form and Dashboard device registration)" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Prompt to scan immediately after adding media (Add Media form and Dashboard device registration)" 2>&1 | tail -20 && git push 2>&1` (terminal ID=8db976fb-d968-4fbe-93f2-5bd7561bf8d8). This is the output of running that command instead:
+[main 79cd665] Prompt to scan immediately after adding media (Add Media form and
+ Dashboard device registration)
+ 4 files changed, 1168 insertions(+), 36 deletions(-)
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 6.37 KiB | 502.00 KiB/s, done.
+Total 10 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   95e8094..79cd665  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (53G free, healthy).
+
+**Implemented: Prompt to scan after adding media**
+
+- **Dashboard → "Register as Media"**: after successful registration, a confirm prompt asks "Scan it now?" — if yes, the scan starts immediately using the device's known mount point (no folder picker needed, since we already know exactly where it's mounted). The device's status badge shows "Scanning…" while it runs, then reverts to "Registered" on completion (tracked via `scan:completed`/`failed`/ events, not just the immediate `scan:start` response).
+- **Media Library → "Add Media"**: after saving, the same prompt appears. If the form was filled in via the detected-device picker, the scan starts directly against that device's mount point; if entered fully manually, it falls back to the folder picker (same as the existing "Scan" button), then tracks progress inline exactly like manual scans.
+
+Both flows reuse the already-verified scan job tracking pattern (job-to-media/device mapping cleared only on actual completion, not on the fire-and-forget  call), so completion state is accurate rather than resolving instantly.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Add scan prompt after media addition* (1/3)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 19:06:22Z)**_
+
+we shold also consider that if a user inserts a media that has been added to the db but neverscanned, they should be notified and prompted.
+
+---
+
+_**Agent (copilot/auto)**_
+
+Good catch — that's a real gap. Let's have the app recognize when a **known** media item (matched by device fingerprint) is reconnected but has never been scanned, and prompt accordingly. This also fixes a related bug: currently the "Registered" badge only persists for the current session, not across app restarts.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 1 to 160
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Dashboard.tsx**</summary>
+
+@@ lines 71-71 @@
+
+```
+
+
+  // Prompt to scan when a known-but-never-scanned media item's device is (re)detected.
+  useEffect(() => {
+    for (const device of devices) {
+      if (promptedDevices.has(device.devicePath)) continue
+      const matched = findMediaForDevice(device)
+      if (!matched || matched.lastScannedAt) continue
+
+      setPromptedDevices((prev) => new Set(prev).add(device.devicePath))
+      if (window.confirm(`"${matched.label}" has been added but never scanned. Scan it now?`)) {
+        startScanFor(matched.id, device.devicePath, device.mountPoint)
+      }
+      break // avoid stacking multiple blocking confirm() dialogs at once
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [devices, mediaItems])
+```
+
+@@ lines 33-33 @@
+
+```
+refreshMediaItems()
+    
+```
+
+@@ lines 21-27 @@
+
+```
+mediaItems, setMediaItems] = useState<MediaItem[]>([])
+  const [scanningDevices, setScanningDevices] = useState<Set<string>>(new Set())
+  const [jobToDevice, setJobToDevice] = useState<Record<number, string>>({})
+  const [promptedDevices, setPromptedDevices] = useState<Set<string>>(new Set())
+
+  const findMediaForDevice = (device: DetectedDevice): MediaItem | undefined =>
+    mediaItems.find((m) => m.deviceFingerprint === (device.uuid ?? device.devicePath))
+
+  const refreshSummary = (): void => {
+    void window.discdock.dashboard.getSummary().then((result) => {
+      if (result.ok) setSummary(result.data)
+    })
+  }
+
+  const refreshMediaItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setMediaItems(result.data)
+    })
+  }
+
+  const startScanFor = (mediaId: number, devicePath: string, mountPoint: string): void => {
+    setScanningDevices((prev) => new Set(prev).add(devicePath))
+    void window.discdock.scan.start(mediaId, mountPoint).then((startResult) => {
+      if (startResult.ok) {
+        setJobToDevice((prev) => ({ ...prev, [startResult.data.jobId]: devicePath }))
+      }
+```
+
+@@ lines 2-2 @@
+
+```
+, MediaItem
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 55 to 65
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 63 to 80
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Dashboard.tsx**</summary>
+
+@@ lines 79-79 @@
+
+```
+  refreshMediaItems()
+    
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update  to use the new helper and refresh media items, and update the render logic:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `const handleRegister` (`**/src/views/Dashboard.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 110 to 130
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 130 to 135
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Dashboard.tsx**</summary>
+
+@@ lines 122-131 @@
+
+```
+refreshSummary()
+          refreshMediaItems()
+          setPromptedDevices((prev) => new Set(prev).add(device.devicePath))
+
+          if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
+            startScanFor(result.data.id, device.devicePath, device.mountPoint
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update the render logic to use  instead of the removed  set, and show a distinct badge for "needs 
+
+ set, and show a distinct badge for "needs verification"-style unscanned matches:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `scanningDevices.has(device.devicePath)` (`**/src/views/Dashboard.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 165 to 195
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Dashboard.tsx**</summary>
+
+@@ lines 173-191 @@
+
+```
+{
+              const matched = findMediaForDevice(device)
+              return (
+                <tr key={device.devicePath}>
+                  <td>{device.label ?? '(unlabeled)'}</td>
+                  <td>{device.mountPoint}</td>
+                  <td>{device.fsType ?? '—'}</td>
+                  <td>{device.sizeBytes ? formatBytes(device.sizeBytes) : '—'}</td>
+                  <td>
+                    {scanningDevices.has(device.devicePath) ? (
+                      <span className="status-badge">Scanning…</span>
+                    ) : !matched ? (
+                      <button type="button" className="button button--small" onClick={() => handleRegister(device)}>
+                        Register as Media
+                      </button>
+                    ) : !matched.lastScannedAt ? (
+                      <button
+                        type="button"
+                        className="button button--small"
+                        onClick={() => startScanFor(matched.id, device.devicePath, device.mountPoint)}
+                      >
+                        Never Scanned — Scan Now
+                      </button>
+                    ) : (
+                      <span className="status-badge">Registered</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search,**/.dart_tool]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No leftover references. Let's check for errors and build:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `Dashboard.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/views/Dashboard.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's directly verify the matching logic against the real DVD by seeding a matching, never-scanned media record in the dev DB, then launching to confirm the UI shows the right prompt state.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-seed.js << 'EOF'
+const Database = require\(...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-check.js << 'EOF'
+const Database = require...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+There's already a real matching, never-scanned entry (id 5, "My Disc") from earlier testing — perfect, that's exactly the scenario to verify. Let me remove my duplicate test row and launch to confirm the UI.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-cleanup.js << 'EOF'
+const Database = requi...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's launch and screenshot the Dashboard to confirm the "Never Scanned — Scan Now" button appears for this disc:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` import -window root /tmp/discdock-never-scanned.png && echo done`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_viewImage"><details>
+<summary>Tool use: **copilot_viewImage**</summary>
+
+Viewed image `discdock-never-scanned.png`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+I notice the Dashboard shows "No removable media currently connected" — let me check if the disc was actually ejected, and also flag something important I just noticed in the screenshot. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` lsblk -o NAME,LABEL,FSTYPE,MOUNTPOINT,TYPE 2>&1 | grep -A2 sr0 || echo "no s...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+I notice the Dashboard shows "No removable media currently connected" — let me check if the disc was actually ejected, and also flag something important I just noticed in the screenshot. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+One important finding from that screenshot: I noticed a **separate "Claude Code" agent panel** in your VS Code sidebar showing "Update Dashboard to prompt for uns..." with "21 files changed" — this looks like it might be a **second AI agent working on this same DiscDock codebase concurrently**. Let me check git status to see if there's anything unexpected before I commit my changes, to avoid stepping on each other.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git status && echo "---" && git log --oneline -5`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Good news: git status only shows my own uncommitted `Dashboard.tsx` changes — no sign of actual conflicting edits on disk. That Claude Code panel may just be a separate idle/differently-scoped session, not something that's touched files yet. Worth double-checking on your end that you don't have two agents both mid-task on the same repo, but nothing to fix from my side. Continuing.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` import -window root /tmp/discdock-final-check.png && echo done`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_viewImage"><details>
+<summary>Tool use: **copilot_viewImage**</summary>
+
+Viewed image `discdock-final-check.png`
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 19:10:59Z)**_
+
+the disc was unloaded, but the prompt appears  when loaded
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 4 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Great, that confirms it's working as intended. Let's finalize — build, verify, and commit. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 1 to 200
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The implementation looks complete and correct. Let's rebuild and verify no errors before committing. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `Dashboard.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/views/Dashboard.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
 </details></tool-use>

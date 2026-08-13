@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { DashboardSummary, DetectedDevice } from '../../shared/types'
+import type { DashboardSummary, DetectedDevice, MediaItem } from '../../shared/types'
 
 const EMPTY_SUMMARY: DashboardSummary = {
   totalMediaItems: 0,
@@ -18,9 +18,13 @@ function formatBytes(bytes: number): string {
 export default function Dashboard(): JSX.Element {
   const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY)
   const [devices, setDevices] = useState<DetectedDevice[]>([])
-  const [registered, setRegistered] = useState<Set<string>>(new Set())
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
   const [scanningDevices, setScanningDevices] = useState<Set<string>>(new Set())
   const [jobToDevice, setJobToDevice] = useState<Record<number, string>>({})
+  const [promptedDevices, setPromptedDevices] = useState<Set<string>>(new Set())
+
+  const findMediaForDevice = (device: DetectedDevice): MediaItem | undefined =>
+    mediaItems.find((m) => m.deviceFingerprint === (device.uuid ?? device.devicePath))
 
   const refreshSummary = (): void => {
     void window.discdock.dashboard.getSummary().then((result) => {
@@ -28,8 +32,24 @@ export default function Dashboard(): JSX.Element {
     })
   }
 
+  const refreshMediaItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setMediaItems(result.data)
+    })
+  }
+
+  const startScanFor = (mediaId: number, devicePath: string, mountPoint: string): void => {
+    setScanningDevices((prev) => new Set(prev).add(devicePath))
+    void window.discdock.scan.start(mediaId, mountPoint).then((startResult) => {
+      if (startResult.ok) {
+        setJobToDevice((prev) => ({ ...prev, [startResult.data.jobId]: devicePath }))
+      }
+    })
+  }
+
   useEffect(() => {
     refreshSummary()
+    refreshMediaItems()
     void window.discdock.devices.list().then((result) => {
       if (result.ok) setDevices(result.data)
     })
@@ -56,6 +76,7 @@ export default function Dashboard(): JSX.Element {
         return next
       })
       refreshSummary()
+      refreshMediaItems()
     }
     const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
     const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
@@ -70,6 +91,22 @@ export default function Dashboard(): JSX.Element {
     }
   }, [])
 
+  // Prompt to scan when a known-but-never-scanned media item's device is (re)detected.
+  useEffect(() => {
+    for (const device of devices) {
+      if (promptedDevices.has(device.devicePath)) continue
+      const matched = findMediaForDevice(device)
+      if (!matched || matched.lastScannedAt) continue
+
+      setPromptedDevices((prev) => new Set(prev).add(device.devicePath))
+      if (window.confirm(`"${matched.label}" has been added but never scanned. Scan it now?`)) {
+        startScanFor(matched.id, device.devicePath, device.mountPoint)
+      }
+      break // avoid stacking multiple blocking confirm() dialogs at once
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [devices, mediaItems])
+
   const handleRegister = (device: DetectedDevice): void => {
     void window.discdock.media
       .create({
@@ -82,16 +119,12 @@ export default function Dashboard(): JSX.Element {
       })
       .then((result) => {
         if (result.ok) {
-          setRegistered((prev) => new Set(prev).add(device.devicePath))
           refreshSummary()
+          refreshMediaItems()
+          setPromptedDevices((prev) => new Set(prev).add(device.devicePath))
 
           if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
-            setScanningDevices((prev) => new Set(prev).add(device.devicePath))
-            void window.discdock.scan.start(result.data.id, device.mountPoint).then((startResult) => {
-              if (startResult.ok) {
-                setJobToDevice((prev) => ({ ...prev, [startResult.data.jobId]: device.devicePath }))
-              }
-            })
+            startScanFor(result.data.id, device.devicePath, device.mountPoint)
           }
         }
       })
@@ -137,25 +170,36 @@ export default function Dashboard(): JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {devices.map((device) => (
-              <tr key={device.devicePath}>
-                <td>{device.label ?? '(unlabeled)'}</td>
-                <td>{device.mountPoint}</td>
-                <td>{device.fsType ?? '—'}</td>
-                <td>{device.sizeBytes ? formatBytes(device.sizeBytes) : '—'}</td>
-                <td>
-                  {scanningDevices.has(device.devicePath) ? (
-                    <span className="status-badge">Scanning…</span>
-                  ) : registered.has(device.devicePath) ? (
-                    <span className="status-badge">Registered</span>
-                  ) : (
-                    <button type="button" className="button button--small" onClick={() => handleRegister(device)}>
-                      Register as Media
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
+            {devices.map((device) => {
+              const matched = findMediaForDevice(device)
+              return (
+                <tr key={device.devicePath}>
+                  <td>{device.label ?? '(unlabeled)'}</td>
+                  <td>{device.mountPoint}</td>
+                  <td>{device.fsType ?? '—'}</td>
+                  <td>{device.sizeBytes ? formatBytes(device.sizeBytes) : '—'}</td>
+                  <td>
+                    {scanningDevices.has(device.devicePath) ? (
+                      <span className="status-badge">Scanning…</span>
+                    ) : !matched ? (
+                      <button type="button" className="button button--small" onClick={() => handleRegister(device)}>
+                        Register as Media
+                      </button>
+                    ) : !matched.lastScannedAt ? (
+                      <button
+                        type="button"
+                        className="button button--small"
+                        onClick={() => startScanFor(matched.id, device.devicePath, device.mountPoint)}
+                      >
+                        Never Scanned — Scan Now
+                      </button>
+                    ) : (
+                      <span className="status-badge">Registered</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       )}
