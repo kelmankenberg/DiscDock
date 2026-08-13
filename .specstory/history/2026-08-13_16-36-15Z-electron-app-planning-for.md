@@ -29809,22 +29809,108 @@ in the Media Library list, the columns should be sortable, unless that is covere
 
 _**Agent (copilot/auto)**_
 
+<think><details><summary>Thought Process</summary>
+Good catch — that's genuinely missing, not deferred; the [UI spec](docs/planning-docs/07-ui-ux-specification.md) already calls for it in Media Library ("Filter/sort by type, location, tag, status..."). Let me add click-to-sort column headers.  
+
+Now update the table header and body to use sortable columns and `sortedItems`:
+</details></think>
+
+_**Agent (copilot/auto)**_
+
 Good catch — that's genuinely missing, not deferred; the UI spec already calls for it in Media Library ("Filter/sort by type, location, tag, status..."). Let me add click-to-sort column headers.  
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 255 to 280
+
+**Input:**
+
+- endLine: `280`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `255`
+
+**Result:**
+
+```
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
+        </div>
+      ) : (
+        <table className="media-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Last Scanned</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => {
+              const scan = scansByMedia[item.id]
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 1 to 30
+
+**Input:**
+
+- endLine: `30`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -29894,18 +29980,103 @@ Now update the table header and body to use sortable columns and :
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 280 to 300
+
+**Input:**
+
+- endLine: `300`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `280`
+
+**Result:**
+
+```
+              onChange={(e) => setForm({ ...form, notes: e.target.value || null })}
+            />
+          </label>
+          <div className="media-form__actions">
+            <button type="submit" className="button button--primary">
+              Save
+            </button>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setShowForm(false)
+                setDeviceMountPoint(null)
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 298 to 340
+
+**Input:**
+
+- endLine: `340`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `298`
+
+**Result:**
+
+```
+        </form>
+      )}
+
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
+        </div>
+      ) : (
+        <table className="media-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Last Scanned</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => {
+              const scan = scansByMedia[item.id]
+              return (
+                <tr key={item.id}>
+                  <td>
+                    <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
+                      {item.label}
+                    </button>
+                  </td>
+                  <td>{mediaTypeLabel(item.mediaType)}</td>
+                  <td>{item.physicalLocation ?? '—'}</td>
+                  <td>
+                    <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+                  </td>
+                  <td>
+                    {scan ? (
+                      <span className="scan-progress">
+                        Scanning… {scan.filesProcessed} files
+                      </span>
+                    ) : (
+                      item.lastScannedAt ?? 'Never'
+                    )}
+                  </td>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -29938,18 +30109,55 @@ Now add the CSS for `.media-table__sort-header`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `.media-table th` (`**/src/views/MediaLibrary.css`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.css`
+- isRegexp: `false`
+- query: `.media-table th`
+
+**Result:**
+
+```
+Found 1 match in 1 file for ".media-table th"
+
+src/views/MediaLibrary.css
+77:.media-table th,
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.css`, lines 75 to 85
+
+**Input:**
+
+- endLine: `85`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.css`
+- startLine: `75`
+
+**Result:**
+
+```
+}
+
+.media-table th,
+.media-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.media-table__actions {
+  display: flex;
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -29992,10 +30200,38 @@ Now let's check for errors, verify integrity, and build:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `MediaLibrary.tsx`, 2 problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx"]`
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import './MediaLibrary.css'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+This code at line 18
+```
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+```
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+````
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30008,6 +30244,21 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css`
+
+Verify edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css` (terminal ID=74293802-b3a7-45ef-958e-1586257679ba). This is the output of running that command instead:
+12508 src/views/MediaLibrary.tsx
+ 1656 src/views/MediaLibrary.css
+14164 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30016,6 +30267,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with sortable Media Library columns
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=0d6c2d3d-8bbe-4f4e-aefc-19fadd829d61). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 35 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-C51m9g9Y.css    7.94 kB │ gzip:  1.83 kB
+dist/assets/index-CHEDcif5.js   217.92 kB │ gzip: 66.94 kB
+
+✓ built in 188ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30028,4 +30316,522 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app to visually verify sortable column headers
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=492d1591-a7ee-40c0-906b-efb00c45079c
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="492d1591-a7ee-40c0-906b-efb00c45079c" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="492d1591-a7ee-40c0-906b-efb00c45079c" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+I can't script clicking into the Media Library tab, but the build is clean and the logic is straightforward (client-side sort matching the existing verified data-loading pattern). Closing and committing.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `492d1591-a7ee-40c0-906b-efb00c45079c`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 492d1591-a7ee-40c0-906b-efb00c45079c. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for sortable columns feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=bd002e3d-b30b-4884-bafc-1673791b0e52). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  378G   57G  88% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  src/views/MediaLibrary.css
+M  src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+57G free now — recovered. Good.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Add sortable columns to the Media Library list" 2>&1 | tail -...`
+
+Commit and push the sortable columns feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Add sortable columns to the Media Library list" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Add sortable columns to the Media Library list" 2>&1 | tail -20 && git push 2>&1` (terminal ID=68fdda19-7e3c-47f5-9721-5c81df03fd4f). This is the output of running that command instead:
+[main a77d164] Add sortable columns to the Media Library list
+ 4 files changed, 557 insertions(+), 15 deletions(-)
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 4.71 KiB | 371.00 KiB/s, done.
+Total 10 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   b85c57c..a77d164  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (disk recovered to 57G free).
+
+This wasn't covered elsewhere — it was a genuine gap against the documented UI spec ("Filter/sort by type, location, tag, status, verification age" for the Media Library list), now implemented:
+
+- All 5 columns (Label, Type, Location, Status, Last Scanned) are clickable to sort
+- Clicking the active column again toggles ascending/descending (▲/▼ indicator)
+- Client-side sort, case-insensitive locale-aware comparison
+
+Note: sorting by *tag* and *verification age* (as opposed to raw last-scanned timestamp) aren't covered yet since tags aren't implemented at all in v0.1.0 — that's tracked in the roadmap's Phase 2 (tagging/collections). Let me know if you want anything else adjusted here.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Add sortable columns to Media Library* (1/3)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 19:18:12Z)**_
+
+also, let's add an Eject button to this page so that the user can easily eject the media for disc drives. Obviously they would have to manually remove USB items, but the app should follow through with that and prompt the user when it is safe to disconnect the USB drive.
+
+---
+
+_**Agent (copilot/auto)**_
+
+Good addition — let's add an Eject action using `eject` (optical) and `udisksctl unmount`/`power-off` (USB/external), which don't require root for user-session removable media.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `deviceEject.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **deviceEject.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+
+const execFileAsync = promisify(execFile)
+
+/**
+ * Ejects/detaches a removable device so it's safe to disconnect.
+ * Optical drives: `eject` unmounts and opens the tray in one step.
+ * USB/external drives: `udisksctl unmount` then `power-off` fully detaches the block device
+ * (equivalent to "Safely Remove Hardware") — neither requires root for the user's own session-mounted media.
+ */
+export async function ejectDevice(devicePath: string, isOptical: boolean): Promise<string> {
+  if (isOptical) {
+    await execFileAsync('eject', [devicePath])
+    return 'Disc ejected.'
+  }
+
+  await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+  try {
+    await execFileAsync('udisksctl', ['power-off', '-b', devicePath])
+    return 'Drive unmounted and powered off — safe to unplug.'
+  } catch {
+    // power-off isn't supported on all udisks2 versions/devices; unmount alone is still safe to remove.
+    return 'Drive unmounted — safe to unplug.'
+  }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now add the IPC handler to `devices.ts`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `devices.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **devices.ts**</summary>
+
+@@ lines 3-23 @@
+
+```
+{ ejectDevice } from '../devices/deviceEject'
+import type { DetectedDevice, IpcResult } from '../../shared/types'
+
+let watcher: DeviceWatcher | null = null
+
+export function startDeviceWatcher(win: BrowserWindow): DeviceWatcher {
+  watcher = new DeviceWatcher(
+    (device) => win.webContents.send('devices:connected', device),
+    (devicePath) => win.webContents.send('devices:disconnected', { devicePath })
+  )
+  void watcher.start()
+  return watcher
+}
+
+export function stopDeviceWatcher(): void {
+  watcher?.stop()
+  watcher = null
+}
+
+export function registerDeviceIpc(): void {
+  ipcMain.handle('devices:list', (): IpcResult<DetectedDevice[]> => {
+    return { ok: true, data: watcher?.getKnownDevices() ?? [] }
+  })
+
+  ipcMain.handle('devices:eject', async (_event, payload: unknown): Promise<IpcResult<{ message: string }>> => {
+    const { devicePath, isOptical } = (payload ?? {}) as { devicePath?: unknown; isOptical?: unknown }
+    if (typeof devicePath !== 'string' || !devicePath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A devicePath is required' } }
+    }
+    try {
+      const message = await ejectDevice(devicePath, Boolean(isOptical))
+      return { ok: true, data: { message } }
+    } catch (err) {
+      return { ok: false, error: { code: 'eject_error', message: (err as Error).message } }
+   
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now expose it in `preload.ts`:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `devices:` (`**/electron/preload.ts`), 6 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 49 to 64
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 62-62 @@
+
+```
+,
+    eject: (devicePath: string, isOptical: boolean): Promise<IpcResult<{ message: string }>> =>
+      ipcRenderer.invoke('devices:eject', { devicePath, isOptical })
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 4 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now add the Eject button to the Dashboard's Detected Devices table:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 130 to 175
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 175 to 209
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Dashboard.tsx**</summary>
+
+@@ lines 200-200 @@
+
+```
+  <td>
+                    <button
+                      type="button"
+                      className="button button--small"
+                      disabled={ejectingDevices.has(device.devicePath)}
+                      onClick={() => handleEject(device)}
+                    >
+                      {ejectingDevices.has(device.devicePath)
+                        ? 'Ejecting…'
+                        : device.isOptical
+                          ? 'Eject'
+                          : 'Safely Remove'}
+                    </button>
+                  </td>
+                
+```
+
+@@ lines 156-168 @@
+
+```
+ejectMessage && <p className="dashboard__eject-message">{ejectMessage}</p>}
+      {devices.length === 0 ? (
+        <p className="dashboard__empty-devices">
+          No removable media currently connected. Insert a USB drive, disc, or external drive to
+          register it here.
+        </p>
+      ) : (
+        <table className="device-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Mount Point</th>
+              <th>Filesystem</th>
+              <th>Size</th>
+              <th>
+```
+
+@@ lines 133-133 @@
+
+```
+const handleEject = (device: DetectedDevice): void => {
+    setEjectingDevices((prev) => new Set(prev).add(device.devicePath))
+    setEjectMessage(null)
+    void window.discdock.devices.eject(device.devicePath, device.isOptical).then((result) => {
+      setEjectingDevices((prev) => {
+        const next = new Set(prev)
+        next.delete(device.devicePath)
+        return next
+      })
+      setEjectMessage(
+        result.ok
+          ? `${device.label ?? device.devicePath}: ${result.data.message}`
+          : `Eject failed: ${result.error.message}`
+      )
+    })
+  }
+
+  
+```
+
+@@ lines 24-24 @@
+
+```
+
+  const [ejectingDevices, setEjectingDevices] = useState<Set<string>>(new Set())
+  const [ejectMessage, setEjectMessage] = useState<string | null>(null)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `ejectingDevices|handleEject|ejectMessage` (`**/src/views/Dashboard.tsx`), 11 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Good, all other edits applied successfully despite the one no-op failure. Let's view the full result to confirm correctness:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 150 to 240
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Correct. Now add the `.dashboard__eject-message` CSS:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `dashboard__empty-devices` (`**/src/styles/global.css`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `global.css`, lines 113 to 122
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **global.css**</summary>
+
+@@ lines 121-121 @@
+
+```
+ashboard__eject-message {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--color-accent);
+}
+
+.d
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now wire  — already registered in `main.ts` earlier, no changes needed there. Let's check for errors and build.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `deviceEject.ts`, `devices.ts`, `preload.ts`, `Dashboard.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Verify content and build:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/devices/deviceEject.ts electron/ipc/devices.ts electron/prelo...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's verify the /`udisksctl` binaries are actually available, then test with the real disc that's currently mounted.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` which eject udisksctl 2>&1; lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE 2>&1 |...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE,RM 2>&1 | python3 -c "import json,...`
 </details></tool-use>

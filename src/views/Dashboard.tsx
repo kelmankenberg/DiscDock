@@ -22,6 +22,8 @@ export default function Dashboard(): JSX.Element {
   const [scanningDevices, setScanningDevices] = useState<Set<string>>(new Set())
   const [jobToDevice, setJobToDevice] = useState<Record<number, string>>({})
   const [promptedDevices, setPromptedDevices] = useState<Set<string>>(new Set())
+  const [ejectingDevices, setEjectingDevices] = useState<Set<string>>(new Set())
+  const [ejectMessage, setEjectMessage] = useState<string | null>(null)
 
   const findMediaForDevice = (device: DetectedDevice): MediaItem | undefined =>
     mediaItems.find((m) => m.deviceFingerprint === (device.uuid ?? device.devicePath))
@@ -130,6 +132,23 @@ export default function Dashboard(): JSX.Element {
       })
   }
 
+  const handleEject = (device: DetectedDevice): void => {
+    setEjectingDevices((prev) => new Set(prev).add(device.devicePath))
+    setEjectMessage(null)
+    void window.discdock.devices.eject(device.devicePath, device.isOptical).then((result) => {
+      setEjectingDevices((prev) => {
+        const next = new Set(prev)
+        next.delete(device.devicePath)
+        return next
+      })
+      setEjectMessage(
+        result.ok
+          ? `${device.label ?? device.devicePath}: ${result.data.message}`
+          : `Eject failed: ${result.error.message}`
+      )
+    })
+  }
+
   return (
     <div className="dashboard">
       <h1>Dashboard</h1>
@@ -153,6 +172,7 @@ export default function Dashboard(): JSX.Element {
       </div>
 
       <h2>Detected Devices</h2>
+      {ejectMessage && <p className="dashboard__eject-message">{ejectMessage}</p>}
       {devices.length === 0 ? (
         <p className="dashboard__empty-devices">
           No removable media currently connected. Insert a USB drive, disc, or external drive to
@@ -166,6 +186,7 @@ export default function Dashboard(): JSX.Element {
               <th>Mount Point</th>
               <th>Filesystem</th>
               <th>Size</th>
+              <th></th>
               <th></th>
             </tr>
           </thead>
@@ -196,6 +217,20 @@ export default function Dashboard(): JSX.Element {
                     ) : (
                       <span className="status-badge">Registered</span>
                     )}
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="button button--small"
+                      disabled={ejectingDevices.has(device.devicePath)}
+                      onClick={() => handleEject(device)}
+                    >
+                      {ejectingDevices.has(device.devicePath)
+                        ? 'Ejecting…'
+                        : device.isOptical
+                          ? 'Eject'
+                          : 'Safely Remove'}
+                    </button>
                   </td>
                 </tr>
               )

@@ -59,7 +59,9 @@ const api = {
         callback(payload.devicePath)
       ipcRenderer.on('devices:disconnected', listener)
       return () => ipcRenderer.removeListener('devices:disconnected', listener)
-    }
+    },
+    eject: (devicePath: string, isOptical: boolean): Promise<IpcResult<{ message: string }>> =>
+      ipcRenderer.invoke('devices:eject', { devicePath, isOptical })
   },
   scan: {
     start: (mediaId: number, rootPath: string, hashMode?: HashMode): Promise<IpcResult<{ jobId: number }>> =>
