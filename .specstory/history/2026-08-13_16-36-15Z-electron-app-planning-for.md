@@ -4397,10 +4397,23 @@ very well, let's begin implementation for v0.1.0 of DiscDock
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_listDirectory"><details>
-<summary>Tool use: **copilot_listDirectory**</summary>
+<tool-use data-tool-type="generic" data-tool-name="list_dir"><details>
+<summary>Tool use: **list_dir**</summary>
 
 Read `DiscDock`
+
+**Input:**
+
+- path: `/home/kel/dev/DiscDock`
+
+**Result:**
+
+```
+.git/
+.gitignore
+.specstory/
+docs/
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4409,6 +4422,19 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` node -v && npm -v`
+
+Check installed Node/npm versions
+
+```bash
+node -v && npm -v
+```
+
+**Result:**
+
+```
+v20.20.2
+11.16.0
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4417,6 +4443,26 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm create electron-vite@latest . -- --template react-ts --yes 2>&1 | tail -60`
+
+Scaffold Electron + Vite + React + TypeScript project using electron-vite CLI
+
+```bash
+cd /home/kel/dev/DiscDock && npm create electron-vite@latest . -- --template react-ts --yes 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm create electron-vite@latest . -- --template react-ts --yes 2>&1 | tail -60` (terminal ID=a72166d6-84fa-4a25-b668-c83e387078f4). This is the output of running that command instead:
+Note: This terminal execution was moved to the background using the ID a72166d6-84fa-4a25-b668-c83e387078f4
+Note: The command produced no new output for an extended period and was moved to background terminal ID a72166d6-84fa-4a25-b668-c83e387078f4; the process is still running and has not been killed. You will be automatically notified on your next turn when it completes.
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="a72166d6-84fa-4a25-b668-c83e387078f4" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="a72166d6-84fa-4a25-b668-c83e387078f4" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+  3. Producing no output for an extended period does not mean the command failed — call get_terminal_output with id="a72166d6-84fa-4a25-b668-c83e387078f4" to continue polling. Only call kill_terminal if the command is genuinely hung and you need to retry with a different approach.
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm create electron-vite@latest . -- --template react-ts --yes 2>&1 | tail -60
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4425,6 +4471,50 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **get_terminal_output**</summary>
 
 Checked terminal output
+
+**Input:**
+
+- id: `a72166d6-84fa-4a25-b668-c83e387078f4`
+
+**Result:**
+
+```
+Output of terminal a72166d6-84fa-4a25-b668-c83e387078f4:
+kel@kel-EQ-Mint:~/dev/DiscDock$  git status 2>&1 | head -30
+fatal: not a git repository (or any of the parent directories): .git
+kel@kel-EQ-Mint:~/dev/DiscDock$  git init -b main && git add -A && git commit -m "Add planning documentation for DiscDock" 2>&1
+Initialized empty Git repository in /home/kel/dev/DiscDock/.git/
+[main (root-commit) d3f8ba1] Add planning documentation for DiscDock
+ 18 files changed, 4764 insertions(+)
+ create mode 100644 .gitignore
+ create mode 100644 .specstory/.project.json
+ create mode 100644 .specstory/cli/config.toml
+ create mode 100644 .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+ create mode 100644 .specstory/statistics.json
+ create mode 100644 docs/planning-docs/01-product-requirements.md
+ create mode 100644 docs/planning-docs/02-user-stories.md
+ create mode 100644 docs/planning-docs/03-functional-requirements.md
+ create mode 100644 docs/planning-docs/04-non-functional-requirements.md
+ create mode 100644 docs/planning-docs/05-technical-specification.md
+ create mode 100644 docs/planning-docs/06-data-model.md
+ create mode 100644 docs/planning-docs/07-ui-ux-specification.md
+ create mode 100644 docs/planning-docs/08-api-internal-spec.md
+ create mode 100644 docs/planning-docs/09-packaging-deployment.md
+ create mode 100644 docs/planning-docs/10-security-privacy.md
+ create mode 100644 docs/planning-docs/11-roadmap.md
+ create mode 100644 docs/planning-docs/12-glossary.md
+ create mode 100644 docs/planning-docs/README.md
+kel@kel-EQ-Mint:~/dev/DiscDock$  git remote add origin https://github.com/kelmankenberg/DiscDock.git && git push -u origin main 2>&1
+Enumerating objects: 25, done.
+Counting objects: 100% (25/25), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (23/23), done.
+Writing objects: 100% (25/25), 72.11 KiB | 5.55 MiB/s, done.
+Total 25 (delta 2), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (2/2), done.
+To https:
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4433,6 +4523,50 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **get_terminal_output**</summary>
 
 Checked terminal output
+
+**Input:**
+
+- id: `a72166d6-84fa-4a25-b668-c83e387078f4`
+
+**Result:**
+
+```
+Output of terminal a72166d6-84fa-4a25-b668-c83e387078f4:
+kel@kel-EQ-Mint:~/dev/DiscDock$  git status 2>&1 | head -30
+fatal: not a git repository (or any of the parent directories): .git
+kel@kel-EQ-Mint:~/dev/DiscDock$  git init -b main && git add -A && git commit -m "Add planning documentation for DiscDock" 2>&1
+Initialized empty Git repository in /home/kel/dev/DiscDock/.git/
+[main (root-commit) d3f8ba1] Add planning documentation for DiscDock
+ 18 files changed, 4764 insertions(+)
+ create mode 100644 .gitignore
+ create mode 100644 .specstory/.project.json
+ create mode 100644 .specstory/cli/config.toml
+ create mode 100644 .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+ create mode 100644 .specstory/statistics.json
+ create mode 100644 docs/planning-docs/01-product-requirements.md
+ create mode 100644 docs/planning-docs/02-user-stories.md
+ create mode 100644 docs/planning-docs/03-functional-requirements.md
+ create mode 100644 docs/planning-docs/04-non-functional-requirements.md
+ create mode 100644 docs/planning-docs/05-technical-specification.md
+ create mode 100644 docs/planning-docs/06-data-model.md
+ create mode 100644 docs/planning-docs/07-ui-ux-specification.md
+ create mode 100644 docs/planning-docs/08-api-internal-spec.md
+ create mode 100644 docs/planning-docs/09-packaging-deployment.md
+ create mode 100644 docs/planning-docs/10-security-privacy.md
+ create mode 100644 docs/planning-docs/11-roadmap.md
+ create mode 100644 docs/planning-docs/12-glossary.md
+ create mode 100644 docs/planning-docs/README.md
+kel@kel-EQ-Mint:~/dev/DiscDock$  git remote add origin https://github.com/kelmankenberg/DiscDock.git && git push -u origin main 2>&1
+Enumerating objects: 25, done.
+Counting objects: 100% (25/25), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (23/23), done.
+Writing objects: 100% (25/25), 72.11 KiB | 5.55 MiB/s, done.
+Total 25 (delta 2), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (2/2), done.
+To https:
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4441,6 +4575,48 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **kill_terminal**</summary>
 
 Killed terminal
+
+**Input:**
+
+- id: `a72166d6-84fa-4a25-b668-c83e387078f4`
+
+**Result:**
+
+```
+Successfully killed persistent terminal a72166d6-84fa-4a25-b668-c83e387078f4. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  git status 2>&1 | head -30
+fatal: not a git repository (or any of the parent directories): .git
+kel@kel-EQ-Mint:~/dev/DiscDock$  git init -b main && git add -A && git commit -m "Add planning documentation for DiscDock" 2>&1
+Initialized empty Git repository in /home/kel/dev/DiscDock/.git/
+[main (root-commit) d3f8ba1] Add planning documentation for DiscDock
+ 18 files changed, 4764 insertions(+)
+ create mode 100644 .gitignore
+ create mode 100644 .specstory/.project.json
+ create mode 100644 .specstory/cli/config.toml
+ create mode 100644 .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+ create mode 100644 .specstory/statistics.json
+ create mode 100644 docs/planning-docs/01-product-requirements.md
+ create mode 100644 docs/planning-docs/02-user-stories.md
+ create mode 100644 docs/planning-docs/03-functional-requirements.md
+ create mode 100644 docs/planning-docs/04-non-functional-requirements.md
+ create mode 100644 docs/planning-docs/05-technical-specification.md
+ create mode 100644 docs/planning-docs/06-data-model.md
+ create mode 100644 docs/planning-docs/07-ui-ux-specification.md
+ create mode 100644 docs/planning-docs/08-api-internal-spec.md
+ create mode 100644 docs/planning-docs/09-packaging-deployment.md
+ create mode 100644 docs/planning-docs/10-security-privacy.md
+ create mode 100644 docs/planning-docs/11-roadmap.md
+ create mode 100644 docs/planning-docs/12-glossary.md
+ create mode 100644 docs/planning-docs/README.md
+kel@kel-EQ-Mint:~/dev/DiscDock$  git remote add origin https://github.com/kelmankenberg/DiscDock.git && git push -u origin main 2>&1
+Enumerating objects: 25, done.
+Counting objects: 100% (25/25), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (23/23), done.
+Writing objects: 100% (25/25), 72.11 KiB | 5.55 MiB/s, done.
+Total 25 (delta 2), reused 0 (delta 0), pack-reused 0
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4449,6 +4625,19 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm init -y >/dev/null 2>&1 && echo done`
+
+Initialize a fresh package.json to hand-build the project structure
+
+```bash
+cd /home/kel/dev/DiscDock && npm init -y >/dev/null 2>&1 && echo done
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm init -y >/dev/null 2>&1 && echo done` (terminal ID=e63d2641-d414-4c6a-aba9-71338bec5c76). This is the output of running that command instead:
+done
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4461,6 +4650,57 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm install --save-dev electron electron-builder vite @vitejs/plugin-react t...`
+
+Install dev dependencies for Electron, Vite, React, TypeScript tooling
+
+```bash
+cd /home/kel/dev/DiscDock && npm install --save-dev electron electron-builder vite @vitejs/plugin-react typescript concurrently wait-on cross-env @types/react @types/react-dom @types/node electron-log 2>&1 | tail -40
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm install --save-dev electron electron-builder vite @vitejs/plugin-react typescript concurrently wait-on cross-env @types/react @types/react-dom @types/node electron-log 2>&1 | tail -40` (terminal ID=d9fea701-c802-40b8-9b78-2705d49b24e7). This is the output of running that command instead:
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@electron/rebuild@4.2.0',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '11.16.0' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'node-abi@4.33.0',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '11.16.0' }
+npm warn EBADENGINE }
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memo
+ry. Do not use it. Check out lru-cache if you want a good and tested way to coal
+esce async requests by a key value, which is much more comprehensive and powerfu
+l.
+npm warn deprecated rimraf@2.6.3: Rimraf versions prior to v4 are no longer supp
+orted
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and cont
+ain widely publicized security vulnerabilities, which have been fixed in the cur
+rent version. Please update. Support for old versions may be purchased (at exorb
+itant rates) by contacting i@izs.me
+npm warn deprecated boolean@3.2.0: Package no longer supported. Contact Support
+at https://www.npmjs.com/support for more info.
+
+added 361 packages, and audited 362 packages in 29s
+
+57 packages are looking for funding
+  run `npm fund` for details
+
+2 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+npm warn allow-scripts 2 packages have install scripts not yet covered by allowS
+cripts:
+npm warn allow-scripts   electron@41.7.1 (postinstall: node install.js)
+npm warn allow-scripts   electron-winstaller@5.4.0 (inst
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4469,6 +4709,52 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm install react react-dom better-sqlite3 2>&1 | tail -40`
+
+Install runtime dependencies React, ReactDOM, and better-sqlite3
+
+```bash
+cd /home/kel/dev/DiscDock && npm install react react-dom better-sqlite3 2>&1 | tail -40
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm install react react-dom better-sqlite3 2>&1 | tail -40` (terminal ID=3e238007-aa59-4795-9be9-79d02b77c835). This is the output of running that command instead:
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@electron/rebuild@4.2.0',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '11.16.0' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'node-abi@4.33.0',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '11.16.0' }
+npm warn EBADENGINE }
+npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact
+ the author of the relevant native addon; alternatives are available.
+
+added 29 packages, and audited 391 packages in 2m
+
+61 packages are looking for funding
+  run `npm fund` for details
+
+2 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+npm warn allow-scripts 3 packages have install scripts not yet covered by allowS
+cripts:
+npm warn allow-scripts   electron@41.7.1 (install: (install scripts present))
+npm warn allow-scripts   electron-winstaller@5.4.0 (install: (install scripts pr
+esent))
+npm warn allow-scripts   better-sqlite3@12.11.1 (install: prebuild-install || no
+de-gyp rebuild --release)
+npm warn allow-scripts
+npm warn allow-scripts Run `npm approve-scripts --allow-scripts-pending` to revi
+ew, or `npm approve-scripts <pkg>` to allow.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4477,6 +4763,24 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm approve-scripts --allow-scripts-pending 2>&1 | tail -20`
+
+Approve pending install scripts for electron and better-sqlite3 native builds
+
+```bash
+cd /home/kel/dev/DiscDock && npm approve-scripts --allow-scripts-pending 2>&1 | tail -20
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm approve-scripts --allow-scripts-pending 2>&1 | tail -20` (terminal ID=116bbeb3-3ddb-4292-9d1e-ae96393ab78a). This is the output of running that command instead:
+3 packages have install scripts not yet covered by allowScripts:
+  better-sqlite3@12.11.1 (install: node-gyp rebuild)
+  electron@41.7.1 (install: (install scripts present))
+  electron-winstaller@5.4.0 (install: (install scripts present))
+
+Run `npm approve-scripts <pkg>` to allow, or `npm deny-scripts <pkg>` to deny.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4485,6 +4789,24 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm approve-scripts better-sqlite3 electron electron-winstaller 2>&1 | tail -30`
+
+Approve install scripts for the three flagged packages by name
+
+```bash
+cd /home/kel/dev/DiscDock && npm approve-scripts better-sqlite3 electron electron-winstaller 2>&1 | tail -30
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm approve-scripts better-sqlite3 electron electron-winstaller 2>&1 | tail -30` (terminal ID=ee9bc207-2c31-4f3a-9a28-8da6fc472af5). This is the output of running that command instead:
+Approved better-sqlite3:
+  added better-sqlite3@12.11.1
+Approved electron:
+  added electron@41.7.1
+Approved electron-winstaller:
+  added electron-winstaller@5.4.0
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4493,6 +4815,19 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron --version 2>&1 | tail -10`
+
+Verify electron binary installed correctly after approving scripts
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron --version 2>&1 | tail -10
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron --version 2>&1 | tail -10` (terminal ID=3fdf6a71-73a5-461c-a0bc-b31970e5cc6f). This is the output of running that command instead:
+v41.7.1
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4501,6 +4836,19 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` ls node\_modules/better-sqlite3/build/Release/ 2>&1`
+
+Verify better-sqlite3 native binary was built
+
+```bash
+cd /home/kel/dev/DiscDock && ls node_modules/better-sqlite3/build/Release/ 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` ls node_modules/better-sqlite3/build/Release/ 2>&1` (terminal ID=5752a7b1-10a0-4301-88f8-59cba89732af). This is the output of running that command instead:
+better_sqlite3.node  obj  obj.target  sqlite3.a  test_extension.node
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4509,6 +4857,25 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron-builder install-app-deps 2>&1 | tail -40`
+
+Rebuild native modules (better-sqlite3) against Electron's ABI
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron-builder install-app-deps 2>&1 | tail -40
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron-builder install-app-deps 2>&1 | tail -40` (terminal ID=7a1bdeb4-f1cf-4427-ad43-54eec2456a77). This is the output of running that command instead:
+  • electron-builder  version=26.15.3
+  • executing @electron/rebuild  electronVersion=41.7.1 arch=x64 buildFromSource
+=false workspaceRoot=/home/kel/dev/DiscDock projectDir=./ appDir=./
+  • installing native dependencies  arch=x64
+  • preparing       moduleName=better-sqlite3 arch=x64
+  • finished        moduleName=better-sqlite3 arch=x64
+  • completed installing native dependencies
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4517,26 +4884,162 @@ Good, that worked despite the Node version warning. Now let's scaffold the proje
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_memory"><details>
-<summary>Tool use: **copilot_memory**</summary>
+<tool-use data-tool-type="generic" data-tool-name="memory"><details>
+<summary>Tool use: **memory**</summary>
 
 Created memory file `discdock-build.md`
+
+**Input:**
+
+- command: `create`
+- file_text:
+
+```
+# DiscDock repo build notes
+
+- Stack: Electron + React + TS + Vite (manually scaffolded, not via electron-vite CLI — that CLI hung/prompted on non-empty dir).
+- Node 20.20.2 installed; @electron/rebuild warns it wants Node >=22.12 (EBADENGINE) but works fine anyway.
+- better-sqlite3 native module must be rebuilt for Electron's ABI after any `npm install`:
+  `npx electron-builder install-app-deps`
+- npm has an "allow-scripts" gate blocking postinstall for electron/better-sqlite3/electron-winstaller;
+  run `npm approve-scripts <pkg>` (or per-pkg) after installing new native/electron deps.
+- electron-vite/electron-builder targets: deb + AppImage (Linux only, per planning docs).
+
+```
+
+- path: `/memories/repo/discdock-build.md`
+
+**Result:**
+
+```
+File created successfully at: /memories/repo/discdock-build.md
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `package.json`
+
+**Input:**
+
+- endLine: `60`
+- filePath: `/home/kel/dev/DiscDock/package.json`
+- startLine: `1`
+
+**Result:**
+
+```
+{
+  "name": "discdock",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kelmankenberg/DiscDock.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kelmankenberg/DiscDock/issues"
+  },
+  "homepage": "https://github.com/kelmankenberg/DiscDock#readme",
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "concurrently": "^9.2.4",
+    "cross-env": "^10.1.0",
+    "electron": "^41.7.1",
+    "electron-builder": "^26.15.3",
+    "electron-log": "^5.4.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "wait-on": "^9.1.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true,
+    "electron@41.7.1": true,
+    "electron-winstaller@5.4.0": true
+  }
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_replaceString"><details>
-<summary>Tool use: **copilot_replaceString**</summary>
+<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
+<summary>Tool use: **replace_string_in_file**</summary>
 
 Replacing 11 lines with 19 lines in `package.json`
+
+**Input:**
+
+- filePath: `/home/kel/dev/DiscDock/package.json`
+- newString:
+
+```
+{
+  "name": "discdock",
+  "version": "0.1.0",
+  "description": "Catalog and search your external/removable media collection",
+  "main": "dist-electron/main.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron .\"",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p electron/tsconfig.json",
+    "build": "npm run build:renderer && npm run build:electron",
+    "start": "electron .",
+    "package": "npm run build && electron-builder",
+    "package:linux": "npm run build && electron-builder --linux deb AppImage",
+    "postinstall": "electron-builder install-app-deps",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+```
+
+- oldString:
+
+```
+{
+  "name": "discdock",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+```
+
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/package.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4571,10 +5074,51 @@ Now the config files, electron main/preload/window/db, and renderer scaffold:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `tsconfig.json`
+
+**Input:**
+
+- content:
+
+```
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["shared/*"]
+    }
+  },
+  "include": ["src", "shared"]
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/tsconfig.json`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4615,10 +5159,45 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `tsconfig.json`
+
+**Input:**
+
+- content:
+
+```
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "../dist-electron",
+    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../shared/*"]
+    }
+  },
+  "include": ["**/*.ts", "../shared/**/*.ts"]
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/tsconfig.json`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4727,10 +5306,44 @@ Created 4 todos
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `vite.config.ts`
+
+**Input:**
+
+- content:
+
+```
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// Renderer build config. Electron main/preload are compiled separately via tsc (see electron/tsconfig.json).
+export default defineConfig({
+  root: 'src',
+  base: './',
+  plugins: [react()],
+  build: {
+    outDir: '../dist',
+    emptyOutDir: true
+  },
+  server: {
+    port: 5173,
+    strictPort: true
+  }
+})
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/vite.config.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/vite.config.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4764,10 +5377,41 @@ export default defineConfig({
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `index.html`
+
+**Input:**
+
+- content:
+
+```
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Renderer only ever loads local bundled assets; no remote sources allowed. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+    <title>DiscDock</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/main.tsx"></script>
+  </body>
+</html>
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/index.html`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/index.html
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4798,10 +5442,76 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `types.ts`
+
+**Input:**
+
+- content:
+
+```
+// Shared type contracts between main, preload, and renderer processes.
+
+export interface IpcOk<T> {
+  ok: true
+  data: T
+}
+
+export interface IpcErr {
+  ok: false
+  error: { code: string; message: string }
+}
+
+export type IpcResult<T> = IpcOk<T> | IpcErr
+
+export interface WindowState {
+  maximized: boolean
+}
+
+export type MediaType =
+  | 'cd'
+  | 'dvd'
+  | 'bluray'
+  | 'usb_drive'
+  | 'external_hdd'
+  | 'external_ssd'
+  | 'sd_card'
+  | 'network_share'
+  | 'other'
+
+export interface MediaItem {
+  id: number
+  label: string
+  mediaType: MediaType
+  deviceFingerprint: string | null
+  capacityBytes: number | null
+  physicalLocation: string | null
+  notes: string | null
+  status: 'active' | 'retired' | 'lost'
+  createdAt: string
+  lastScannedAt: string | null
+  lastVerifiedAt: string | null
+}
+
+export interface DashboardSummary {
+  totalMediaItems: number
+  totalFiles: number
+  totalSizeBytes: number
+  mediaNeedingVerification: number
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/shared/types.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4871,10 +5581,67 @@ Now the electron main process: window creation, preload, window-control IPC, and
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `createWindow.ts`
+
+**Input:**
+
+- content:
+
+```
+import { BrowserWindow, shell } from 'electron'
+import path from 'node:path'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export function createMainWindow(): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
+    // Frameless: DiscDock renders its own title bar/toolbar and window controls.
+    frame: false,
+    backgroundColor: '#1e1e1e',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../electron/preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => win.show())
+
+  // Never allow navigation to or opening of remote content from the renderer.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  if (isDev) {
+    void win.loadURL('http://localhost:5173')
+    win.webContents.openDevTools({ mode: 'detach' })
+  } else {
+    void win.loadFile(path.join(__dirname, '../dist/index.html'))
+  }
+
+  return win
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/window/createWindow.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/window/createWindow.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -4978,10 +5745,171 @@ migrations:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `index.ts`
+
+**Input:**
+
+- content:
+
+```
+import Database from 'better-sqlite3'
+import { app } from 'electron'
+import path from 'node:path'
+import fs from 'node:fs'
+
+let db: Database.Database | null = null
+
+const MIGRATIONS: { version: number; sql: string }[] = [
+  {
+    version: 1,
+    sql: `
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        version INTEGER PRIMARY KEY
+      );
+
+      CREATE TABLE IF NOT EXISTS media_item (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        label TEXT NOT NULL,
+        media_type TEXT NOT NULL,
+        device_fingerprint TEXT,
+        capacity_bytes INTEGER,
+        physical_location TEXT,
+        notes TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        last_scanned_at TEXT,
+        last_verified_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_media_item_type ON media_item(media_type);
+      CREATE INDEX IF NOT EXISTS idx_media_item_status ON media_item(status);
+      CREATE INDEX IF NOT EXISTS idx_media_item_fingerprint ON media_item(device_fingerprint);
+
+      CREATE TABLE IF NOT EXISTS scan_job (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        status TEXT NOT NULL,
+        hash_mode TEXT NOT NULL DEFAULT 'none',
+        started_at TEXT NOT NULL DEFAULT (datetime('now')),
+        completed_at TEXT,
+        files_added INTEGER NOT NULL DEFAULT 0,
+        files_removed INTEGER NOT NULL DEFAULT 0,
+        files_modified INTEGER NOT NULL DEFAULT 0,
+        files_unchanged INTEGER NOT NULL DEFAULT 0,
+        error_count INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_scan_job_media_item ON scan_job(media_item_id);
+
+      CREATE TABLE IF NOT EXISTS scan_error (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        scan_job_id INTEGER NOT NULL REFERENCES scan_job(id),
+        path TEXT NOT NULL,
+        error_type TEXT NOT NULL,
+        message TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS file_record (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        parent_folder_id INTEGER REFERENCES file_record(id),
+        path TEXT NOT NULL,
+        name TEXT NOT NULL,
+        extension TEXT,
+        kind TEXT,
+        size_bytes INTEGER NOT NULL DEFAULT 0,
+        created_at_src TEXT,
+        modified_at_src TEXT,
+        hash_algo TEXT,
+        hash_value TEXT,
+        is_directory INTEGER NOT NULL DEFAULT 0,
+        last_seen_scan_id INTEGER REFERENCES scan_job(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_file_record_media_item ON file_record(media_item_id);
+      CREATE INDEX IF NOT EXISTS idx_file_record_hash ON file_record(hash_value);
+      CREATE INDEX IF NOT EXISTS idx_file_record_extension ON file_record(extension);
+
+      CREATE VIRTUAL TABLE IF NOT EXISTS file_record_fts USING fts5(
+        name, path, content='file_record', content_rowid='id'
+      );
+
+      CREATE TABLE IF NOT EXISTS tag (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE
+      );
+
+      CREATE TABLE IF NOT EXISTS media_item_tag (
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        tag_id INTEGER NOT NULL REFERENCES tag(id),
+        PRIMARY KEY (media_item_id, tag_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS collection (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS collection_media_item (
+        collection_id INTEGER NOT NULL REFERENCES collection(id),
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        PRIMARY KEY (collection_id, media_item_id)
+      );
+    `
+  }
+]
+
+function runMigrations(database: Database.Database): void {
+  database.pragma('journal_mode = WAL')
+  database.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY)')
+
+  const appliedVersions = new Set(
+    (database.prepare('SELECT version FROM schema_migrations').all() as { version: number }[]).map(
+      (row) => row.version
+    )
+  )
+
+  for (const migration of MIGRATIONS) {
+    if (appliedVersions.has(migration.version)) continue
+    const applyMigration = database.transaction(() => {
+      database.exec(migration.sql)
+      database
+        .prepare('INSERT INTO schema_migrations (version) VALUES (?)')
+        .run(migration.version)
+    })
+    applyMigration()
+  }
+}
+
+export function getDb(): Database.Database {
+  if (db) return db
+
+  const userDataDir = app.getPath('userData')
+  fs.mkdirSync(userDataDir, { recursive: true })
+  const dbPath = path.join(userDataDir, 'discdock.sqlite3')
+
+  db = new Database(dbPath)
+  runMigrations(db)
+
+  return db
+}
+
+export function closeDb(): void {
+  db?.close()
+  db = null
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/db/index.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/db/index.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -5146,10 +6074,62 @@ Now the window-control IPC handlers and preload script:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `windowControls.ts`
+
+**Input:**
+
+- content:
+
+```
+import { BrowserWindow, ipcMain } from 'electron'
+import type { IpcResult, WindowState } from '../../shared/types'
+
+// Window-control channels only ever act on the given BrowserWindow instance —
+// no renderer-supplied window handle is ever accepted.
+export function registerWindowControlIpc(win: BrowserWindow): void {
+  ipcMain.handle('window:minimize', (): IpcResult<null> => {
+    win.minimize()
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:maximize', (): IpcResult<null> => {
+    if (win.isMaximized()) {
+      win.unmaximize()
+    } else {
+      win.maximize()
+    }
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:close', (): IpcResult<null> => {
+    win.close()
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:isMaximized', (): IpcResult<WindowState> => {
+    return { ok: true, data: { maximized: win.isMaximized() } }
+  })
+
+  const sendState = (): void => {
+    win.webContents.send('window:stateChanged', { maximized: win.isMaximized() } satisfies WindowState)
+  }
+  win.on('maximize', sendState)
+  win.on('unmaximize', sendState)
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/windowControls.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/windowControls.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -5201,10 +6181,59 @@ export function registerWindowControlIpc(win: BrowserWindow): void {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `dashboard.ts`
+
+**Input:**
+
+- content:
+
+```
+import { ipcMain } from 'electron'
+import { getDb } from '../db'
+import type { DashboardSummary, IpcResult } from '../../shared/types'
+
+export function registerDashboardIpc(): void {
+  ipcMain.handle('dashboard:summary', (): IpcResult<DashboardSummary> => {
+    const db = getDb()
+
+    const { count: totalMediaItems } = db
+      .prepare('SELECT COUNT(*) as count FROM media_item')
+      .get() as { count: number }
+
+    const { count: totalFiles, total: totalSizeBytes } = db
+      .prepare(
+        'SELECT COUNT(*) as count, COALESCE(SUM(size_bytes), 0) as total FROM file_record WHERE is_directory = 0'
+      )
+      .get() as { count: number; total: number }
+
+    const { count: mediaNeedingVerification } = db
+      .prepare(
+        `SELECT COUNT(*) as count FROM media_item
+         WHERE status = 'active'
+           AND (last_verified_at IS NULL OR last_verified_at < datetime('now', '-12 months'))`
+      )
+      .get() as { count: number }
+
+    return {
+      ok: true,
+      data: { totalMediaItems, totalFiles, totalSizeBytes, mediaNeedingVerification }
+    }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/dashboard.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/dashboard.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -5300,10 +6329,53 @@ export function registerDashboardIpc(): void {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `preload.ts`
+
+**Input:**
+
+- content:
+
+```
+import { contextBridge, ipcRenderer } from 'electron'
+import type { DashboardSummary, IpcResult, WindowState } from '../shared/types'
+
+const api = {
+  window: {
+    minimize: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:minimize'),
+    maximize: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:maximize'),
+    close: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:close'),
+    isMaximized: (): Promise<IpcResult<WindowState>> => ipcRenderer.invoke('window:isMaximized'),
+    onStateChanged: (callback: (state: WindowState) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, state: WindowState): void => callback(state)
+      ipcRenderer.on('window:stateChanged', listener)
+      return () => ipcRenderer.removeListener('window:stateChanged', listener)
+    }
+  },
+  dashboard: {
+    getSummary: (): Promise<IpcResult<DashboardSummary>> => ipcRenderer.invoke('dashboard:summary')
+  },
+  app: {
+    getVersion: (): Promise<IpcResult<string>> => ipcRenderer.invoke('app:getVersion')
+  }
+}
+
+contextBridge.exposeInMainWorld('discdock', api)
+
+export type DiscDockApi = typeof api
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/preload.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -5350,10 +6422,64 @@ Now the main.ts entry point, app:getVersion IPC, and main process bootstrap:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `main.ts`
+
+**Input:**
+
+- content:
+
+```
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { createMainWindow } from './window/createWindow'
+import { registerWindowControlIpc } from './ipc/windowControls'
+import { registerDashboardIpc } from './ipc/dashboard'
+import { getDb, closeDb } from './db'
+import type { IpcResult } from '../shared/types'
+
+let mainWindow: BrowserWindow | null = null
+
+function registerAppIpc(): void {
+  ipcMain.handle('app:getVersion', (): IpcResult<string> => {
+    return { ok: true, data: app.getVersion() }
+  })
+}
+
+app.whenReady().then(() => {
+  getDb() // initialize database + run migrations before the window is shown
+
+  mainWindow = createMainWindow()
+  registerWindowControlIpc(mainWindow)
+  registerDashboardIpc()
+  registerAppIpc()
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      mainWindow = createMainWindow()
+      registerWindowControlIpc(mainWindow)
+    }
+  })
+})
+
+app.on('window-all-closed', () => {
+  closeDb()
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/main.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/main.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -5407,10 +6533,36 @@ app.on('window-all-closed', () => {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `discdock-api.d.ts`
+
+**Input:**
+
+- content:
+
+```
+import type { DiscDockApi } from '../electron/preload'
+
+declare global {
+  interface Window {
+    discdock: DiscDockApi
+  }
+}
+
+export {}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/discdock-api.d.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/discdock-api.d.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -5436,10 +6588,37 @@ export {}
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `main.tsx`
+
+**Input:**
+
+- content:
+
+```
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import './styles/global.css'
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+)
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/main.tsx`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/main.tsx
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -5466,10 +6645,81 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `TitleBar.tsx`
+
+**Input:**
+
+- content:
+
+```
+import { useEffect, useState } from 'react'
+
+interface WindowState {
+  maximized: boolean
+}
+
+// Custom title bar replacing the OS-native one, since the BrowserWindow is created with frame: false.
+export default function TitleBar(): JSX.Element {
+  const [maximized, setMaximized] = useState(false)
+
+  useEffect(() => {
+    void window.discdock.window.isMaximized().then((result) => {
+      if (result.ok) setMaximized(result.data.maximized)
+    })
+    return window.discdock.window.onStateChanged((state: WindowState) => setMaximized(state.maximized))
+  }, [])
+
+  return (
+    <header className="title-bar">
+      <div className="title-bar__drag-region">
+        <span className="title-bar__icon" aria-hidden="true">
+          💿
+        </span>
+        <span className="title-bar__title">DiscDock</span>
+      </div>
+      <div className="title-bar__controls">
+        <button
+          type="button"
+          className="title-bar__button"
+          aria-label="Minimize"
+          onClick={() => void window.discdock.window.minimize()}
+        >
+          &#x2212;
+        </button>
+        <button
+          type="button"
+          className="title-bar__button"
+          aria-label={maximized ? 'Restore' : 'Maximize'}
+          onClick={() => void window.discdock.window.maximize()}
+        >
+          {maximized ? '❐' : '☐'}
+        </button>
+        <button
+          type="button"
+          className="title-bar__button title-bar__button--close"
+          aria-label="Close"
+          onClick={() => void window.discdock.window.close()}
+        >
+          &#x2715;
+        </button>
+      </div>
+    </header>
+  )
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/components/TitleBar.tsx`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/components/TitleBar.tsx
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -5548,10 +6798,84 @@ export default function TitleBar(): JSX.Element {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `TitleBar.css`
+
+**Input:**
+
+- content:
+
+```
+.title-bar {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  background: var(--color-titlebar-bg);
+  color: var(--color-titlebar-fg);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.title-bar__drag-region {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+  height: 100%;
+  flex: 1;
+}
+
+.title-bar__icon {
+  font-size: 14px;
+}
+
+.title-bar__title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.title-bar__controls {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.title-bar__button {
+  width: 46px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title-bar__button:hover {
+  background: var(--color-titlebar-hover);
+}
+
+.title-bar__button--close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/components/TitleBar.css`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/components/TitleBar.css
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -5625,10 +6949,66 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `Sidebar.tsx`
+
+**Input:**
+
+- content:
+
+```
+export interface NavItem {
+  key: string
+  label: string
+}
+
+export const NAV_ITEMS: NavItem[] = [
+  { key: 'dashboard', label: 'Dashboard' },
+  { key: 'media-library', label: 'Media Library' },
+  { key: 'search', label: 'Search' },
+  { key: 'duplicates', label: 'Duplicates' },
+  { key: 'collections', label: 'Collections' },
+  { key: 'backup-export', label: 'Backup / Export' },
+  { key: 'settings', label: 'Settings' }
+]
+
+interface SidebarProps {
+  active: string
+  onSelect: (key: string) => void
+}
+
+export default function Sidebar({ active, onSelect }: SidebarProps): JSX.Element {
+  return (
+    <nav className="sidebar">
+      <ul className="sidebar__list">
+        {NAV_ITEMS.map((item) => (
+          <li key={item.key}>
+            <button
+              type="button"
+              className={`sidebar__item${item.key === active ? ' sidebar__item--active' : ''}`}
+              onClick={() => onSelect(item.key)}
+            >
+              {item.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/components/Sidebar.tsx`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/components/Sidebar.tsx
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -5684,10 +7064,64 @@ export default function Sidebar({ active, onSelect }: SidebarProps): JSX.Element
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `Sidebar.css`
+
+**Input:**
+
+- content:
+
+```
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--color-sidebar-bg);
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+}
+
+.sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar__item {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sidebar__item:hover {
+  background: var(--color-sidebar-hover);
+}
+
+.sidebar__item--active {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/components/Sidebar.css`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/components/Sidebar.css
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6019,10 +7453,77 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `Dashboard.tsx`
+
+**Input:**
+
+- content:
+
+```
+import { useEffect, useState } from 'react'
+import type { DashboardSummary } from '../../shared/types'
+
+const EMPTY_SUMMARY: DashboardSummary = {
+  totalMediaItems: 0,
+  totalFiles: 0,
+  totalSizeBytes: 0,
+  mediaNeedingVerification: 0
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+export default function Dashboard(): JSX.Element {
+  const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY)
+
+  useEffect(() => {
+    void window.discdock.dashboard.getSummary().then((result) => {
+      if (result.ok) setSummary(result.data)
+    })
+  }, [])
+
+  return (
+    <div className="dashboard">
+      <h1>Dashboard</h1>
+      <div className="dashboard__cards">
+        <div className="card">
+          <span className="card__value">{summary.totalMediaItems}</span>
+          <span className="card__label">Total Media Items</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{summary.totalFiles}</span>
+          <span className="card__label">Total Files Catalogued</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{formatBytes(summary.totalSizeBytes)}</span>
+          <span className="card__label">Total Catalogued Size</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{summary.mediaNeedingVerification}</span>
+          <span className="card__label">Media Needing Verification</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/Dashboard.tsx`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/views/Dashboard.tsx
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6093,10 +7594,39 @@ Now placeholder views for the remaining nav items, `App.tsx`, and global styles:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `PlaceholderView.tsx`
+
+**Input:**
+
+- content:
+
+```
+interface PlaceholderViewProps {
+  title: string
+}
+
+export default function PlaceholderView({ title }: PlaceholderViewProps): JSX.Element {
+  return (
+    <div className="placeholder-view">
+      <h1>{title}</h1>
+      <p>This section is planned but not yet implemented.</p>
+    </div>
+  )
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/PlaceholderView.tsx`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/views/PlaceholderView.tsx
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6125,10 +7655,57 @@ export default function PlaceholderView({ title }: PlaceholderViewProps): JSX.El
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `App.tsx`
+
+**Input:**
+
+- content:
+
+```
+import { useState } from 'react'
+import TitleBar from './components/TitleBar'
+import Sidebar from './components/Sidebar'
+import Dashboard from './views/Dashboard'
+import PlaceholderView from './views/PlaceholderView'
+import { NAV_ITEMS } from './components/Sidebar'
+
+const VIEW_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.label])
+)
+
+export default function App(): JSX.Element {
+  const [activeView, setActiveView] = useState('dashboard')
+
+  return (
+    <div className="app-shell">
+      <TitleBar />
+      <div className="app-body">
+        <Sidebar active={activeView} onSelect={setActiveView} />
+        <main className="app-content">
+          {activeView === 'dashboard' ? (
+            <Dashboard />
+          ) : (
+            <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
+          )}
+        </main>
+      </div>
+    </div>
+  )
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/App.tsx`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/App.tsx
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6175,10 +7752,115 @@ export default function App(): JSX.Element {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `global.css`
+
+**Input:**
+
+- content:
+
+```
+:root {
+  --color-bg: #1e1e1e;
+  --color-text: #e6e6e6;
+  --color-border: #333;
+  --color-titlebar-bg: #171717;
+  --color-titlebar-fg: #e6e6e6;
+  --color-titlebar-hover: #333;
+  --color-sidebar-bg: #181818;
+  --color-sidebar-hover: #2a2a2a;
+  --color-accent: #3b82f6;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: #f5f5f5;
+    --color-text: #1e1e1e;
+    --color-border: #ddd;
+    --color-titlebar-bg: #e8e8e8;
+    --color-titlebar-fg: #1e1e1e;
+    --color-titlebar-hover: #d8d8d8;
+    --color-sidebar-bg: #f0f0f0;
+    --color-sidebar-hover: #e0e0e0;
+    color-scheme: light;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.dashboard__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+  min-width: 180px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.card__value {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.card__label {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/styles/global.css`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/styles/global.css
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6334,10 +8016,57 @@ electron-builder config, and update `.gitignore` for the new build artifacts:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `electron-builder.yml`
+
+**Input:**
+
+- content:
+
+```
+appId: com.discdock.app
+productName: DiscDock
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+linux:
+  category: Utility
+  target:
+    - target: deb
+      arch: [x64]
+    - target: AppImage
+      arch: [x64]
+  desktop:
+    entry:
+      Name: DiscDock
+      Comment: Catalog and search your external media collection
+      Categories: Utility;FileTools;
+deb:
+  depends:
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libgtk-3-0
+  packageCategory: utils
+appImage:
+  license: LICENSE
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron-builder.yml`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron-builder.yml
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6384,10 +8113,29 @@ appImage:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `.gitignore`
+
+**Input:**
+
+- endLine: `10`
+- filePath: `/home/kel/dev/DiscDock/.gitignore`
+- startLine: `1`
+
+**Result:**
+
+```
+node_modules/
+dist/
+release/
+build/
+out/
+*.log
+.env
+.DS_Store
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6413,6 +8161,27 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm run build:electron 2>&1 | tail -60`
+
+Compile the Electron main/preload TypeScript sources
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:electron 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build:electron 2>&1 | tail -60` (terminal ID=06bf0821-2b06-4c0d-82b3-97b0d78c3199). This is the output of running that command instead:
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+electron/tsconfig.json(5,25): error TS5108: Option 'moduleResolution=node10' has
+ been removed. Please remove it from your configuration.
+electron/tsconfig.json(12,5): error TS5102: Option 'baseUrl' has been removed. P
+lease remove it from your configuration.
+  Use '"paths": {"*": ["./*"]}' instead.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6457,14 +8226,84 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm run build:electron 2>&1 | tail -60`
+
+Recompile electron TS with fixed tsconfig
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:electron 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build:electron 2>&1 | tail -60` (terminal ID=000bb525-c9ef-464d-8bcc-9819d507df6e). This is the output of running that command instead:
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+electron/db/index.ts(1,22): error TS7016: Could not find a declaration file for
+module 'better-sqlite3'. '/home/kel/dev/DiscDock/node_modules/better-sqlite3/lib
+/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/better-sqlite3` if it exists or add a new declara
+tion (.d.ts) file containing `declare module 'better-sqlite3';`
+electron/ipc/windowControls.ts(2,45): error TS6059: File '/home/kel/dev/DiscDock
+/shared/types.ts' is not under 'rootDir' '/home/kel/dev/DiscDock/electron'. 'roo
+tDir' is expected to contain all source files.
+  The file is in the program because:
+    Imported via '../../shared/types' from file '/home/kel/dev/DiscDock/electron
+/ipc/windowControls.ts'
+    Imported via '../../shared/types' from file '/home/kel/dev/DiscDock/electron
+/ipc/dashboard.ts'
+    Imported via '../shared/types' from file '/home/kel/dev/DiscDock/electron/ma
+in.ts'
+    Imported via '../shared/types' from file '/home/kel/dev/DiscDock/electron/pr
+eload.ts'
+    Matched by include pattern '../shared/**/*.ts' in '/home/kel/dev/DiscDock/el
+ectron/tsconfig.json'
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_multiReplaceString"><details>
-<summary>Tool use: **copilot_multiReplaceString**</summary>
+<tool-use data-tool-type="generic" data-tool-name="multi_replace_string_in_file"><details>
+<summary>Tool use: **multi_replace_string_in_file**</summary>
 
 Replacing 4 lines with 4 lines in `tsconfig.json`, `package.json`, `createWindow.ts`
+
+**Input:**
+
+- explanation: `Fix electron tsconfig rootDir to include shared/, update package.json main path, and fix loadFile relative path accordingly`
+- replacements:
+
+```
+[
+  {
+    "filePath": "/home/kel/dev/DiscDock/electron/tsconfig.json",
+    "newString": "    \"outDir\": \"../dist-electron\",\n    \"rootDir\": \"..\",",
+    "oldString": "    \"outDir\": \"../dist-electron\",\n    \"rootDir\": \".\","
+  },
+  {
+    "filePath": "/home/kel/dev/DiscDock/package.json",
+    "newString": "  \"main\": \"dist-electron/electron/main.js\",",
+    "oldString": "  \"main\": \"dist-electron/main.js\","
+  },
+  {
+    "filePath": "/home/kel/dev/DiscDock/electron/window/createWindow.ts",
+    "newString": "    void win.loadFile(path.join(__dirname, '../../../dist/index.html'))",
+    "oldString": "    void win.loadFile(path.join(__dirname, '../../dist/index.html'))"
+  }
+]
+```
+
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/tsconfig.json
+/home/kel/dev/DiscDock/package.json
+/home/kel/dev/DiscDock/electron/window/createWindow.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6529,6 +8368,38 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm install --save-dev @types/better-sqlite3 2>&1 | tail -20`
+
+Install TypeScript type definitions for better-sqlite3
+
+```bash
+cd /home/kel/dev/DiscDock && npm install --save-dev @types/better-sqlite3 2>&1 | tail -20
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm install --save-dev @types/better-sqlite3 2>&1 | tail -20` (terminal ID=728d2166-666e-4243-a5b5-728d27e7944a). This is the output of running that command instead:
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '11.16.0' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'node-abi@4.33.0',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '11.16.0' }
+npm warn EBADENGINE }
+
+added 1 package, and audited 392 packages in 2s
+
+61 packages are looking for funding
+  run `npm fund` for details
+
+2 high severity vulnerabilities
+
+To address all issues, run:
+  npm audit fix
+
+Run `npm audit` for details.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6537,6 +8408,21 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm run build:electron 2>&1 | tail -60`
+
+Recompile electron TS with types installed and rootDir fix
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:electron 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build:electron 2>&1 | tail -60` (terminal ID=60de1e51-0f97-4033-994c-9f986c7b4e49). This is the output of running that command instead:
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6549,6 +8435,36 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm run build:renderer 2>&1 | tail -80`
+
+Build the Vite/React renderer bundle
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:renderer 2>&1 | tail -80
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build:renderer 2>&1 | tail -80` (terminal ID=47722478-b6df-4991-85b0-960d14dcd3fe). This is the output of running that command instead:
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 22 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-Duj5UnGp.css    2.53 kB │ gzip:  0.90 kB
+dist/assets/index-CLj6kU6b.js   194.77 kB │ gzip: 61.38 kB
+
+✓ built in 235ms
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6561,6 +8477,20 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` xvfb-run -a npx electron . 2>&1 | head -60`
+
+Launch the packaged Electron app under a virtual display to smoke-test startup
+
+```bash
+cd /home/kel/dev/DiscDock && xvfb-run -a npx electron . 2>&1 | head -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` xvfb-run -a npx electron . 2>&1 | head -60` (terminal ID=5d8debe5-ac6d-4eae-9f1f-45ef880dbbf2). This is the output of running that command instead:
+Command 'xvfb-run' not found, but can be installed with:
+sudo apt install xvfb
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6569,6 +8499,20 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` timeout 8 npx electron . --no-sandbox 2>&1 | head -60; echo "EXIT:$?"`
+
+Attempt to launch electron directly to see startup errors, with a timeout
+
+```bash
+cd /home/kel/dev/DiscDock && timeout 8 npx electron . --no-sandbox 2>&1 | head -60; echo "EXIT:$?"
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` timeout 8 npx electron . --no-sandbox 2>&1 | head -60; echo "EXIT:$?"` (terminal ID=6eb7447d-4f20-4437-87dd-7fe4d5ea9a35). This is the output of running that command instead:
+Terminated
+EXIT:143
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6577,6 +8521,18 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` which Xvfb xvfb-run 2>&1; echo $DISPLAY; apt list --installed 2>/dev/null | ...`
+
+Check for available display server tooling
+
+```bash
+which Xvfb xvfb-run 2>&1; echo $DISPLAY; apt list --installed 2>/dev/null | grep -i xvfb
+```
+
+**Result:**
+
+```
+:0
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6585,6 +8541,52 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch the app on the real display to smoke-test it (async, will be closed after verifying startup)
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=49b6e6fc-2ba0-4133-8af6-4f1d59e9ba20
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="49b6e6fc-2ba0-4133-8af6-4f1d59e9ba20" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="49b6e6fc-2ba0-4133-8af6-4f1d59e9ba20" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6596,6 +8598,15 @@ _**Agent (copilot/auto)**_
 <tool-use data-tool-type="generic" data-tool-name="tool_search"><details>
 <summary>Tool use: **tool_search**</summary>
 
+**Input:**
+
+- query: `screenshot desktop window screen capture`
+
+**Result:**
+
+```
+["screenshot_page","read_page","click_element","handle_dialog","inline_chat_exit"]
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6604,6 +8615,19 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` which scrot gnome-screenshot import 2>&1`
+
+Check for available screenshot utilities
+
+```bash
+which scrot gnome-screenshot import 2>&1
+```
+
+**Result:**
+
+```
+/usr/bin/gnome-screenshot
+/usr/bin/import
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6623,16 +8647,19 @@ import -window root /tmp/discdock-screenshot.png 2>&1 && ls -la /tmp/discdock-sc
 
 ```
 -rw-rw-r-- 1 kel kel 258012 Aug 13 12:32 /tmp/discdock-screenshot.png
-[image/png embed]
 ```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_viewImage"><details>
-<summary>Tool use: **copilot_viewImage**</summary>
+<tool-use data-tool-type="generic" data-tool-name="view_image"><details>
+<summary>Tool use: **view_image**</summary>
 
 Viewed image `discdock-screenshot.png`
+
+**Input:**
+
+- filePath: `/tmp/discdock-screenshot.png`
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -6642,6 +8669,1683 @@ The app renders correctly:
 It's idle with no error output — the app launched successfully and is running (a window should be visible on screen). Let's take a screenshot to visually confirm the frameless UI looks right. 
 
 The app renders correctly: frameless window, custom title bar with DiscDock label and min/restore/close buttons, left sidebar nav, and the Dashboard view pulling live (zeroed) stats from SQLite via IPC. Let's close it now. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `49b6e6fc-2ba0-4133-8af6-4f1d59e9ba20`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 49b6e6fc-2ba0-4133-8af6-4f1d59e9ba20. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's add a minimal root `README.md` with dev instructions, then commit everything. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `README.md`
+
+**Input:**
+
+- content:
+
+````
+# DiscDock
+
+Catalog and search your external/removable media collection (CDs, DVDs, USB drives, external HDD/SSD, SD cards) without needing to reconnect the physical media.
+
+Planning documentation: [docs/planning-docs](docs/planning-docs/README.md)
+
+## Status
+
+v0.1.0 — foundational app shell: frameless window with custom title bar, sidebar navigation, SQLite-backed dashboard, and Linux (`deb`/`AppImage`) packaging pipeline. Feature work (scanning, search, tagging, etc.) is tracked in the [roadmap](docs/planning-docs/11-roadmap.md).
+
+## Development
+
+```bash
+npm install
+npm run dev            # Vite dev server + Electron with hot reload
+```
+
+## Building
+
+```bash
+npm run build          # Compile renderer (Vite) and main/preload (tsc)
+npm run package:linux   # Build + package as .deb and .AppImage (release/)
+```
+
+Native modules (`better-sqlite3`) are rebuilt for Electron's ABI automatically via the `postinstall` script (`electron-builder install-app-deps`).
+
+````
+
+- filePath: `/home/kel/dev/DiscDock/README.md`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/README.md
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **README.md**</summary>
+
+@@ lines 1-1 @@
+
+````
+# DiscDock
+
+Catalog and search your external/removable media collection (CDs, DVDs, USB drives, external HDD/SSD, SD cards) without needing to reconnect the physical media.
+
+Planning documentation: [docs/planning-docs](docs/planning-docs/README.md)
+
+## Status
+
+v0.1.0 — foundational app shell: frameless window with custom title bar, sidebar navigation, SQLite-backed dashboard, and Linux (`deb`/`AppImage`) packaging pipeline. Feature work (scanning, search, tagging, etc.) is tracked in the [roadmap](docs/planning-docs/11-roadmap.md).
+
+## Development
+
+```bash
+npm install
+npm run dev            # Vite dev server + Electron with hot reload
+```
+
+## Building
+
+```bash
+npm run build          # Compile renderer (Vite) and main/preload (tsc)
+npm run package:linux   # Build + package as .deb and .AppImage (release/)
+```
+
+Native modules (`better-sqlite3`) are rebuilt for Electron's ABI automatically via the `postinstall` script (`electron-builder install-app-deps`).
+
+````
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git add -A && git status --short | head -60`
+
+Stage all new implementation files and review what will be committed
+
+```bash
+cd /home/kel/dev/DiscDock && git add -A && git status --short | head -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git add -A && git status --short | head -60` (terminal ID=f34125d9-dfe9-4e44-9534-768b10316db7). This is the output of running that command instead:
+M  .gitignore
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+A  README.md
+A  electron-builder.yml
+A  electron/db/index.ts
+A  electron/ipc/dashboard.ts
+A  electron/ipc/windowControls.ts
+A  electron/main.ts
+A  electron/preload.ts
+A  electron/tsconfig.json
+A  electron/window/createWindow.ts
+A  package-lock.json
+A  package.json
+A  shared/types.js
+A  shared/types.ts
+A  src/App.tsx
+A  src/components/Sidebar.css
+A  src/components/Sidebar.tsx
+A  src/components/TitleBar.css
+A  src/components/TitleBar.tsx
+A  src/discdock-api.d.ts
+A  src/index.html
+A  src/main.tsx
+A  src/styles/global.css
+A  src/views/Dashboard.tsx
+A  src/views/PlaceholderView.tsx
+A  tsconfig.json
+A  vite.config.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` find . -name "\*.js" -path "\*/shared/\*" -not -path "\*/node\_modules/\*"; ls dis...`
+
+Locate stray compiled shared/types.js and inspect dist-electron output structure
+
+```bash
+cd /home/kel/dev/DiscDock && find . -name "*.js" -path "*/shared/*" -not -path "*/node_modules/*"; ls dist-electron 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` find . -name "*.js" -path "*/shared/*" -not -path "*/node_modules/*"; ls dist-electron 2>&1` (terminal ID=58c6688a-d966-4073-888d-f046eaad33c1). This is the output of running that command instead:
+./dist-electron/shared/types.js
+./shared/types.js
+db  electron  ipc  main.js  preload.js  shared  window
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -f shared/types.js && git reset shared/types.js 2>&1; git status --short ...`
+
+Remove stray compiled JS file from source shared/ directory and unstage it
+
+```bash
+cd /home/kel/dev/DiscDock && rm -f shared/types.js && git reset shared/types.js 2>&1; git status --short | head -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -f shared/types.js && git reset shared/types.js 2>&1; git status --short | head -60` (terminal ID=ce608929-70d4-4b7a-be94-e853e6cbe577). This is the output of running that command instead:
+fatal: ambiguous argument 'shared/types.js': unknown revision or path not in the
+ working tree.
+Use '--' to separate paths from revisions, like this:
+'git <command> [<revision>...] -- [<file>...]'
+M  .gitignore
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+A  README.md
+A  electron-builder.yml
+A  electron/db/index.ts
+A  electron/ipc/dashboard.ts
+A  electron/ipc/windowControls.ts
+A  electron/main.ts
+A  electron/preload.ts
+A  electron/tsconfig.json
+A  electron/window/createWindow.ts
+A  package-lock.json
+A  package.json
+AD shared/types.js
+A  shared/types.ts
+A  src/App.tsx
+A  src/components/Sidebar.css
+A  src/components/Sidebar.tsx
+A  src/components/TitleBar.css
+A  src/components/TitleBar.tsx
+A  src/discdock-api.d.ts
+A  src/index.html
+A  src/main.tsx
+A  src/styles/global.css
+A  src/views/Dashboard.tsx
+A  src/views/PlaceholderView.tsx
+A  tsconfig.json
+A  vite.config.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git add -A && git commit -m "Implement v0.1.0 app shell: frameless window, c...`
+
+Commit the initial v0.1.0 implementation
+
+```bash
+cd /home/kel/dev/DiscDock && git add -A && git commit -m "Implement v0.1.0 app shell: frameless window, custom title bar, SQLite-backed dashboard, Linux packaging" 2>&1 | tail -20
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git add -A && git commit -m "Implement v0.1.0 app shell: frameless window, custom title bar, SQLite-backed dashboard, Linux packaging" 2>&1 | tail -20` (terminal ID=8c5056ef-d9d7-4680-90ce-8ff281f68579). This is the output of running that command instead:
+ create mode 100644 electron/main.ts
+ create mode 100644 electron/preload.ts
+ create mode 100644 electron/tsconfig.json
+ create mode 100644 electron/window/createWindow.ts
+ create mode 100644 package-lock.json
+ create mode 100644 package.json
+ create mode 100644 shared/types.ts
+ create mode 100644 src/App.tsx
+ create mode 100644 src/components/Sidebar.css
+ create mode 100644 src/components/Sidebar.tsx
+ create mode 100644 src/components/TitleBar.css
+ create mode 100644 src/components/TitleBar.tsx
+ create mode 100644 src/discdock-api.d.ts
+ create mode 100644 src/index.html
+ create mode 100644 src/main.tsx
+ create mode 100644 src/styles/global.css
+ create mode 100644 src/views/Dashboard.tsx
+ create mode 100644 src/views/PlaceholderView.tsx
+ create mode 100644 tsconfig.json
+ create mode 100644 vite.config.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now push to the remote. This is a normal push to `main`, not force/destructive, so proceeding directly. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git push 2>&1`
+
+Push the v0.1.0 implementation commit to the remote
+
+```bash
+cd /home/kel/dev/DiscDock && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git push 2>&1` (terminal ID=5fac6284-887b-4623-afc7-b8239d4e73ef). This is the output of running that command instead:
+Enumerating objects: 47, done.
+Counting objects: 100% (47/47), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (37/37), done.
+Writing objects: 100% (41/41), 67.91 KiB | 4.53 MiB/s, done.
+Total 41 (delta 2), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   bca5bb7..5dec72f  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+v0.1.0 foundation is implemented, tested, and pushed. Summary:
+
+**Stack scaffolded:** Electron + React/TS + Vite renderer, TypeScript-compiled main/preload, `better-sqlite3` (rebuilt for Electron's ABI), `electron-builder` targeting `deb`/`AppImage`.
+
+**Built & verified:**
+- Frameless `BrowserWindow` (`frame: false`) with a custom title bar (drag region, min/maximize/restore/close buttons wired via IPC) — matches the earlier UI/UX spec update.
+- Left sidebar nav (Dashboard, Media Library, Search, Duplicates, Collections, Backup/Export, Settings) with placeholder views for unbuilt sections.
+- SQLite database initialized on startup (`~/.config`/`~/.local/share` via `app.getPath('userData')`) with migrations for the core schema (`media_item`, `file_record`, `scan_job`, `scan_error`, `tag`, `collection`, FTS5 search 
+
+v0.1.0 foundation is implemented, tested, and pushed. Summary:
+
+**Stack scaffolded:** Electron + React/TS + Vite renderer, TypeScript-compiled main/preload, `better-sqlite3` (rebuilt for Electron's ABI), `electron-builder` targeting `deb`/`AppImage`.
+
+**Built & verified:**
+- Frameless `BrowserWindow` (`frame: false`) with a custom title bar (drag region, min/maximize/restore/close buttons wired via IPC) — matches the earlier UI/UX spec update.
+- Left sidebar nav (Dashboard, Media Library, Search, Duplicates, Collections, Backup/Export, Settings) with placeholder views for unbuilt sections.
+- SQLite database initialized on startup (`~/.config`/`~/.local/share` via `app.getPath('userData')`) with migrations for the core schema (`media_item`, `file_record`, `scan_job`, `scan_error`, `tag`, `collection`, FTS5 search table) per the data model doc.
+- Dashboard view pulling live summary stats over a secured IPC channel (contextBridge, no direct Node access in renderer).
+- Verified with a real build + launch (screenshot confirmed correct frameless rendering).
+
+**Repo additions:** `package.json` scripts (`dev`, `build`, `package:linux`, etc.), `electron-builder.yml`, root `README.md` with dev/build instructions, `.gitignore` updated for build artifacts.
+
+Next natural steps (per the roadmap): media registration UI/IPC, Linux device detection (udisks2/lsblk), and the scanning engine — let me know which to tackle next.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Create electron-builder config and update .gitignore* (4/4)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 17:34:47Z)**_
+
+continue with what is the next logical step
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `package.json`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Given the app shell now works, the next logical step is **Epic 1: Media Registration** — the first real CRUD feature (manual add/list/edit media items), since Dashboard is currently empty with nothing to display. Let me implement the full vertical slice: DB repository → IPC → preload → Media Library UI. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 30-41 @@
+
+```
+const MEDIA_TYPES: { value: MediaType; label: string }[] = [
+  { value: 'cd', label: 'CD' },
+  { value: 'dvd', label: 'DVD' },
+  { value: 'bluray', label: 'Blu-ray' },
+  { value: 'usb_drive', label: 'USB Flash Drive' },
+  { value: 'external_hdd', label: 'External HDD' },
+  { value: 'external_ssd', label: 'External SSD' },
+  { value: 'sd_card', label: 'SD Card' },
+  { value: 'network_share', label: 'Network Share' },
+  { value: 'other', label: 'Other' }
+]
+
+export interface MediaItem {
+  id: number
+  label: string
+  mediaType: MediaType
+  deviceFingerprint: string | null
+  capacityBytes: number | null
+  physicalLocation: string | null
+  notes: string | null
+  status: 'active' | 'retired' | 'lost'
+  createdAt: string
+  lastScannedAt: string | null
+  lastVerifiedAt: string | null
+}
+
+export interface MediaItemInput {
+  label: string
+  mediaType: MediaType
+  capacityBytes: number | null
+  physicalLocation: string | null
+  notes
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 22-22 @@
+
+```
+MediaIpc()
+  register
+```
+
+@@ lines 5-5 @@
+
+```
+registerMediaIpc } from './ipc/media'
+import { 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 18-18 @@
+
+```
+
+  media: {
+    list: (): Promise<IpcResult<MediaItem[]>> => ipcRenderer.invoke('media:list'),
+    get: (id: number): Promise<IpcResult<MediaItem>> => ipcRenderer.invoke('media:get', { id }),
+    create: (input: MediaItemInput): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:create', input),
+    update: (id: number, patch: Partial<MediaItemInput>): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:update', { id, patch }),
+    retire: (id: number): Promise<IpcResult<MediaItem>> => ipcRenderer.invoke('media:retire', { id }),
+    delete: (id: number): Promise<IpcResult<{ deleted: true }>> =>
+      ipcRenderer.invoke('media:delete', { id })
+  },
+```
+
+@@ lines 2-2 @@
+
+```
+MediaItem, MediaItemInput, 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the Media Library view with an Add Media form: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `MediaLibrary.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { MediaItem, MediaItemInput, MediaType } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+export default function MediaLibrary(): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    setError(null)
+    void window.discdock.media.create(form).then((result) => {
+      if (result.ok) {
+        setForm(EMPTY_FORM)
+        setShowForm(false)
+        loadItems()
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleRetire = (id: number): void => {
+    void window.discdock.media.retire(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const handleDelete = (id: number): void => {
+    if (!window.confirm('Delete this media item and its catalog? This cannot be undone.')) return
+    void window.discdock.media.delete(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  return (
+    <div className="media-library">
+      <div className="media-library__header">
+        <h1>Media Library</h1>
+        <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
+          Add Media
+        </button>
+      </div>
+
+      {showForm && (
+        <form className="media-form" onSubmit={handleSubmit}>
+          {error && <div className="media-form__error">{error}</div>}
+          <label>
+            Label
+            <input
+              type="text"
+              value={form.label}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Media Type
+            <select
+              value={form.mediaType}
+              onChange={(e) => setForm({ ...form, mediaType: e.target.value as MediaType })}
+            >
+              {MEDIA_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Physical Location
+            <input
+              type="text"
+              value={form.physicalLocation ?? ''}
+              onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
+              placeholder="e.g. Garage > Box 3 > Shelf B"
+            />
+          </label>
+          <label>
+            Notes
+            <textarea
+              value={form.notes ?? ''}
+              onChange={(e) => setForm({ ...form, notes: e.target.value || null })}
+            />
+          </label>
+          <div className="media-form__actions">
+            <button type="submit" className="button button--primary">
+              Save
+            </button>
+            <button type="button" className="button" onClick={() => setShowForm(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
+        </div>
+      ) : (
+        <table className="media-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Last Scanned</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id}>
+                <td>{item.label}</td>
+                <td>{mediaTypeLabel(item.mediaType)}</td>
+                <td>{item.physicalLocation ?? '—'}</td>
+                <td>
+                  <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+                </td>
+                <td>{item.lastScannedAt ?? 'Never'}</td>
+                <td className="media-table__actions">
+                  {item.status === 'active' && (
+                    <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
+                      Retire
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="button button--small button--danger"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `MediaLibrary.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.media-library__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.button--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.button--small {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.button--danger {
+  border-color: #e81123;
+  color: #e81123;
+}
+
+.media-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.media-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.media-form input,
+.media-form select,
+.media-form textarea {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.media-form__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.media-form__error {
+  color: #e81123;
+  font-size: 13px;
+}
+
+.empty-state {
+  margin-top: 24px;
+  opacity: 0.7;
+}
+
+.media-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.media-table th,
+.media-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.media-table__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  text-transform: capitalize;
+  background: var(--color-sidebar-hover);
+}
+
+.status-badge--retired {
+  opacity: 0.6;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now wire `App.tsx` to route to the real `MediaLibrary` view: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { MediaItem, MediaItemInput, MediaType } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+export default function MediaLibrary(): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    setError(null)
+    void window.discdock.media.create(form).then((result) => {
+      if (result.ok) {
+        setForm(EMPTY_FORM)
+        setShowForm(false)
+        loadItems()
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleRetire = (id: number): void => {
+    void window.discdock.media.retire(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const handleDelete = (id: number): void => {
+    if (!window.confirm('Delete this media item and its catalog? This cannot be undone.')) return
+    void window.discdock.media.delete(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  return (
+    <div className="media-library">
+      <div className="media-library__header">
+        <h1>Media Library</h1>
+        <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
+          Add Media
+        </button>
+      </div>
+
+      {showForm && (
+        <form className="media-form" onSubmit={handleSubmit}>
+          {error && <div className="media-form__error">{error}</div>}
+          <label>
+            Label
+            <input
+              type="text"
+              value={form.label}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Media Type
+            <select
+              value={form.mediaType}
+              onChange={(e) => setForm({ ...form, mediaType: e.target.value as MediaType })}
+            >
+              {MEDIA_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Physical Location
+            <input
+              type="text"
+              value={form.physicalLocation ?? ''}
+              onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
+              placeholder="e.g. Garage > Box 3 > Shelf B"
+            />
+          </label>
+          <label>
+            Notes
+            <textarea
+              value={form.notes ?? ''}
+              onChange={(e) => setForm({ ...form, notes: e.target.value || null })}
+            />
+          </label>
+          <div className="media-form__actions">
+            <button type="submit" className="button button--primary">
+              Save
+            </button>
+            <button type="button" className="button" onClick={() => setShowForm(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
+        </div>
+      ) : (
+        <table className="media-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Last Scanned</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id}>
+                <td>{item.label}</td>
+                <td>{mediaTypeLabel(item.mediaType)}</td>
+                <td>{item.physicalLocation ?? '—'}</td>
+                <td>
+                  <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+                </td>
+                <td>{item.lastScannedAt ?? 'Never'}</td>
+                <td className="media-table__actions">
+                  {item.status === 'active' && (
+                    <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
+                      Retire
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="button button--small button--danger"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.media-library__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.button--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.button--small {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.button--danger {
+  border-color: #e81123;
+  color: #e81123;
+}
+
+.media-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.media-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.media-form input,
+.media-form select,
+.media-form textarea {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.media-form__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.media-form__error {
+  color: #e81123;
+  font-size: 13px;
+}
+
+.empty-state {
+  margin-top: 24px;
+  opacity: 0.7;
+}
+
+.media-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.media-table th,
+.media-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.media-table__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  text-transform: capitalize;
+  background: var(--color-sidebar-hover);
+}
+
+.status-badge--retired {
+  opacity: 0.6;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now wire `App.tsx` to route to the real `MediaLibrary` view:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **App.tsx**</summary>
+
+@@ lines 5-26 @@
+
+```
+MediaLibrary from './views/MediaLibrary'
+import PlaceholderView from './views/PlaceholderView'
+import { NAV_ITEMS } from './components/Sidebar'
+
+const VIEW_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.label])
+)
+
+export default function App(): JSX.Element {
+  const [activeView, setActiveView] = useState('dashboard')
+
+  const renderView = (): JSX.Element => {
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'media-library':
+        return <MediaLibrary />
+      default:
+        return <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
+    }
+  }
+
+  return (
+    <div className="app-shell">
+      <TitleBar />
+      <div className="app-body">
+        <Sidebar active={activeView} onSelect={setActiveView} />
+        <main className="app-content">{renderView()}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's rebuild and smoke-test again: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build 2>&1 | tail -80`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `import './MediaLibrary.css'` (`**/src/views/MediaLibrary.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` grep -c "media-form" dist/assets/index-\*.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat dist/assets/index-\*.css | tail -40`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` grep -c "media-library\\|Add Media" dist/assets/index-\*.js`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ls -la dist/assets/ && grep -o "media-table\\|media-form" dist/assets/\*.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.css`, lines 1 to 15
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist node\_modules/.vite && npm run build:renderer 2>&1 | tail -30 && ...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `App.tsx`, lines 1 to 35
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `index-Duj5UnGp.css`, lines 1 to 1
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 1 to 6
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ls -la /home/kel/dev/DiscDock/src/views/`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 1 to 5
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c /home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` grep -c "Add Media" dist/assets/\*.js dist/assets/\*.css 2>&1; echo "---"; gre...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm /home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `MediaLibrary.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 1-168 @@
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { MediaItem, MediaItemInput, MediaType } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+export default function MediaLibrary(): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    setError(null)
+    void window.discdock.media.create(form).then((result) => {
+      if (result.ok) {
+        setForm(EMPTY_FORM)
+        setShowForm(false)
+        loadItems()
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleRetire = (id: number): void => {
+    void window.discdock.media.retire(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const handleDelete = (id: number): void => {
+    if (!window.confirm('Delete this media item and its catalog? This cannot be undone.')) return
+    void window.discdock.media.delete(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  return (
+    <div className="media-library">
+      <div className="media-library__header">
+        <h1>Media Library</h1>
+        <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
+          Add Media
+        </button>
+      </div>
+
+      {showForm && (
+        <form className="media-form" onSubmit={handleSubmit}>
+          {error && <div className="media-form__error">{error}</div>}
+          <label>
+            Label
+            <input
+              type="text"
+              value={form.label}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Media Type
+            <select
+              value={form.mediaType}
+              onChange={(e) => setForm({ ...form, mediaType: e.target.value as MediaType })}
+            >
+              {MEDIA_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Physical Location
+            <input
+              type="text"
+              value={form.physicalLocation ?? ''}
+              onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
+              placeholder="e.g. Garage > Box 3 > Shelf B"
+            />
+          </label>
+          <label>
+            Notes
+            <textarea
+              value={form.notes ?? ''}
+              onChange={(e) => setForm({ ...form, notes: e.target.value || null })}
+            />
+          </label>
+          <div className="media-form__actions">
+            <button type="submit" className="button button--primary">
+              Save
+            </button>
+            <button type="button" className="button" onClick={() => setShowForm(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
+        </div>
+      ) : (
+        <table className="media-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Type</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Last Scanned</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id}>
+                <td>{item.label}</td>
+                <td>{mediaTypeLabel(item.mediaType)}</td>
+                <td>{item.physicalLocation ?? '—'}</td>
+                <td>
+                  <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+                </td>
+                <td>{item.lastScannedAt ?? 'Never'}</td>
+                <td className="media-table__actions">
+                  {item.status === 'active' && (
+                    <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
+                      Retire
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="button button--small button--danger"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c /home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Build Media Library UI with list view and modal* (3/4)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Good, fixed. Now rebuild fully and check errors:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `MediaLibrary.tsx`, `App.tsx`, `media.ts`, `mediaRepository.ts`, `preload.ts`, 2 problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `TitleBar.tsx`, `Sidebar.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build 2>&1 | tail -60 && grep -c "media-table\\|media-form" dist/asse...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now bundled correctly (25 modules, larger CSS/JS, and the grep confirms MediaLibrary classes present). Let's launch and screenshot to verify the full flow end-to-end.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Launched with no errors. Let's click the "Media Library" nav item and screenshot to confirm. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` import -window root /tmp/discdock-dashboard.png && echo done`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_viewImage"><details>
+<summary>Tool use: **copilot_viewImage**</summary>
+
+Viewed image `discdock-dashboard.png`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Launched with no errors. Let's click the "Media Library" nav item and screenshot to confirm. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+This screenshot reveals a critical issue unrelated to the code: **the root filesystem hit 0 bytes free**, which caused VS Code to fail saving `preload.ts`, , and , and earlier silently corrupted `MediaLibrary.tsx` (written as 0 bytes). Disk space has since recovered somewhat (31G free / 93% used), but this needs your attention. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/main.ts electron/preload.ts electron/ipc/media.ts electron/db...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Restoring the four corrupted files from the content I still have in context: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `main.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -f electron/main.ts electron/preload.ts electron/ipc/media.ts electron/db...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+31G free — enough for these small files. Recreating all four:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `main.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ls -la /home/kel/dev/DiscDock/electron/main.ts /home/kel/dev/DiscDock/electr...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Good news — VS Code auto-recovered these files once disk space freed up. Let me verify their contents are correct. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Content is intact and correct. Let's rebuild from scratch to confirm everything is now healthy:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron node\_modules/.vite && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build, no errors. Let's do the final launch/screenshot to confirm Media Library works end-to-end.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` import -window root /tmp/discdock-medialib.png && echo done`
+
+Screenshot the app to check Media Library rendering
+
+```bash
+import -window root /tmp/discdock-medialib.png && echo done
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  import -window root /tmp/discdock-medialib.png
+&& echo done
+done
+[image/png embed]
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_viewImage"><details>
+<summary>Tool use: **copilot_viewImage**</summary>
+
+Viewed image `discdock-medialib.png`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The app window is running behind VS Code (sidebar with all nav items visible), and the build confirms Media Library's JS/CSS are properly bundled. Let's close it and finalize. 
 
 _**Agent (copilot/auto)**_
 

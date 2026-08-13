@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { createMainWindow } from './window/createWindow'
 import { registerWindowControlIpc } from './ipc/windowControls'
 import { registerDashboardIpc } from './ipc/dashboard'
+import { registerMediaIpc } from './ipc/media'
 import { getDb, closeDb } from './db'
 import type { IpcResult } from '../shared/types'
 
@@ -19,6 +20,7 @@ app.whenReady().then(() => {
   mainWindow = createMainWindow()
   registerWindowControlIpc(mainWindow)
   registerDashboardIpc()
+  registerMediaIpc()
   registerAppIpc()
 
   app.on('activate', () => {

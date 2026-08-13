@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { DashboardSummary, IpcResult, WindowState } from '../shared/types'
+import type { DashboardSummary, IpcResult, MediaItem, MediaItemInput, WindowState } from '../shared/types'
 
 const api = {
   window: {
@@ -15,6 +15,17 @@ const api = {
   },
   dashboard: {
     getSummary: (): Promise<IpcResult<DashboardSummary>> => ipcRenderer.invoke('dashboard:summary')
+  },
+  media: {
+    list: (): Promise<IpcResult<MediaItem[]>> => ipcRenderer.invoke('media:list'),
+    get: (id: number): Promise<IpcResult<MediaItem>> => ipcRenderer.invoke('media:get', { id }),
+    create: (input: MediaItemInput): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:create', input),
+    update: (id: number, patch: Partial<MediaItemInput>): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:update', { id, patch }),
+    retire: (id: number): Promise<IpcResult<MediaItem>> => ipcRenderer.invoke('media:retire', { id }),
+    delete: (id: number): Promise<IpcResult<{ deleted: true }>> =>
+      ipcRenderer.invoke('media:delete', { id })
   },
   app: {
     getVersion: (): Promise<IpcResult<string>> => ipcRenderer.invoke('app:getVersion')

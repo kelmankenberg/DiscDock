@@ -27,6 +27,18 @@ export type MediaType =
   | 'network_share'
   | 'other'
 
+export const MEDIA_TYPES: { value: MediaType; label: string }[] = [
+  { value: 'cd', label: 'CD' },
+  { value: 'dvd', label: 'DVD' },
+  { value: 'bluray', label: 'Blu-ray' },
+  { value: 'usb_drive', label: 'USB Flash Drive' },
+  { value: 'external_hdd', label: 'External HDD' },
+  { value: 'external_ssd', label: 'External SSD' },
+  { value: 'sd_card', label: 'SD Card' },
+  { value: 'network_share', label: 'Network Share' },
+  { value: 'other', label: 'Other' }
+]
+
 export interface MediaItem {
   id: number
   label: string
@@ -39,6 +51,14 @@ export interface MediaItem {
   createdAt: string
   lastScannedAt: string | null
   lastVerifiedAt: string | null
+}
+
+export interface MediaItemInput {
+  label: string
+  mediaType: MediaType
+  capacityBytes: number | null
+  physicalLocation: string | null
+  notes: string | null
 }
 
 export interface DashboardSummary {
