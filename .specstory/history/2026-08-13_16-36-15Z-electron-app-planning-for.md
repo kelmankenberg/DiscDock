@@ -34276,10 +34276,77 @@ let's use lucide icons. let's make that accessible and start by adding icons to 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<think><details><summary>Thought Process</summary>
+No errors on launch. Since the title bar renders on every screen, let's screenshot to confirm the new `Disc3` title bar icon and window controls render correctly.
+</details></think>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `package.json`, lines 1 to 50
+
+**Input:**
+
+- endLine: `50`
+- filePath: `/home/kel/dev/DiscDock/package.json`
+- startLine: `1`
+
+**Result:**
+
+```
+{
+  "name": "discdock",
+  "version": "0.1.0",
+  "description": "Catalog and search your external/removable media collection",
+  "main": "dist-electron/electron/main.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron .\"",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p electron/tsconfig.json",
+    "build": "npm run build:renderer && npm run build:electron",
+    "start": "electron .",
+    "package": "npm run build && electron-builder",
+    "package:linux": "npm run build && electron-builder --linux deb AppImage",
+    "postinstall": "electron-builder install-app-deps",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kelmankenberg/DiscDock.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kelmankenberg/DiscDock/issues"
+  },
+  "homepage": "https://github.com/kelmankenberg/DiscDock#readme",
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "concurrently": "^9.2.4",
+    "cross-env": "^10.1.0",
+    "electron": "^41.7.1",
+    "electron-builder": "^26.15.3",
+    "electron-log": "^5.4.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "wait-on": "^9.1.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "lucide-react": "^1.31.0",
+    "react": "^19.2.8",
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34288,18 +34355,117 @@ Good, `lucide-react` is already installed. Let's update the Media Library action
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for regex `Scan\b|Retire|Delete|Eject|Safely Remove|Cancel` (`**/src/views/MediaLibrary.tsx`), 64 results
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `true`
+- query: `Scan\b|Retire|Delete|Eject|Safely Remove|Cancel`
+
+**Result:**
+
+```
+Found 64 matches in 1 file for "Scan\b|Retire|Delete|Eject|Safely Remove|Cancel"
+
+src/views/MediaLibrary.tsx
+41:interface ActiveScan {
+52:  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+90:  const [ejectingIds, setEjectingIds] = useState<Set<number>>(new Set())
+91:  const [ejectMessage, setEjectMessage] = useState<string | null>(null)
+93:  const handleEject = (item: MediaItem, device: DetectedDevice): void => {
+94:    setEjectingIds((prev) => new Set(prev).add(item.id))
+95:    setEjectMessage(null)
+96:    void window.discdock.devices.eject(device.devicePath, device.isOptical).then((result) => {
+97:      setEjectingIds((prev) => {
+99:        next.delete(item.id)
+102:      setEjectMessage(result.ok ? `${item.label}: ${result.data.message}` : `Eject failed: ${result.error.message}`)
+127:        if (next.has(item.id)) next.delete(item.id)
+157:  const handleBatchRetire = (): void => {
+158:    if (!window.confirm(`Retire ${selectedIds.size} selected media item(s)?`)) return
+159:    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.retire(id))).then(() => {
+165:  const handleBatchDelete = (): void => {
+166:    if (!window.confirm(`Delete ${selectedIds.size} selected media item(s) and their catalogs? This cannot be undone.`))
+168:    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.delete(id))).then(() => {
+199:    const unsubProgress = window.discdock.scan.onProgress((progress: ScanProgress) => {
+215:    const finishScan = (jobId: number): void => {
+221:            delete next[mediaId]
+226:        delete next[jobId]
+232:    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
+233:    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+234:    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
+240:      unsubCancelled()
+254:        if (window.confirm(`"${result.data.label}" was added
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 570 to 615
+
+**Input:**
+
+- endLine: `615`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `570`
+
+**Result:**
+
+```
+                    )}
+                  </td>
+                  <td className="media-table__actions">
+                    {scan ? (
+                      <button type="button" className="button button--small" onClick={() => handleCancelScan(item.id)}>
+                        Cancel
+                      </button>
+                    ) : (
+                      <button type="button" className="button button--small" onClick={() => handleScan(item.id)}>
+                        Scan
+                      </button>
+                    )}
+                    {item.status === 'active' && !scan && (
+                      <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
+                        Retire
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="button button--small button--danger"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      Delete
+                    </button>
+                    {presentDevice && (
+                      <button
+                        type="button"
+                        className="button button--small"
+                        disabled={ejectingIds.has(item.id)}
+                        onClick={() => handleEject(item, presentDevice)}
+                      >
+                        {ejectingIds.has(item.id)
+                          ? 'Ejecting…'
+                          : presentDevice.isOptical
+                            ? 'Eject'
+                            : 'Safely Remove'}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+          </table>
+        </>
+      )}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34308,14 +34474,72 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` ls node\_modules/lucide-react/dist/esm/icons/ | grep -iE "eject|scan|circle-x...`
+
+Check for an eject icon and scan-related icons in lucide-react
+
+```bash
+ls node_modules/lucide-react/dist/esm/icons/ | grep -iE "eject|scan|circle-x|archive$"
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  ls node_modules/lucide-react/dist/esm/icons/ |
+grep -iE "eject|scan|circle-x|archive$"
+circle-x.mjs
+circle-x.mjs.map
+eject.mjs
+eject.mjs.map
+file-scan.mjs
+file-scan.mjs.map
+message-circle-x.mjs
+message-circle-x.mjs.map
+scan-barcode.mjs
+scan-barcode.mjs.map
+scan-box.mjs
+scan-box.mjs.map
+scan-eye.mjs
+scan-eye.mjs.map
+scan-face.mjs
+scan-face.mjs.map
+scan-heart.mjs
+scan-heart.mjs.map
+scan-line.mjs
+scan-line.mjs.map
+scan.mjs
+scan.mjs.map
+scan-qr-code.mjs
+scan-qr-code.mjs.map
+scan-search.mjs
+scan-search.mjs.map
+scan-square.mjs
+scan-square.mjs.map
+scan-text.mjs
+scan-text.mjs.map
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 1 to 4
+
+**Input:**
+
+- endLine: `4`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34369,18 +34593,53 @@ Now let's add flex/gap CSS to `.button--small` (or a general `.button`) so icon+
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `.button {` (`**/src/styles/global.css`), 1 result
+
+**Input:**
+
+- includePattern: `src/styles/global.css`
+- isRegexp: `false`
+- query: `.button {`
+
+**Result:**
+
+```
+Found 1 match in 1 file for ".button {"
+
+src/styles/global.css
+141:.button {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `global.css`, lines 141 to 150
+
+**Input:**
+
+- endLine: `150`
+- filePath: `/home/kel/dev/DiscDock/src/styles/global.css`
+- startLine: `141`
+
+**Result:**
+
+```
+.button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13px;
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34400,10 +34659,46 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `MediaLibrary.tsx`, `TitleBar.tsx`, 2 problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx",
+  "/home/kel/dev/DiscDock/src/components/TitleBar.tsx"
+]
+```
+
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+At line 18
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/components/TitleBar.tsx">
+No errors found
+</errors>
+````
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34424,6 +34719,22 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c src/views/MediaLibrary.tsx src/components/TitleBar.tsx src/styles/glob...`
+
+Verify edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/views/MediaLibrary.tsx src/components/TitleBar.tsx src/styles/global.css
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/views/MediaLibrary.tsx src/components/TitleBar.tsx src/styles/global.css` (terminal ID=e4c67e70-356f-4e4c-90fd-fa83c63390dd). This is the output of running that command instead:
+22375 src/views/MediaLibrary.tsx
+ 1746 src/components/TitleBar.tsx
+ 3216 src/styles/global.css
+27337 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34432,6 +34743,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with lucide icons integrated
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=23917e7d-3a64-4308-a584-66adb638deec). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 1813 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-DcTHRCNv.css    9.83 kB │ gzip:  2.17 kB
+dist/assets/index-CNJ7rygZ.js   227.05 kB │ gzip: 69.72 kB
+
+✓ built in 253ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34444,6 +34792,52 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app to verify icons render without runtime errors
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=29fd7b50-669a-4a24-996d-1b15324bf2cb
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="29fd7b50-669a-4a24-996d-1b15324bf2cb" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="29fd7b50-669a-4a24-996d-1b15324bf2cb" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34456,12 +34850,377 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` import -window root /tmp/discdock-lucide-titlebar.png && echo done`
+
+Screenshot to verify the new lucide title bar icons render correctly
+
+```bash
+import -window root /tmp/discdock-lucide-titlebar.png && echo done
+```
+
+**Result:**
+
+```
+done
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_viewImage"><details>
-<summary>Tool use: **copilot_viewImage**</summary>
+<tool-use data-tool-type="generic" data-tool-name="view_image"><details>
+<summary>Tool use: **view_image**</summary>
 
 Viewed image `discdock-lucide-titlebar.png`
+
+**Input:**
+
+- filePath: `/tmp/discdock-lucide-titlebar.png`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors on launch. Since the title bar renders on every screen, let's screenshot to confirm the new  title bar icon and window controls render correctly.   
+
+Excellent — this screenshot directly confirms the feature works: the title bar now shows real icon buttons (minimize/maximize/close), and the Scan/Retire/Delete buttons all show icon+text. Let me verify git status is clean before closing, since I noticed a "Claude Code" panel tab in the screenshot referencing similar work.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git status --short`
+
+Check for any unexpected concurrent changes on disk before committing
+
+```bash
+cd /home/kel/dev/DiscDock && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git status --short` (terminal ID=535101e6-38b2-4554-8d9f-88eb6e846dba). This is the output of running that command instead:
+ M .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+ M .specstory/statistics.json
+ M package-lock.json
+ M package.json
+ M src/components/TitleBar.tsx
+ M src/styles/global.css
+ M src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Only my own edits — no unexpected concurrent changes. Closing the test window and committing.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `29fd7b50-669a-4a24-996d-1b15324bf2cb`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 29fd7b50-669a-4a24-996d-1b15324bf2cb. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the lucide icons feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=b63a9842-9a13-485b-a80f-19114ea5800f). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  384G   51G  89% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  package-lock.json
+M  package.json
+M  src/components/TitleBar.tsx
+M  src/styles/global.css
+M  src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+51G free, healthy.      
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Adopt lucide-react icon library: title bar controls and Media...`
+
+Commit and push the lucide-react icon integration
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Adopt lucide-react icon library: title bar controls and Media Library action buttons" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Adopt lucide-react icon library: title bar controls and Media Library action buttons" 2>&1 | tail -20 && git push 2>&1` (terminal ID=43ee146a-2bd6-4e09-895c-52a17314b2a9). This is the output of running that command instead:
+[main bf7ead6] Adopt lucide-react icon library: title bar controls and Media Lib
+rary action buttons
+ 7 files changed, 1280 insertions(+), 31 deletions(-)
+Enumerating objects: 29, done.
+Counting objects: 100% (29/29), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (14/14), done.
+Writing objects: 100% (15/15), 7.01 KiB | 478.00 KiB/s, done.
+Total 15 (delta 11), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (11/11), completed with 11 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   1f41b51..bf7ead6  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (51G free, healthy).
+
+**Implemented: lucide-react integration**
+- Installed `lucide-react` (tree-shakeable — bundle only grew 223KB → 227KB)
+- **Title bar**:  app icon, /// for minimize/maximize/restore/close (replacing text glyphs)
+- **Media Library action buttons**:  icon on Scan,  on Cancel,  on Retire,  on Delete,  on Eject/Safely Remove — each paired with its existing text label (kept text for accessibility/clarity rather than icon-only, per your "make that accessible" note)
+- Added `display: inline-flex; gap: 5px` to the shared `.button` class so icon+text align cleanly everywhere buttons are used
+
+**Verified visually** — screenshot confirms the title bar controls and all four Media Library action buttons render with real icons correctly.
+
+Next natural step would be the Sidebar nav icons (Dashboard, Media Library, Search, Duplicates, Collections, Backup/Export, Settings) and the Dashboard/Media Library device-type emoji (💿/💾) replacements — let me know if you'd like me to continue there.
+
+---
+
+_**User (2026-08-13 20:16:27Z)**_
+
+introduce sidebar nav icons appropriate for their context
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Sidebar.tsx`, lines 1 to 39
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Sidebar.tsx**</summary>
+
+@@ lines 1-33 @@
+
+```
+{ LayoutDashboard, Library, Search, Copy, FolderOpen, DatabaseBackup, Settings } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import './Sidebar.css'
+
+export interface NavItem {
+  key: string
+  label: string
+  icon: LucideIcon
+}
+
+export const NAV_ITEMS: NavItem[] = [
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { key: 'media-library', label: 'Media Library', icon: Library },
+  { key: 'search', label: 'Search', icon: Search },
+  { key: 'duplicates', label: 'Duplicates', icon: Copy },
+  { key: 'collections', label: 'Collections', icon: FolderOpen },
+  { key: 'backup-export', label: 'Backup / Export', icon: DatabaseBackup },
+  { key: 'settings', label: 'Settings', icon: Settings }
+]
+
+interface SidebarProps {
+  active: string
+  onSelect: (key: string) => void
+}
+
+export default function Sidebar({ active, onSelect }: SidebarProps): JSX.Element {
+  return (
+    <nav className="sidebar">
+      <ul className="sidebar__list">
+        {NAV_ITEMS.map((item) => (
+          <li key={item.key}>
+            <button
+              type="button"
+              className={`sidebar__item${item.key === active ? ' sidebar__item--active' : ''}`}
+              onClick={() => onSelect(item.key)}
+            >
+              <item.icon size={16} aria-hidden="true" /
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` grep -r "LucideIcon" node\_modules/lucide-react/dist/lucide-react.d.ts | head -5`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `content.txt`, lines 1 to 1
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Sidebar.tsx**</summary>
+
+@@ lines 1-33 @@
+
+```
+{ LayoutDashboard, Library, Search, Copy, FolderOpen, DatabaseBackup, Settings } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import './Sidebar.css'
+
+export interface NavItem {
+  key: string
+  label: string
+  icon: LucideIcon
+}
+
+export const NAV_ITEMS: NavItem[] = [
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { key: 'media-library', label: 'Media Library', icon: Library },
+  { key: 'search', label: 'Search', icon: Search },
+  { key: 'duplicates', label: 'Duplicates', icon: Copy },
+  { key: 'collections', label: 'Collections', icon: FolderOpen },
+  { key: 'backup-export', label: 'Backup / Export', icon: DatabaseBackup },
+  { key: 'settings', label: 'Settings', icon: Settings }
+]
+
+interface SidebarProps {
+  active: string
+  onSelect: (key: string) => void
+}
+
+export default function Sidebar({ active, onSelect }: SidebarProps): JSX.Element {
+  return (
+    <nav className="sidebar">
+      <ul className="sidebar__list">
+        {NAV_ITEMS.map((item) => (
+          <li key={item.key}>
+            <button
+              type="button"
+              className={`sidebar__item${item.key === active ? ' sidebar__item--active' : ''}`}
+              onClick={() => onSelect(item.key)}
+            >
+              <item.icon size={16} aria-hidden="true" /
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Good, confirmed the type exists. Now let's update  for proper icon+label alignment:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Sidebar.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Sidebar.css**</summary>
+
+@@ lines 28-28 @@
+
+```
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `NAV_ITEMS` (`**/src/App.tsx`), 2 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Good, that's compatible with the added  field. Let's check for errors, verify content, and build.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `Sidebar.tsx`, `App.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Verify content and build.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/components/Sidebar.tsx src/components/Sidebar.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's launch and screenshot to visually confirm the sidebar icons render correctly.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
 </details></tool-use>

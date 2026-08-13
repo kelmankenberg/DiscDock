@@ -25,6 +25,9 @@
   color: var(--color-text);
   font-size: 13px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .sidebar__item:hover {
