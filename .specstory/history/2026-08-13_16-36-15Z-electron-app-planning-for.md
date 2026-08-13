@@ -38793,10 +38793,84 @@ let's move on to the Search page. Can the search input control act more like a f
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Search.tsx`
+
+**Input:**
+
+- endLine: `130`
+- filePath: `/home/kel/dev/DiscDock/src/views/Search.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { FILE_KINDS, MEDIA_TYPES } from '../../shared/types'
+import type { FileSearchResult, MediaType, FileKind, SearchFilters } from '../../shared/types'
+import './Search.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+export default function Search(): JSX.Element {
+  const [text, setText] = useState('')
+  const [mediaType, setMediaType] = useState<MediaType | ''>('')
+  const [kind, setKind] = useState<FileKind | ''>('')
+  const [results, setResults] = useState<FileSearchResult[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(false)
+
+  const runSearch = (pageToLoad: number): void => {
+    const filters: SearchFilters = {}
+    if (mediaType) filters.mediaType = mediaType
+    if (kind) filters.kind = kind
+
+    setLoading(true)
+    void window.discdock.search.query(text, filters, pageToLoad).then((result) => {
+      setLoading(false)
+      if (result.ok) {
+        setResults(result.data.results)
+        setTotal(result.data.total)
+        setPage(pageToLoad)
+      }
+    })
+  }
+
+  useEffect(() => {
+    runSearch(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    runSearch(0)
+  }
+
+  const pageSize = 100
+  const hasMore = (page + 1) * pageSize < total
+
+  return (
+    <div className="search-view">
+      <h1>Search</h1>
+      <form className="search-form" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Search by file name or path…"
+          className="search-form__input"
+        />
+       
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -38908,18 +38982,70 @@ export default function Search(): JSX.Element {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Search.css`, lines 1 to 1
+
+**Input:**
+
+- endLine: `1`
+- filePath: `/home/kel/dev/DiscDock/src/views/Search.css`
+- startLine: `1`
+
+**Result:**
+
+```
+.search-form {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Search.css`, lines 1 to 30
+
+**Input:**
+
+- endLine: `30`
+- filePath: `/home/kel/dev/DiscDock/src/views/Search.css`
+- startLine: `1`
+
+**Result:**
+
+```
+.search-form {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.search-form__input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.search-form select {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.search-view__status {
+  opacity: 0.7;
+  font-size: 13px;
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -38973,10 +39099,22 @@ Let's check for errors, verify integrity/sync, and build.
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `Search.tsx`, no problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/src/views/Search.tsx"]`
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/src/views/Search.tsx">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -38997,4 +39135,512 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c src/views/Search.tsx src/views/Search.css && git fetch origin 2>&1 | t...`
+
+Verify edited files have content and check for concurrent commits before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/views/Search.tsx src/views/Search.css && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/views/Search.tsx src/views/Search.css && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1` (terminal ID=59a3e873-14c3-4414-8062-e0e07ab27d7c). This is the output of running that command instead:
+4475 src/views/Search.tsx
+1165 src/views/Search.css
+5640 total
+92017ab (HEAD -> main, origin/main) Replace emoji device-type indicators with lu
+cide Disc3/Usb icons
+92017ab (HEAD -> main, origin/main) Replace emoji device-type indicators with lu
+cide Disc3/Usb icons
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact, in sync. Building.      
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with the live-filter Search feature
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=a958d4b2-ae9d-4929-99f4-6230626f0e31). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 1813 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-Bm5DD_nh.css   10.69 kB │ gzip:  2.34 kB
+dist/assets/index-BOAvBg-6.js   231.06 kB │ gzip: 71.02 kB
+
+✓ built in 212ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's launch and screenshot to verify the Search view's new live-filter UI.      
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app to verify Search view renders
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=fad0c551-fa63-4393-938b-61a2cc04b663
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="fad0c551-fa63-4393-938b-61a2cc04b663" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="fad0c551-fa63-4393-938b-61a2cc04b663" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors on launch. Since I can't click to the Search tab, I'll rely on the clean build + code review (consistent with the established verification approach for non-reachable views). Closing and committing.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `fad0c551-fa63-4393-938b-61a2cc04b663`
+
+**Result:**
+
+```
+Successfully killed persistent terminal fad0c551-fa63-4393-938b-61a2cc04b663. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the Search feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=0532b584-9c9e-43b7-8121-a93bf6829fe8). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  384G   50G  89% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  src/views/Search.css
+M  src/views/Search.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+50G free, healthy.       
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Make Search a live filter: debounced auto-search, instant fil...`
+
+Commit and push the live-filter Search feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Make Search a live filter: debounced auto-search, instant filter dropdowns, clear button" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Make Search a live filter: debounced auto-search, instant filter dropdowns, clear button" 2>&1 | tail -20 && git push 2>&1` (terminal ID=6ed48c11-84bf-4306-a5b0-185aeafb5e78). This is the output of running that command instead:
+[main 3fb083d] Make Search a live filter: debounced auto-search, instant filter
+dropdowns, clear button
+ 4 files changed, 749 insertions(+), 48 deletions(-)
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 4.86 KiB | 262.00 KiB/s, done.
+Total 10 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   92017ab..3fb083d  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (50G free, healthy).
+
+**My reasoning + what I implemented:**
+
+A Search/Filter mode toggle would add cognitive 
+
+Committed and pushed (50G free, healthy).
+
+**My reasoning + what I implemented:**
+
+A Search/Filter mode toggle would add cognitive overhead ("which mode am I in?") for little real benefit, and our backend (FTS5 prefix search) is fast enough that live filtering feels natural rather than needing an explicit query step. So I went with a single unified **live-filter** behavior:
+
+- Text input now debounces (300ms after you stop typing) and auto-searches — no more "Search" button to click
+- Media type / file kind dropdowns now also trigger the filter instantly on change
+- Added a small "X" clear button inside the input for quickly resetting the text
+- Removed the `<form onSubmit>` pattern entirely since there's no explicit submit anymore
+- Placeholder text updated from "Search by..." to "Filter by..." to set the right mental model
+
+This keeps pagination ("Load more") working the same way, just resets to page 0 whenever the filter criteria change. Let me know if 300ms feels right once you try it, or if you'd prefer it snappier/slower.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Implement live filtering for search input* (1/3)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 20:45:00Z)**_
+
+there appears to be an issue in the filtering. Do you see it in the screencaps?
+
+---
+
+_**Agent (copilot/auto)**_
+
+Yes — I can see it. Let's check the query-building logic. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `searchRepository.ts`, lines 28 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Found it —  only splits the search text on **whitespace**, so `"C.ini"` stays as one quoted term. When SQLite's FTS5 tokenizer parses that quoted phrase, it splits on the period internally (`c`, `ini`) and treats it as a **strict adjacency phrase query** — requiring a token literally `c` immediately followed by a token starting with `ini`. Real filenames like `5631_DIG.INI` tokenize to `5631`, `dig`, `ini` — no literal `c` token — so it correctly (by FTS5 rules) finds nothing, even though that's not what a user typing "C.ini" would expect. Let's fix it by splitting on any non-alphanumeric character, not just whitespace.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **searchRepository.ts**</summary>
+
+@@ lines 30-33 @@
+
+```
+// Split on any non-alphanumeric separator (not just whitespace) so punctuation like "." or "_"
+  // in a query (e.g. "report.ini") produces separate AND'd prefix terms rather than a single quoted
+  // phrase — FTS5 would otherwise tokenize a quoted multi-word phrase itself and require strict
+  // token adjacency, causing real matches to be missed (e.g. "c.ini" would require a literal "c"
+  // token immediately followed by "ini", which most filenames don't have).
+  const terms = text
+    .trim()
+    .split(/[^a-zA-Z0-9]+/
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's rebuild and directly verify the fix against the real database using the exact reported query.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:electron 2>&1 | tail -20`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-search-fix.js << 'EOF'
+const Database = re...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-search-fix2.js << 'EOF'
+const Database = r...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The AND-based fix is technically correct (FTS5 requires *both* prefix conditions to exist somewhere in the same row), but the real issue is user intent: typing "C.ini" means "find files containing this substring," not "find files with a word starting with C AND a word starting with ini." Let me check if a literal substring match would actually find something, then add a fallback.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-search-like.js << 'EOF'
+const Database = r...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+That's exactly it — `5631_HWC.INI` contains "C.INI" as a literal substring, which only a proper substring (LIKE) search can find, since FTS5's word-tokenized index can't match across the boundary. Let's add a LIKE-based fallback when the FTS query returns nothing.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `searchRepository.ts`, lines 1 to 100
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `searchRepository.ts`, lines 100 to 106
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `searchRepository.ts`, lines 100 to 109
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **searchRepository.ts**</summary>
+
+@@ lines 107-107 @@
+
+```
+// FTS5 only indexes whole word tokens, so a query containing punctuation (e.g. "report.ini")
+  // can miss real substring matches that span a word boundary (e.g. "5631_hwc.ini" contains
+  // "c.ini" but tokenizes to "5631"/"hwc"/"ini", none of which is "c"). Fall back to a plain
+  // substring LIKE search across name/path when the FTS-based query finds nothing.
+  if (matchQuery && total === 0) {
+    return searchByLikeFallback(text, conditions, params, page, pageSize)
+  }
+
+  return { results, total }
+}
+
+function searchByLikeFallback(
+  text: string,
+  baseConditions: string[],
+  baseParams: Record<string, unknown>,
+  page: number,
+  pageSize: number
+): SearchResultPage {
+  const db = getDb()
+  const likePattern = `%${text.trim().replace(/[%_]/g, (c) => `\\${c}`)}%`
+  const conditions = [...baseConditions, '(fr.name LIKE @likePattern ESCAPE \'\\\' OR fr.path LIKE @likePattern ESCAPE \'\\\')']
+  const params = { ...baseParams, likePattern }
+  const offset = Math.max(0, page) * pageSize
+
+  const fromClause = `FROM file_record fr JOIN media_item mi ON mi.id = fr.media_item_id`
+  const whereClause = `WHERE ${conditions.join(' AND ')}`
+
+  const total = (
+    db.prepare(`SELECT COUNT(*) as count ${fromClause} ${whereClause}`).get(params) as { count: number }
+  ).count
+
+  const results = (
+    db
+      .prepare(
+        `SELECT fr.id, fr.media_item_id, mi.label as media_label, fr.path, fr.name, fr.size_bytes,
+                fr.modified_at_src, fr.kind
+         ${fromClause} ${whereClause}
+         ORDER BY fr.name
+         LIMIT @limit OFFSET @offset`
+      )
+      .all({ ...params, limit: pageSize, offset }) as FileSearchRow[]
+  ).map(toResult)
+
+  
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's check for errors, verify integrity, and rebuild.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `searchRepository.ts`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Verify content and sync.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/db/searchRepository.ts && git fetch origin 2>&1 | tail -5 && ...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact, in sync. Building.       
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Now let's directly test the exact compiled  function against the real dev DB with the reported query to confirm the actual end-to-end fix.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-search-e2e.js << 'EOF'
+const \{ app \} = req...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-search-e2e.js << 'EOF'
+const \{ app \} = req...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-search-e2e.js << 'EOF'
+const \{ app \} = req...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Confirmed fixed against the real database: "ini" still correctly returns 43 results (unchanged), and "C.ini" now correctly returns 18 results (previously 0) via the LIKE fallback, matching exactly the files you'd expect. Let's do a final full launch smoke test and commit.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Closing and committing.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
 </details></tool-use>

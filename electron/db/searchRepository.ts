@@ -27,10 +27,14 @@ function toResult(row: FileSearchRow): FileSearchResult {
 
 /** Builds an FTS5 MATCH expression doing a prefix match per term (FR-3.2: partial/substring search). */
 function buildMatchQuery(text: string): string | null {
+  // Split on any non-alphanumeric separator (not just whitespace) so punctuation like "." or "_"
+  // in a query (e.g. "report.ini") produces separate AND'd prefix terms rather than a single quoted
+  // phrase — FTS5 would otherwise tokenize a quoted multi-word phrase itself and require strict
+  // token adjacency, causing real matches to be missed (e.g. "c.ini" would require a literal "c"
+  // token immediately followed by "ini", which most filenames don't have).
   const terms = text
     .trim()
-    .split(/\s+/)
-    .filter(Boolean)
+    .split(/[^a-zA-Z0-9]+/)
     .map((term) => term.replace(/["*]/g, ''))
     .filter(Boolean)
   if (terms.length === 0) return null
@@ -94,6 +98,49 @@ export function searchFiles(text: string, filters: SearchFilters, page: number, 
         `SELECT fr.id, fr.media_item_id, mi.label as media_label, fr.path, fr.name, fr.size_bytes,
                 fr.modified_at_src, fr.kind
          ${baseQuery}
+         ORDER BY fr.name
+         LIMIT @limit OFFSET @offset`
+      )
+      .all({ ...params, limit: pageSize, offset }) as FileSearchRow[]
+  ).map(toResult)
+
+  // FTS5 only indexes whole word tokens, so a query containing punctuation (e.g. "report.ini")
+  // can miss real substring matches that span a word boundary (e.g. "5631_hwc.ini" contains
+  // "c.ini" but tokenizes to "5631"/"hwc"/"ini", none of which is "c"). Fall back to a plain
+  // substring LIKE search across name/path when the FTS-based query finds nothing.
+  if (matchQuery && total === 0) {
+    return searchByLikeFallback(text, conditions, params, page, pageSize)
+  }
+
+  return { results, total }
+}
+
+function searchByLikeFallback(
+  text: string,
+  baseConditions: string[],
+  baseParams: Record<string, unknown>,
+  page: number,
+  pageSize: number
+): SearchResultPage {
+  const db = getDb()
+  const likePattern = `%${text.trim().replace(/[%_]/g, (c) => `\\${c}`)}%`
+  const conditions = [...baseConditions, '(fr.name LIKE @likePattern ESCAPE \'\\\' OR fr.path LIKE @likePattern ESCAPE \'\\\')']
+  const params = { ...baseParams, likePattern }
+  const offset = Math.max(0, page) * pageSize
+
+  const fromClause = `FROM file_record fr JOIN media_item mi ON mi.id = fr.media_item_id`
+  const whereClause = `WHERE ${conditions.join(' AND ')}`
+
+  const total = (
+    db.prepare(`SELECT COUNT(*) as count ${fromClause} ${whereClause}`).get(params) as { count: number }
+  ).count
+
+  const results = (
+    db
+      .prepare(
+        `SELECT fr.id, fr.media_item_id, mi.label as media_label, fr.path, fr.name, fr.size_bytes,
+                fr.modified_at_src, fr.kind
+         ${fromClause} ${whereClause}
          ORDER BY fr.name
          LIMIT @limit OFFSET @offset`
       )
