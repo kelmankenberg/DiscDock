@@ -3,6 +3,7 @@ import { createMainWindow } from './window/createWindow'
 import { registerWindowControlIpc } from './ipc/windowControls'
 import { registerDashboardIpc } from './ipc/dashboard'
 import { registerMediaIpc } from './ipc/media'
+import { registerDeviceIpc, startDeviceWatcher, stopDeviceWatcher } from './ipc/devices'
 import { getDb, closeDb } from './db'
 import type { IpcResult } from '../shared/types'
 
@@ -21,7 +22,9 @@ app.whenReady().then(() => {
   registerWindowControlIpc(mainWindow)
   registerDashboardIpc()
   registerMediaIpc()
+  registerDeviceIpc()
   registerAppIpc()
+  startDeviceWatcher(mainWindow)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -32,6 +35,7 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  stopDeviceWatcher()
   closeDb()
   if (process.platform !== 'darwin') {
     app.quit()

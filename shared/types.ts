@@ -59,6 +59,16 @@ export interface MediaItemInput {
   capacityBytes: number | null
   physicalLocation: string | null
   notes: string | null
+  deviceFingerprint?: string | null
+}
+
+export interface DetectedDevice {
+  devicePath: string
+  label: string | null
+  fsType: string | null
+  mountPoint: string
+  sizeBytes: number | null
+  uuid: string | null
 }
 
 export interface DashboardSummary {

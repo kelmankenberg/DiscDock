@@ -4,32 +4,6 @@
   justify-content: space-between;
 }
 
-.button {
-  padding: 6px 14px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.button--primary {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff;
-}
-
-.button--small {
-  padding: 4px 10px;
-  font-size: 12px;
-}
-
-.button--danger {
-  border-color: #e81123;
-  color: #e81123;
-}
-
 .media-form {
   display: flex;
   flex-direction: column;
@@ -91,16 +65,4 @@
 .media-table__actions {
   display: flex;
   gap: 6px;
-}
-
-.status-badge {
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
-  text-transform: capitalize;
-  background: var(--color-sidebar-hover);
-}
-
-.status-badge--retired {
-  opacity: 0.6;
 }

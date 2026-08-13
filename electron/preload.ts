@@ -1,5 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { DashboardSummary, IpcResult, MediaItem, MediaItemInput, WindowState } from '../shared/types'
+import type {
+  DashboardSummary,
+  DetectedDevice,
+  IpcResult,
+  MediaItem,
+  MediaItemInput,
+  WindowState
+} from '../shared/types'
 
 const api = {
   window: {
@@ -29,6 +36,21 @@ const api = {
   },
   app: {
     getVersion: (): Promise<IpcResult<string>> => ipcRenderer.invoke('app:getVersion')
+  },
+  devices: {
+    list: (): Promise<IpcResult<DetectedDevice[]>> => ipcRenderer.invoke('devices:list'),
+    onConnected: (callback: (device: DetectedDevice) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, device: DetectedDevice): void =>
+        callback(device)
+      ipcRenderer.on('devices:connected', listener)
+      return () => ipcRenderer.removeListener('devices:connected', listener)
+    },
+    onDisconnected: (callback: (devicePath: string) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { devicePath: string }): void =>
+        callback(payload.devicePath)
+      ipcRenderer.on('devices:disconnected', listener)
+      return () => ipcRenderer.removeListener('devices:disconnected', listener)
+    }
   }
 }
 

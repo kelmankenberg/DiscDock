@@ -48,15 +48,16 @@ export function getMediaItem(id: number): MediaItem | null {
 export function createMediaItem(input: MediaItemInput): MediaItem {
   const result = getDb()
     .prepare(
-      `INSERT INTO media_item (label, media_type, capacity_bytes, physical_location, notes)
-       VALUES (@label, @mediaType, @capacityBytes, @physicalLocation, @notes)`
+      `INSERT INTO media_item (label, media_type, capacity_bytes, physical_location, notes, device_fingerprint)
+       VALUES (@label, @mediaType, @capacityBytes, @physicalLocation, @notes, @deviceFingerprint)`
     )
     .run({
       label: input.label,
       mediaType: input.mediaType,
       capacityBytes: input.capacityBytes,
       physicalLocation: input.physicalLocation,
-      notes: input.notes
+      notes: input.notes,
+      deviceFingerprint: input.deviceFingerprint ?? null
     })
 
   const created = getMediaItem(Number(result.lastInsertRowid))

@@ -39,7 +39,19 @@ function validateMediaItemInput(input: unknown): MediaItemInput {
   const notes =
     typeof candidate.notes === 'string' && candidate.notes.trim() ? candidate.notes.trim() : null
 
-  return { label, mediaType: mediaType as MediaItemInput['mediaType'], capacityBytes, physicalLocation, notes }
+  const deviceFingerprint =
+    typeof candidate.deviceFingerprint === 'string' && candidate.deviceFingerprint.trim()
+      ? candidate.deviceFingerprint.trim()
+      : null
+
+  return {
+    label,
+    mediaType: mediaType as MediaItemInput['mediaType'],
+    capacityBytes,
+    physicalLocation,
+    notes,
+    deviceFingerprint
+  }
 }
 
 function toErrorResult(err: unknown): IpcResult<never> {
