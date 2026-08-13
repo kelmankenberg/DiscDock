@@ -63,10 +63,6 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     }
   }
 
-  const sortedItems = [...filteredItems].sort((a, b) => {
-    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
-    return sortAsc ? result : -result
-  })
   const [devices, setDevices] = useState<DetectedDevice[]>([])
   const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
   const [containerFilter, setContainerFilter] = useState<string>('')
@@ -78,6 +74,11 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
 
   const filteredItems = containerFilter ? items.filter((item) => item.physicalLocation === containerFilter) : items
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
 
   const loadItems = (): void => {
     void window.discdock.media.list().then((result) => {

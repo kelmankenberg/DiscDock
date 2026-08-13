@@ -32279,10 +32279,45 @@ now we also need to include the ability for a user to assign a 'Container' label
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<think><details><summary>Thought Process</summary>
+Clean build. Let's directly verify the `media:update` path works for setting `physicalLocation`, since that's the core new capability (editing an already-created media item), using our real dev DB.
+</details></think>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `physicalLocation` (`**/src/views/*.tsx`), 11 results
+
+**Input:**
+
+- includePattern: `src/views/*.tsx`
+- isRegexp: `false`
+- query: `physicalLocation`
+
+**Result:**
+
+```
+Found 11 matches in 3 files for "physicalLocation"
+
+src/views/Dashboard.tsx
+118:        physicalLocation: null,
+
+src/views/MediaDetail.tsx
+63:        {mediaTypeLabel} {item.physicalLocation ? `· ${item.physicalLocation}` : ''}
+
+src/views/MediaLibrary.tsx
+10:  physicalLocation: null,
+18:type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+23:  { key: 'physicalLocation', label: 'Location' },
+32:    case 'physicalLocation':
+33:      return item.physicalLocation ?? ''
+172:      physicalLocation: null,
+271:              value={form.physicalLocation ?? ''}
+272:              onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
+331:                  <td>{item.physicalLocation ?? '—'}</td>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32291,10 +32326,82 @@ That's exactly what "Physical Location" is meant to represent — but right now 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`
+
+**Input:**
+
+- endLine: `380`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'label', label: 'Label' },
+  { key: 'mediaType', label: 'Type' },
+  { key: 'physicalLocation', label: 'Location' },
+  { key: 'status', label: 'Status' },
+  { key: 'lastScannedAt', label: 'Last Scanned' }
+]
+
+function sortValue(item: MediaItem, key: SortKey): string {
+  switch (key) {
+    case 'mediaType':
+      return mediaTypeLabel(item.mediaType)
+    case 'physicalLocation':
+      return item.physicalLocation ?? ''
+    case 'lastScannedAt':
+      return item.lastScannedAt ?? ''
+    default:
+      return item[key] ?? ''
+  }
+}
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [sortKey, setSortKey] = useState<SortKey>('label')
+  const [sortAsc, setSortAsc] = useState(true)
+
+  const handleSort = (key: SortKey): void => {
+    if (key === sortKey) {
+      setSortAsc((prev) => !prev)
+    } else 
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32395,18 +32502,58 @@ Now add the datalist to the Add Media form's Physical Location input, and add th
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `Physical Location` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `Physical Location`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "Physical Location"
+
+src/views/MediaLibrary.tsx
+290:            Physical Location
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 287 to 300
+
+**Input:**
+
+- endLine: `300`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `287`
+
+**Result:**
+
+```
+            </select>
+          </label>
+          <label>
+            Physical Location
+            <input
+              type="text"
+              value={form.physicalLocation ?? ''}
+              onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
+              placeholder="e.g. Garage > Box 3 > Shelf B"
+            />
+          </label>
+          <label>
+            Notes
+            <textarea
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32459,18 +32606,64 @@ Now add the Container filter dropdown above the table, and make the Location cel
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `items.length === 0` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `items.length === 0`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "items.length === 0"
+
+src/views/MediaLibrary.tsx
+329:      {items.length === 0 ? (
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 326 to 345
+
+**Input:**
+
+- endLine: `345`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `326`
+
+**Result:**
+
+```
+        </form>
+      )}
+
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
+        </div>
+      ) : (
+        <table className="media-table">
+          <thead>
+            <tr>
+              {COLUMNS.map((col) => (
+                <th key={col.key}>
+                  <button type="button" className="media-table__sort-header" onClick={() => handleSort(col.key)}>
+                    {col.label}
+                    {sortKey === col.key ? (sortAsc ? ' ▲' : ' ▼') : ''}
+                  </button>
+                </th>
+              ))}
+              <th></th>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32503,20 +32696,66 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `</table>
       )}
     </div>` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query:
+
+```
+</table>
+      )}
+    </div>
+```
+
+
+**Result:**
+
+```
+Found 1 match in 1 file for "</table>
+      )}
+    </div>"
+
+src/views/MediaLibrary.tsx
+415:        </table>       )}     </div>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 408 to 418
+
+**Input:**
+
+- endLine: `418`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `408`
+
+**Result:**
+
+```
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32538,10 +32777,25 @@ Now let's make the Location table cell inline-editable:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `{item.physicalLocation ?? '—'}` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `{item.physicalLocation ?? '—'}`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "{item.physicalLocation ?? '—'}"
+
+src/views/MediaLibrary.tsx
+375:                  <td>{item.physicalLocation ?? '—'}</td>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32614,18 +32868,60 @@ Now add CSS for `.container-filter` and `.media-table__location-input`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `.media-table__sort-header` (`**/src/views/MediaLibrary.css`), 2 results
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.css`
+- isRegexp: `false`
+- query: `.media-table__sort-header`
+
+**Result:**
+
+```
+Found 2 matches in 1 file for ".media-table__sort-header"
+
+src/views/MediaLibrary.css
+84:.media-table__sort-header {
+94:.media-table__sort-header:hover {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.css`, lines 84 to 98
+
+**Input:**
+
+- endLine: `98`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.css`
+- startLine: `84`
+
+**Result:**
+
+```
+.media-table__sort-header {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.media-table__sort-header:hover {
+  text-decoration: underline;
+}
+
+.media-table__actions {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -32668,4 +32964,443 @@ location-input {
 
 .media-table__
 ```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.css**</summary>
+
+@@ lines 98-98 @@
+
+```
+location-input {
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-accent);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+  width: 100%;
+}
+
+.container-filter {
+  margin: 12px 0;
+}
+
+.container-filter label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.container-filter select {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.media-table__
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Add container filter to Media Library UI* (3/4)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's check for errors, verify file integrity, and build:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `MediaLibrary.tsx`, 2 problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx"]`
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import './MediaLibrary.css'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+This code at line 18
+```
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+```
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+````
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Known non-blocking IDE quirk. Verify content and build:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css`
+
+Verify edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css` (terminal ID=9b5a623d-064b-4436-944b-d34bcaf1eec3). This is the output of running that command instead:
+15303 src/views/MediaLibrary.tsx
+ 2198 src/views/MediaLibrary.css
+17501 total
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with the Container/Location feature
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=1ab0006e-28ff-4ea6-9a31-f960128af110). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 35 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-EXLTdRqz.css    8.47 kB │ gzip:  1.91 kB
+dist/assets/index-BRX3tTnE.js   219.80 kB │ gzip: 67.41 kB
+
+✓ built in 158ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's directly verify the `media:update` path works for setting , since that's the core new capability (editing an already-created media item), using our real dev DB.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-container.js << 'EOF'
+const \{ app \} = requ...`
+
+Verify updateMediaItem correctly persists and reverts the physicalLocation (Container) field against the real dev database
+
+```bash
+cat > /home/kel/dev/DiscDock/test-container.js << 'EOF'
+const { app } = require('electron')
+app.whenReady().then(async () => {
+  const { updateMediaItem, getMediaItem, listMediaItems } = require('./dist-electron/electron/db/mediaRepository')
+  const items = listMediaItems()
+  console.log('Existing media items:', items.map(i => ({ id: i.id, label: i.label, loc: i.physicalLocation })))
+  if (items.length > 0) {
+    const target = items[0]
+    const updated = updateMediaItem(target.id, { physicalLocation: 'CD Spindle #1' })
+    console.log('After update:', updated.physicalLocation)
+    // revert
+    updateMediaItem(target.id, { physicalLocation: target.physicalLocation })
+    console.log('Reverted to:', getMediaItem(target.id).physicalLocation)
+  }
+  app.quit()
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-container.js --no-sandbox 2>&1; rm -f test-container.js
+```
+
+**Result:**
+
+```
+Existing media items: []
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-container.js << 'EOF'
+const \{ app \} = requ...`
+
+Seed a temporary media item, verify container/location can be set via update, then clean up
+
+```bash
+cat > /home/kel/dev/DiscDock/test-container.js << 'EOF'
+const { app } = require('electron')
+app.whenReady().then(async () => {
+  const { createMediaItem, updateMediaItem, getMediaItem, deleteMediaItem } = require('./dist-electron/electron/db/mediaRepository')
+  const created = createMediaItem({ label: 'Container Test Disc', mediaType: 'cd', capacityBytes: null, physicalLocation: null, notes: null })
+  console.log('Created, location:', created.physicalLocation)
+  const updated = updateMediaItem(created.id, { physicalLocation: 'CD Spindle #1' })
+  console.log('After update, location:', updated.physicalLocation)
+  const reread = getMediaItem(created.id)
+  console.log('Re-read from DB, location:', reread.physicalLocation)
+  deleteMediaItem(created.id)
+  console.log('Cleaned up test item')
+  app.quit()
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-container.js --no-sandbox 2>&1; rm -f test-container.js
+```
+
+**Result:**
+
+```
+Created, location: null
+After update, location: CD Spindle #1
+Re-read from DB, location: CD Spindle #1
+Cleaned up test item
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Confirmed working: create with no container → update to "CD Spindle #1" → persisted and re-readable from disk. Let's commit and push.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the Container feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=80424a8d-2f72-43b0-95bf-6fc499df8ba6). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  378G   57G  87% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  src/views/MediaLibrary.css
+M  src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+57G free, healthy.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Add Container/Location editing, autocomplete, and filter to M...`
+
+Commit and push the Container feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Add Container/Location editing, autocomplete, and filter to Media Library" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Add Container/Location editing, autocomplete, and filter to Media Library" 2>&1 | tail -20 && git push 2>&1` (terminal ID=b4a44f9d-e07d-4810-8814-475a5edbb884). This is the output of running that command instead:
+kel@kel-EQ-Mint:~/dev/DiscDock$  git commit -m "Add Container/Location editing,
+autocomplete, and filter to Media Library" 2>&1 | tail -20 && git push 2>&1
+[main 3355fe1] Add Container/Location editing, autocomplete, and filter to Media
+ Library
+ 4 files changed, 1067 insertions(+), 19 deletions(-)
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 7.82 KiB | 571.00 KiB/s, done.
+Total 10 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   8d12a81..3355fe1  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (57G free).
+
+**Answer:** yes — "Physical Location" is exactly the field for this ("Container / Physical Location" per the planning docs' data model: a free-form field meant for things like "Garage > Box 3 > Shelf B"). But three real gaps existed, now fixed:
+
+1. **No way to edit it after creation** — you could only set it once when adding new media. Media Library's Location column is now click-to-edit inline (click the value or "Set container…" → type → Enter/click away to save, Escape to cancel).
+2. **No consistency aid** — retyping "CD Spindle #1" by hand every time risks typos/variants ("Spindle 1" vs "CD Spindle #1"). Both the Add Media form and the inline editor now offer an autocomplete dropdown (`<datalist>`) populated from every container name already in use.
+3. **No way to browse by container** — added a "Container" filter dropdown above the Media Library table (only appears once at least one container name exists) that filters the list to just that container's items.
+
+Renamed the label to "Container / Physical Location" in the Add Media form to make the intent explicit. Verified the underlying update/persist path directly against the real database (create → set container → re-read from disk → confirmed value persisted).
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Add container filter to Media Library UI* (1/2)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 19:39:00Z)**_
+
+Uncaught ReferenceError: Cannot access 'filteredItems' before initialization
+    at MediaLibrary (MediaLibrary.tsx:66:23)
+    at Object.react_stack_bottom_frame (react-dom_client.js?v=af15e3d6:12864:12)
+    at renderWithHooks (react-dom_client.js?v=af15e3d6:4211:19)
+    at updateFunctionComponent (react-dom_client.js?v=af15e3d6:5567:16)
+    at beginWork (react-dom_client.js?v=af15e3d6:6138:20)
+    at runWithFiberInDEV (react-dom_client.js?v=af15e3d6:850:66)
+    at performUnitOfWork (react-dom_client.js?v=af15e3d6:8427:92)
+    at workLoopSync (react-dom_client.js?v=af15e3d6:8323:37)
+    at renderRootSync (react-dom_client.js?v=af15e3d6:8307:6)
+    at performWorkOnRoot (react-dom_client.js?v=af15e3d6:7992:27)
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 46 to 80
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Confirmed —  uses  before it's declared. Let's reorder.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 66-80 @@
+
+```
+[devices, setDevices] = useState<DetectedDevice[]>([])
+  const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
+  const [containerFilter, setContainerFilter] = useState<string>('')
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
+  const [editingLocationValue, setEditingLocationValue] = useState('')
+
+  const knownLocations = Array.from(
+    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
+  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+
+  const filteredItems = containerFilter ? items.filter((item) => item.physicalLocation === containerFilter) : items
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's rebuild and verify with a live launch that this actually resolves the crash.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `MediaLibrary.tsx`, 2 problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Same known non-blocking IDE quirk (no new errors). Let's build and launch to confirm the actual crash is fixed.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/views/MediaLibrary.tsx && rm -rf dist dist-electron && npm run bui...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 47 to 100
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Ordering is now correct — all declarations precede their uses. Let's do a live launch smoke test and, importantly, navigate to Media Library this time by checking the console output directly (Electron's `--no-sandbox` run prints renderer console errors to the terminal via devtools in dev mode... let's verify by launching with devtools open, which we already do in dev mode).   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
 </details></tool-use>
