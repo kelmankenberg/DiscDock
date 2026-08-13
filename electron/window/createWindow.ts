@@ -30,8 +30,10 @@ export function createMainWindow(): BrowserWindow {
   })
 
   // DevTools are not opened automatically; toggle manually with Ctrl+Shift+I.
+  // Only react to keyDown — before-input-event also fires on keyUp, which would otherwise
+  // toggle twice per press (open then immediately close again).
   win.webContents.on('before-input-event', (_event, input) => {
-    if (input.control && input.shift && input.key.toLowerCase() === 'i') {
+    if (input.type === 'keyDown' && input.control && input.shift && input.key.toLowerCase() === 'i') {
       win.webContents.toggleDevTools()
     }
   })

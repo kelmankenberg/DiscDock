@@ -41200,10 +41200,61 @@ can we make the dev tools not appear by default? I can always open dev tools wit
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `createWindow.ts`, lines 1 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/home/kel/dev/DiscDock/electron/window/createWindow.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { BrowserWindow, shell } from 'electron'
+import path from 'node:path'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export function createMainWindow(): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
+    // Frameless: DiscDock renders its own title bar/toolbar and window controls.
+    frame: false,
+    backgroundColor: '#1e1e1e',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => win.show())
+
+  // Never allow navigation to or opening of remote content from the renderer.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  if (isDev) {
+    void win.loadURL('http://localhost:5173')
+    win.webContents.openDevTools({ mode: 'detach' })
+  } else {
+    void win.loadFile(path.join(__dirname, '../../../dist/index.html'))
+  }
+
+  return win
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -41232,10 +41283,22 @@ Let's check for errors, verify integrity/sync, and build.
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `createWindow.ts`, no problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/electron/window/createWindow.ts"]`
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/electron/window/createWindow.ts">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -41244,6 +41307,23 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c electron/window/createWindow.ts && git fetch origin 2>&1 | tail -5 && ...`
+
+Verify edited file has content and check for concurrent commits before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/window/createWindow.ts && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/window/createWindow.ts && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1` (terminal ID=fe4100a5-0ec4-46d9-9a26-afef0fd203df). This is the output of running that command instead:
+1290 electron/window/createWindow.ts
+899b0a0 (HEAD -> main, origin/main) Add Ctrl+F (Search) and Ctrl+, (Settings) ke
+yboard shortcuts with a Keyboard Shortcuts settings section
+899b0a0 (HEAD -> main, origin/main) Add Ctrl+F (Search) and Ctrl+, (Settings) ke
+yboard shortcuts with a Keyboard Shortcuts settings section
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -41256,6 +41336,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with devtools change
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=a4d4beaa-2fc1-4655-a17d-5ce1e572f4de). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 1813 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-WVIIgVP-.css   10.97 kB │ gzip:  2.38 kB
+dist/assets/index-Cyo8TABM.js   231.87 kB │ gzip: 71.21 kB
+
+✓ built in 245ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -41268,4 +41385,237 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` NODE\_ENV=development npx electron . --no-sandbox 2>&1`
+
+Launch app in dev mode to verify devtools no longer opens automatically
+
+```bash
+cd /home/kel/dev/DiscDock && NODE_ENV=development npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` NODE_ENV=development npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=8cff1fb4-c88c-4f5c-bcbc-ea3c130972ea
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  NODE_ENV=development npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="8cff1fb4-c88c-4f5c-bcbc-ea3c130972ea" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="8cff1fb4-c88c-4f5c-bcbc-ea3c130972ea" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` import -window root /tmp/discdock-no-devtools.png && echo done`
+
+Screenshot to verify devtools window does not appear automatically
+
+```bash
+import -window root /tmp/discdock-no-devtools.png && echo done
+```
+
+**Result:**
+
+```
+done
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="view_image"><details>
+<summary>Tool use: **view_image**</summary>
+
+Viewed image `discdock-no-devtools.png`
+
+**Input:**
+
+- filePath: `/tmp/discdock-no-devtools.png`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Confirmed — no devtools panel/window appears anywhere, just the app itself. Closing and committing.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `8cff1fb4-c88c-4f5c-bcbc-ea3c130972ea`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 8cff1fb4-c88c-4f5c-bcbc-ea3c130972ea. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  NODE_ENV=development npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the devtools change
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=095bf9f5-78ea-4fe6-8270-1bbc1fa14d05). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  386G   49G  89% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  electron/window/createWindow.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+49G free, healthy.         
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Do not auto-open DevTools in dev mode; toggle manually with C...`
+
+Commit and push the devtools change
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Do not auto-open DevTools in dev mode; toggle manually with Ctrl+Shift+I" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Do not auto-open DevTools in dev mode; toggle manually with Ctrl+Shift+I" 2>&1 | tail -20 && git push 2>&1` (terminal ID=b07623c6-9b16-48c5-857e-7e13796d7c49). This is the output of running that command instead:
+[main 6494ff9] Do not auto-open DevTools in dev mode; toggle manually with Ctrl+
+Shift+I
+ 3 files changed, 566 insertions(+), 20 deletions(-)
+Enumerating objects: 17, done.
+Counting objects: 100% (17/17), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (8/8), done.
+Writing objects: 100% (9/9), 3.15 KiB | 201.00 KiB/s, done.
+Total 9 (delta 5), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (5/5), completed with 5 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   899b0a0..6494ff9  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (49G free, healthy).
+
+**Implemented:** removed the automatic  call in dev mode, and added a `before-input-event` listener on the window that toggles DevTools with `Ctrl+Shift+I` on demand.
+
+**Verified visually** — launched in dev mode and confirmed no DevTools panel/window appears anywhere, just the app itself.
+
+Restart your `npm run dev` session to pick this up (main-process change, same reason as before — doesn't hot-reload).
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 21:03:43Z)**_
+
+Let's make Ctrl+Shift+I toggle the Dev tools instead of only showing it
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `createWindow.ts`, lines 1 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+That's likely a real bug — my `before-input-event` handler fires on both `keyDown` and `keyUp`, so a single press of Ctrl+Shift+I calls  twice (once per event), causing it to open then immediately close (or vice versa) instead of cleanly toggling once. Let's fix it by only reacting to `keyDown`.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **createWindow.ts**</summary>
+
+@@ lines 33-34 @@
+
+```
+// Only react to keyDown — before-input-event also fires on keyUp, which would otherwise
+  // toggle twice per press (open then immediately close again).
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type === 'keyDown' && 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's check for errors, verify integrity/sync, and build.        
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `createWindow.ts`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Run in Terminal
 </details></tool-use>
