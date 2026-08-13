@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
+import { X } from 'lucide-react'
 import { FILE_KINDS, MEDIA_TYPES } from '../../shared/types'
 import type { FileSearchResult, MediaType, FileKind, SearchFilters } from '../../shared/types'
 import './Search.css'
+
+const DEBOUNCE_MS = 300
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -35,15 +38,14 @@ export default function Search(): JSX.Element {
     })
   }
 
+  // Acts as a live filter: re-runs (debounced) whenever the search text or filters change,
+  // rather than requiring an explicit submit — the catalog is typically small/fast enough
+  // (FTS5-backed) for this to feel instant.
   useEffect(() => {
-    runSearch(0)
+    const timer = setTimeout(() => runSearch(0), DEBOUNCE_MS)
+    return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const handleSubmit = (event: React.FormEvent): void => {
-    event.preventDefault()
-    runSearch(0)
-  }
+  }, [text, mediaType, kind])
 
   const pageSize = 100
   const hasMore = (page + 1) * pageSize < total
@@ -51,14 +53,27 @@ export default function Search(): JSX.Element {
   return (
     <div className="search-view">
       <h1>Search</h1>
-      <form className="search-form" onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Search by file name or path…"
-          className="search-form__input"
-        />
+      <div className="search-form">
+        <div className="search-form__input-wrapper">
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Filter by file name or path…"
+            className="search-form__input"
+          />
+          {text && (
+            <button
+              type="button"
+              className="search-form__clear"
+              onClick={() => setText('')}
+              aria-label="Clear search"
+              title="Clear search"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
         <select value={mediaType} onChange={(e) => setMediaType(e.target.value as MediaType | '')}>
           <option value="">All media types</option>
           {MEDIA_TYPES.map((t) => (
@@ -75,10 +90,7 @@ export default function Search(): JSX.Element {
             </option>
           ))}
         </select>
-        <button type="submit" className="button button--primary">
-          Search
-        </button>
-      </form>
+      </div>
 
       {loading ? (
         <p className="search-view__status">Searching…</p>
