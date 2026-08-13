@@ -40529,10 +40529,85 @@ very good. two small Keyboard shortcuts. Ctrl+F should open the Search page; Ctr
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<think><details><summary>Thought Process</summary>
+Now let's add CSS for `.shortcuts-table` and `kbd` styling:
+</details></think>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `App.tsx`, lines 1 to 70
+
+**Input:**
+
+- endLine: `70`
+- filePath: `/home/kel/dev/DiscDock/src/App.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import TitleBar from './components/TitleBar'
+import Sidebar from './components/Sidebar'
+import Dashboard from './views/Dashboard'
+import MediaLibrary from './views/MediaLibrary'
+import MediaDetail from './views/MediaDetail'
+import Search from './views/Search'
+import Duplicates from './views/Duplicates'
+import BackupExport from './views/BackupExport'
+import SettingsView from './views/Settings'
+import PlaceholderView from './views/PlaceholderView'
+import { NAV_ITEMS } from './components/Sidebar'
+
+const VIEW_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.label])
+)
+
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'discdock:sidebar-collapsed'
+
+export default function App(): JSX.Element {
+  const [activeView, setActiveView] = useState('dashboard')
+  const [selectedMediaId, setSelectedMediaId] = useState<number | null>(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
+    () => localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true'
+  )
+
+  const toggleSidebarCollapsed = (): void => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(next))
+      return next
+    })
+  }
+
+  useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) document.documentElement.dataset.theme = result.data.theme
+    })
+  }, [])
+
+  const handleSelectNav = (key: string): void => {
+    setSelectedMediaId(null)
+    setActiveView(key)
+  }
+
+  const renderView = (): JSX.Element => {
+    if (activeView === 'media-library' && selectedMediaId !== null) {
+      return <MediaDetail mediaId={selectedMediaId} onBack={() => setSelectedMediaId(null)} />
+    }
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'media-library':
+        return <MediaLibrary onOpenDetail={setSelectedMediaId} />
+      case 'search':
+        return <Search />
+      case 'du
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -40569,26 +40644,111 @@ Now let's add the Keyboard Shortcuts section to Settings:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Settings.tsx`, lines 1 to 30
+
+**Input:**
+
+- endLine: `30`
+- filePath: `/home/kel/dev/DiscDock/src/views/Settings.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import type { AppSettings, HashMode, Theme } from '../../shared/types'
+import './Settings.css'
+
+const HASH_MODES: { value: HashMode; label: string }[] = [
+  { value: 'none', label: 'None (metadata only, fastest)' },
+  { value: 'quick', label: 'Quick (partial hash)' },
+  { value: 'full', label: 'Full (SHA-256, most accurate)' }
+]
+
+export default function Settings(): JSX.Element {
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) setSettings(result.data)
+    })
+  }, [])
+
+  const save = (patch: Partial<AppSettings>): void => {
+    void window.discdock.settings.update(patch).then((result) => {
+      if (result.ok) {
+        setSettings(result.data)
+        if (patch.theme) document.documentElement.dataset.theme = result.data.theme
+        setSaved(true)
+        setTimeout(() => setSaved(false), 1500)
+      }
+    })
+  }
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `Notifications` (`**/src/views/Settings.tsx`), 7 results
+
+**Input:**
+
+- includePattern: `src/views/Settings.tsx`
+- isRegexp: `false`
+- query: `Notifications`
+
+**Result:**
+
+```
+Found 7 matches in 1 file for "Notifications"
+
+src/views/Settings.tsx
+85:        <h2>Notifications</h2>
+89:            checked={settings.notifications.scanCompleted}
+91:              save({ notifications: { ...settings.notifications, scanCompleted: e.target.checked } })
+99:            checked={settings.notifications.scanFailed}
+101:              save({ notifications: { ...settings.notifications, scanFailed: e.target.checked } })
+109:            checked={settings.notifications.verificationReminders}
+111:              save({ notifications: { ...settings.notifications, verificationReminders: e.target.checked } })
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Settings.tsx`, lines 108 to 120
+
+**Input:**
+
+- endLine: `120`
+- filePath: `/home/kel/dev/DiscDock/src/views/Settings.tsx`
+- startLine: `108`
+
+**Result:**
+
+```
+            type="checkbox"
+            checked={settings.notifications.verificationReminders}
+            onChange={(e) =>
+              save({ notifications: { ...settings.notifications, verificationReminders: e.target.checked } })
+            }
+          />
+          Remind me about media needing re-verification
+        </label>
+      </section>
+    </div>
+  )
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -40629,18 +40789,86 @@ Now let's add CSS for `.shortcuts-table` and  styling:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Settings.css`, lines 1 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/home/kel/dev/DiscDock/src/views/Settings.css`
+- startLine: `1`
+
+**Result:**
+
+```
+.settings-view__saved {
+  color: var(--color-accent);
+  font-size: 13px;
+}
+
+.settings-section {
+  margin: 20px 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-section h2 {
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.settings-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  max-width: 420px;
+}
+
+.settings-section select,
+.settings-section textarea {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.settings-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Settings.css`, lines 36 to 42
+
+**Input:**
+
+- endLine: `44`
+- filePath: `/home/kel/dev/DiscDock/src/views/Settings.css`
+- startLine: `36`
+
+**Result:**
+
+```
+
+.settings-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -40688,10 +40916,33 @@ Let's check for errors, verify integrity/sync, and build.
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `App.tsx`, `Settings.tsx`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/src/App.tsx",
+  "/home/kel/dev/DiscDock/src/views/Settings.tsx"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/src/App.tsx">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/views/Settings.tsx">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -40704,6 +40955,26 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c src/App.tsx src/views/Settings.tsx src/views/Settings.css && git fetch...`
+
+Verify edited files have content and check for concurrent commits before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/App.tsx src/views/Settings.tsx src/views/Settings.css && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/App.tsx src/views/Settings.tsx src/views/Settings.css && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1` (terminal ID=29234803-b525-42df-81e2-ca373941779a). This is the output of running that command instead:
+3167 src/App.tsx
+4452 src/views/Settings.tsx
+1089 src/views/Settings.css
+8708 total
+0f5bd00 (HEAD -> main, origin/main) Fix search: punctuation-containing queries m
+issed substring matches across word boundaries
+0f5bd00 (HEAD -> main, origin/main) Fix search: punctuation-containing queries m
+issed substring matches across word boundaries
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -40716,6 +40987,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with keyboard shortcuts feature
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=cb0765f6-e712-4f62-aacc-44a2b48f7451). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 1813 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-WVIIgVP-.css   10.97 kB │ gzip:  2.38 kB
+dist/assets/index-Cyo8TABM.js   231.87 kB │ gzip: 71.21 kB
+
+✓ built in 202ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -40728,4 +41036,236 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app to verify keyboard shortcuts feature
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=8badc716-24a6-4476-ada4-acdf1baa788c
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="8badc716-24a6-4476-ada4-acdf1baa788c" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="8badc716-24a6-4476-ada4-acdf1baa788c" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors on launch. I can't script actual key-press testing for the desktop window, but the logic is straightforward and reviewed. Closing and committing.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `8badc716-24a6-4476-ada4-acdf1baa788c`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 8badc716-24a6-4476-ada4-acdf1baa788c. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for keyboard shortcuts feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=31dd68ae-9653-43d9-b5b8-955388587d69). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  383G   51G  89% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  src/App.tsx
+M  src/views/Settings.css
+M  src/views/Settings.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+51G free, healthy.        
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Add Ctrl\+F \(Search\) and Ctrl\+, \(Settings\) keyboard shortcuts ...`
+
+Commit and push the keyboard shortcuts feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Add Ctrl+F (Search) and Ctrl+, (Settings) keyboard shortcuts with a Keyboard Shortcuts settings section" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Add Ctrl+F (Search) and Ctrl+, (Settings) keyboard shortcuts with a Keyboard Shortcuts settings section" 2>&1 | tail -20 && git push 2>&1` (terminal ID=e64f5f01-888c-45c5-b33e-a98f80084b59). This is the output of running that command instead:
+kel@kel-EQ-Mint:~/dev/DiscDock$  git commit -m "Add Ctrl+F (Search) and Ctrl+, (
+Settings) keyboard shortcuts with a Keyboard Shortcuts settings section" 2>&1 |
+tail -20 && git push 2>&1
+[main 899b0a0] Add Ctrl+F (Search) and Ctrl+, (Settings) keyboard shortcuts with
+ a Keyboard Shortcuts settings section
+ 5 files changed, 1261 insertions(+), 121 deletions(-)
+Enumerating objects: 21, done.
+Counting objects: 100% (21/21), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (11/11), done.
+Writing objects: 100% (11/11), 7.35 KiB | 442.00 KiB/s, done.
+Total 11 (delta 8), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (8/8), completed with 8 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   0f5bd00..899b0a0  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (51G free, healthy).
+
+**Implemented:**
+- `App.tsx` — global `keydown` listener: `Ctrl+F` navigates to Search, `Ctrl+,` navigates to Settings, both with  (important for `Ctrl+F` since Electron would otherwise trigger Chromium's built-in find bar)
+- `Settings.tsx` — new "Keyboard Shortcuts" section displaying both shortcuts in a simple `<kbd>`-styled table
+
+Remember to restart your `npm run dev` session (same reason as the search fix) since this also touches the renderer's `App.tsx` — though that one *does* hot-reload via Vite, so a full restart isn't strictly required this time, just a page refresh if HMR doesn't pick it up cleanly.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Add keyboard shortcuts for Search and Settings* (1/2)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 20:59:36Z)**_
+
+can we make the dev tools not appear by default? I can always open dev tools with Ctrl+Shift+I
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `createWindow.ts`, lines 1 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **createWindow.ts**</summary>
+
+@@ lines 32-34 @@
+
+```
+// DevTools are not opened automatically; toggle manually with Ctrl+Shift+I.
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.control && input.shift && input.key.toLowerCase() === 'i') {
+      win.webContents.toggleDevTools()
+    }
+  })
+
+  if (isDev) {
+    void win.loadURL('http://localhost:5173'
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's check for errors, verify integrity/sync, and build.       
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `createWindow.ts`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/window/createWindow.ts && git fetch origin 2>&1 | tail -5 && ...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact, in sync. Building.         
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's launch and confirm devtools no longer opens automatically.         
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` NODE\_ENV=development npx electron . --no-sandbox 2>&1`
 </details></tool-use>

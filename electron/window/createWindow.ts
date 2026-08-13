@@ -29,9 +29,15 @@ export function createMainWindow(): BrowserWindow {
     return { action: 'deny' }
   })
 
+  // DevTools are not opened automatically; toggle manually with Ctrl+Shift+I.
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.control && input.shift && input.key.toLowerCase() === 'i') {
+      win.webContents.toggleDevTools()
+    }
+  })
+
   if (isDev) {
     void win.loadURL('http://localhost:5173')
-    win.webContents.openDevTools({ mode: 'detach' })
   } else {
     void win.loadFile(path.join(__dirname, '../../../dist/index.html'))
   }
