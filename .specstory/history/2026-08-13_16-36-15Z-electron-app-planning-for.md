@@ -4386,3 +4386,2267 @@ no, as long as the user can filter the type, that is sufficient.
 _**Agent (copilot/auto)**_
 
 Understood — filter-based categorization is sufficient as-is, no doc changes needed.
+
+---
+
+_**User (2026-08-13 17:14:57Z)**_
+
+very well, let's begin implementation for v0.1.0 of DiscDock
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_listDirectory"><details>
+<summary>Tool use: **copilot_listDirectory**</summary>
+
+Read `DiscDock`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` node -v && npm -v`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm create electron-vite@latest . -- --template react-ts --yes 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_terminal_output"><details>
+<summary>Tool use: **get_terminal_output**</summary>
+
+Checked terminal output
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_terminal_output"><details>
+<summary>Tool use: **get_terminal_output**</summary>
+
+Checked terminal output
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm init -y >/dev/null 2>&1 && echo done`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now installing dependencies: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm install --save-dev electron electron-builder vite @vitejs/plugin-react t...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm install react react-dom better-sqlite3 2>&1 | tail -40`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm approve-scripts --allow-scripts-pending 2>&1 | tail -20`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm approve-scripts better-sqlite3 electron electron-winstaller 2>&1 | tail -30`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron --version 2>&1 | tail -10`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ls node\_modules/better-sqlite3/build/Release/ 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron-builder install-app-deps 2>&1 | tail -40`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Good, that worked despite the Node version warning. Now let's scaffold the project structure. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_memory"><details>
+<summary>Tool use: **copilot_memory**</summary>
+
+Created memory file `discdock-build.md`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `package.json`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_replaceString"><details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Replacing 11 lines with 19 lines in `package.json`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **package.json**</summary>
+
+@@ lines 3-9 @@
+
+```
+0.1.0",
+  "description": "Catalog and search your external/removable media collection",
+  "main": "dist-electron/main.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron .\"",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p electron/tsconfig.json",
+    "build": "npm run build:renderer && npm run build:electron",
+    "start": "electron .",
+    "package": "npm run build && electron-builder",
+    "package:linux": "npm run build && electron-builder --linux deb AppImage",
+    "postinstall": "electron-builder install-app-deps",
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the config files, electron main/preload/window/db, and renderer scaffold: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `tsconfig.json`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **tsconfig.json**</summary>
+
+@@ lines 1-1 @@
+
+```
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["shared/*"]
+    }
+  },
+  "include": ["src", "shared"]
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `tsconfig.json`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **tsconfig.json**</summary>
+
+@@ lines 1-1 @@
+
+```
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "../dist-electron",
+    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../shared/*"]
+    }
+  },
+  "include": ["**/*.ts", "../shared/**/*.ts"]
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **tsconfig.json**</summary>
+
+@@ lines 1-1 @@
+
+```
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["shared/*"]
+    }
+  },
+  "include": ["src", "shared"]
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **tsconfig.json**</summary>
+
+@@ lines 1-1 @@
+
+```
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "outDir": "../dist-electron",
+    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../shared/*"]
+    }
+  },
+  "include": ["**/*.ts", "../shared/**/*.ts"]
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 4 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `vite.config.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **vite.config.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// Renderer build config. Electron main/preload are compiled separately via tsc (see electron/tsconfig.json).
+export default defineConfig({
+  root: 'src',
+  base: './',
+  plugins: [react()],
+  build: {
+    outDir: '../dist',
+    emptyOutDir: true
+  },
+  server: {
+    port: 5173,
+    strictPort: true
+  }
+})
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `index.html`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.html**</summary>
+
+@@ lines 1-1 @@
+
+```
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Renderer only ever loads local bundled assets; no remote sources allowed. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+    <title>DiscDock</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/main.tsx"></script>
+  </body>
+</html>
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `types.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+// Shared type contracts between main, preload, and renderer processes.
+
+export interface IpcOk<T> {
+  ok: true
+  data: T
+}
+
+export interface IpcErr {
+  ok: false
+  error: { code: string; message: string }
+}
+
+export type IpcResult<T> = IpcOk<T> | IpcErr
+
+export interface WindowState {
+  maximized: boolean
+}
+
+export type MediaType =
+  | 'cd'
+  | 'dvd'
+  | 'bluray'
+  | 'usb_drive'
+  | 'external_hdd'
+  | 'external_ssd'
+  | 'sd_card'
+  | 'network_share'
+  | 'other'
+
+export interface MediaItem {
+  id: number
+  label: string
+  mediaType: MediaType
+  deviceFingerprint: string | null
+  capacityBytes: number | null
+  physicalLocation: string | null
+  notes: string | null
+  status: 'active' | 'retired' | 'lost'
+  createdAt: string
+  lastScannedAt: string | null
+  lastVerifiedAt: string | null
+}
+
+export interface DashboardSummary {
+  totalMediaItems: number
+  totalFiles: number
+  totalSizeBytes: number
+  mediaNeedingVerification: number
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the electron main process: window creation, preload, window-control IPC, and DB init/migrations. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `createWindow.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **createWindow.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { BrowserWindow, shell } from 'electron'
+import path from 'node:path'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export function createMainWindow(): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
+    // Frameless: DiscDock renders its own title bar/toolbar and window controls.
+    frame: false,
+    backgroundColor: '#1e1e1e',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../electron/preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => win.show())
+
+  // Never allow navigation to or opening of remote content from the renderer.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  if (isDev) {
+    void win.loadURL('http://localhost:5173')
+    win.webContents.openDevTools({ mode: 'detach' })
+  } else {
+    void win.loadFile(path.join(__dirname, '../dist/index.html'))
+  }
+
+  return win
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **createWindow.ts**</summary>
+
+@@ lines 17-36 @@
+
+```
+preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => win.show())
+
+  // Never allow navigation to or opening of remote content from the renderer.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  if (isDev) {
+    void win.loadURL('http://localhost:5173')
+    win.webContents.openDevTools({ mode: 'detach' })
+  } else {
+    void win.loadFile(path.join(__dirname, '../
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the DB module with 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Added 1 todo
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+migrations: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `index.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import Database from 'better-sqlite3'
+import { app } from 'electron'
+import path from 'node:path'
+import fs from 'node:fs'
+
+let db: Database.Database | null = null
+
+const MIGRATIONS: { version: number; sql: string }[] = [
+  {
+    version: 1,
+    sql: `
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        version INTEGER PRIMARY KEY
+      );
+
+      CREATE TABLE IF NOT EXISTS media_item (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        label TEXT NOT NULL,
+        media_type TEXT NOT NULL,
+        device_fingerprint TEXT,
+        capacity_bytes INTEGER,
+        physical_location TEXT,
+        notes TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        last_scanned_at TEXT,
+        last_verified_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_media_item_type ON media_item(media_type);
+      CREATE INDEX IF NOT EXISTS idx_media_item_status ON media_item(status);
+      CREATE INDEX IF NOT EXISTS idx_media_item_fingerprint ON media_item(device_fingerprint);
+
+      CREATE TABLE IF NOT EXISTS scan_job (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        status TEXT NOT NULL,
+        hash_mode TEXT NOT NULL DEFAULT 'none',
+        started_at TEXT NOT NULL DEFAULT (datetime('now')),
+        completed_at TEXT,
+        files_added INTEGER NOT NULL DEFAULT 0,
+        files_removed INTEGER NOT NULL DEFAULT 0,
+        files_modified INTEGER NOT NULL DEFAULT 0,
+        files_unchanged INTEGER NOT NULL DEFAULT 0,
+        error_count INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_scan_job_media_item ON scan_job(media_item_id);
+
+      CREATE TABLE IF NOT EXISTS scan_error (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        scan_job_id INTEGER NOT NULL REFERENCES scan_job(id),
+        path TEXT NOT NULL,
+        error_type TEXT NOT NULL,
+        message TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS file_record (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        parent_folder_id INTEGER REFERENCES file_record(id),
+        path TEXT NOT NULL,
+        name TEXT NOT NULL,
+        extension TEXT,
+        kind TEXT,
+        size_bytes INTEGER NOT NULL DEFAULT 0,
+        created_at_src TEXT,
+        modified_at_src TEXT,
+        hash_algo TEXT,
+        hash_value TEXT,
+        is_directory INTEGER NOT NULL DEFAULT 0,
+        last_seen_scan_id INTEGER REFERENCES scan_job(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_file_record_media_item ON file_record(media_item_id);
+      CREATE INDEX IF NOT EXISTS idx_file_record_hash ON file_record(hash_value);
+      CREATE INDEX IF NOT EXISTS idx_file_record_extension ON file_record(extension);
+
+      CREATE VIRTUAL TABLE IF NOT EXISTS file_record_fts USING fts5(
+        name, path, content='file_record', content_rowid='id'
+      );
+
+      CREATE TABLE IF NOT EXISTS tag (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL UNIQUE
+      );
+
+      CREATE TABLE IF NOT EXISTS media_item_tag (
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        tag_id INTEGER NOT NULL REFERENCES tag(id),
+        PRIMARY KEY (media_item_id, tag_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS collection (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS collection_media_item (
+        collection_id INTEGER NOT NULL REFERENCES collection(id),
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        PRIMARY KEY (collection_id, media_item_id)
+      );
+    `
+  }
+]
+
+function runMigrations(database: Database.Database): void {
+  database.pragma('journal_mode = WAL')
+  database.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY)')
+
+  const appliedVersions = new Set(
+    (database.prepare('SELECT version FROM schema_migrations').all() as { version: number }[]).map(
+      (row) => row.version
+    )
+  )
+
+  for (const migration of MIGRATIONS) {
+    if (appliedVersions.has(migration.version)) continue
+    const applyMigration = database.transaction(() => {
+      database.exec(migration.sql)
+      database
+        .prepare('INSERT INTO schema_migrations (version) VALUES (?)')
+        .run(migration.version)
+    })
+    applyMigration()
+  }
+}
+
+export function getDb(): Database.Database {
+  if (db) return db
+
+  const userDataDir = app.getPath('userData')
+  fs.mkdirSync(userDataDir, { recursive: true })
+  const dbPath = path.join(userDataDir, 'discdock.sqlite3')
+
+  db = new Database(dbPath)
+  runMigrations(db)
+
+  return db
+}
+
+export function closeDb(): void {
+  db?.close()
+  db = null
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the window-control IPC handlers and preload script:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `windowControls.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **windowControls.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { BrowserWindow, ipcMain } from 'electron'
+import type { IpcResult, WindowState } from '../../shared/types'
+
+// Window-control channels only ever act on the given BrowserWindow instance —
+// no renderer-supplied window handle is ever accepted.
+export function registerWindowControlIpc(win: BrowserWindow): void {
+  ipcMain.handle('window:minimize', (): IpcResult<null> => {
+    win.minimize()
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:maximize', (): IpcResult<null> => {
+    if (win.isMaximized()) {
+      win.unmaximize()
+    } else {
+      win.maximize()
+    }
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:close', (): IpcResult<null> => {
+    win.close()
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:isMaximized', (): IpcResult<WindowState> => {
+    return { ok: true, data: { maximized: win.isMaximized() } }
+  })
+
+  const sendState = (): void => {
+    win.webContents.send('window:stateChanged', { maximized: win.isMaximized() } satisfies WindowState)
+  }
+  win.on('maximize', sendState)
+  win.on('unmaximize', sendState)
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `dashboard.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **windowControls.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { BrowserWindow, ipcMain } from 'electron'
+import type { IpcResult, WindowState } from '../../shared/types'
+
+// Window-control channels only ever act on the given BrowserWindow instance —
+// no renderer-supplied window handle is ever accepted.
+export function registerWindowControlIpc(win: BrowserWindow): void {
+  ipcMain.handle('window:minimize', (): IpcResult<null> => {
+    win.minimize()
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:maximize', (): IpcResult<null> => {
+    if (win.isMaximized()) {
+      win.unmaximize()
+    } else {
+      win.maximize()
+    }
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:close', (): IpcResult<null> => {
+    win.close()
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('window:isMaximized', (): IpcResult<WindowState> => {
+    return { ok: true, data: { maximized: win.isMaximized() } }
+  })
+
+  const sendState = (): void => {
+    win.webContents.send('window:stateChanged', { maximized: win.isMaximized() } satisfies WindowState)
+  }
+  win.on('maximize', sendState)
+  win.on('unmaximize', sendState)
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **dashboard.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { getDb } from '../db'
+import type { DashboardSummary, IpcResult } from '../../shared/types'
+
+export function registerDashboardIpc(): void {
+  ipcMain.handle('dashboard:summary', (): IpcResult<DashboardSummary> => {
+    const db = getDb()
+
+    const { count: totalMediaItems } = db
+      .prepare('SELECT COUNT(*) as count FROM media_item')
+      .get() as { count: number }
+
+    const { count: totalFiles, total: totalSizeBytes } = db
+      .prepare(
+        'SELECT COUNT(*) as count, COALESCE(SUM(size_bytes), 0) as total FROM file_record WHERE is_directory = 0'
+      )
+      .get() as { count: number; total: number }
+
+    const { count: mediaNeedingVerification } = db
+      .prepare(
+        `SELECT COUNT(*) as count FROM media_item
+         WHERE status = 'active'
+           AND (last_verified_at IS NULL OR last_verified_at < datetime('now', '-12 months'))`
+      )
+      .get() as { count: number }
+
+    return {
+      ok: true,
+      data: { totalMediaItems, totalFiles, totalSizeBytes, mediaNeedingVerification }
+    }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `preload.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { contextBridge, ipcRenderer } from 'electron'
+import type { DashboardSummary, IpcResult, WindowState } from '../shared/types'
+
+const api = {
+  window: {
+    minimize: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:minimize'),
+    maximize: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:maximize'),
+    close: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:close'),
+    isMaximized: (): Promise<IpcResult<WindowState>> => ipcRenderer.invoke('window:isMaximized'),
+    onStateChanged: (callback: (state: WindowState) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, state: WindowState): void => callback(state)
+      ipcRenderer.on('window:stateChanged', listener)
+      return () => ipcRenderer.removeListener('window:stateChanged', listener)
+    }
+  },
+  dashboard: {
+    getSummary: (): Promise<IpcResult<DashboardSummary>> => ipcRenderer.invoke('dashboard:summary')
+  },
+  app: {
+    getVersion: (): Promise<IpcResult<string>> => ipcRenderer.invoke('app:getVersion')
+  }
+}
+
+contextBridge.exposeInMainWorld('discdock', api)
+
+export type DiscDockApi = typeof api
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the main.ts entry point, app:getVersion IPC, and main process bootstrap:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `main.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { createMainWindow } from './window/createWindow'
+import { registerWindowControlIpc } from './ipc/windowControls'
+import { registerDashboardIpc } from './ipc/dashboard'
+import { getDb, closeDb } from './db'
+import type { IpcResult } from '../shared/types'
+
+let mainWindow: BrowserWindow | null = null
+
+function registerAppIpc(): void {
+  ipcMain.handle('app:getVersion', (): IpcResult<string> => {
+    return { ok: true, data: app.getVersion() }
+  })
+}
+
+app.whenReady().then(() => {
+  getDb() // initialize database + run migrations before the window is shown
+
+  mainWindow = createMainWindow()
+  registerWindowControlIpc(mainWindow)
+  registerDashboardIpc()
+  registerAppIpc()
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      mainWindow = createMainWindow()
+      registerWindowControlIpc(mainWindow)
+    }
+  })
+})
+
+app.on('window-all-closed', () => {
+  closeDb()
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `discdock-api.d.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **discdock-api.d.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import type { DiscDockApi } from '../electron/preload'
+
+declare global {
+  interface Window {
+    discdock: DiscDockApi
+  }
+}
+
+export {}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `main.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import './styles/global.css'
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+)
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `TitleBar.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Update UI/UX Specification for formless design* (1/5)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **TitleBar.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+
+interface WindowState {
+  maximized: boolean
+}
+
+// Custom title bar replacing the OS-native one, since the BrowserWindow is created with frame: false.
+export default function TitleBar(): JSX.Element {
+  const [maximized, setMaximized] = useState(false)
+
+  useEffect(() => {
+    void window.discdock.window.isMaximized().then((result) => {
+      if (result.ok) setMaximized(result.data.maximized)
+    })
+    return window.discdock.window.onStateChanged((state: WindowState) => setMaximized(state.maximized))
+  }, [])
+
+  return (
+    <header className="title-bar">
+      <div className="title-bar__drag-region">
+        <span className="title-bar__icon" aria-hidden="true">
+          💿
+        </span>
+        <span className="title-bar__title">DiscDock</span>
+      </div>
+      <div className="title-bar__controls">
+        <button
+          type="button"
+          className="title-bar__button"
+          aria-label="Minimize"
+          onClick={() => void window.discdock.window.minimize()}
+        >
+          &#x2212;
+        </button>
+        <button
+          type="button"
+          className="title-bar__button"
+          aria-label={maximized ? 'Restore' : 'Maximize'}
+          onClick={() => void window.discdock.window.maximize()}
+        >
+          {maximized ? '❐' : '☐'}
+        </button>
+        <button
+          type="button"
+          className="title-bar__button title-bar__button--close"
+          aria-label="Close"
+          onClick={() => void window.discdock.window.close()}
+        >
+          &#x2715;
+        </button>
+      </div>
+    </header>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `TitleBar.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **TitleBar.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.title-bar {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  background: var(--color-titlebar-bg);
+  color: var(--color-titlebar-fg);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.title-bar__drag-region {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+  height: 100%;
+  flex: 1;
+}
+
+.title-bar__icon {
+  font-size: 14px;
+}
+
+.title-bar__title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.title-bar__controls {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.title-bar__button {
+  width: 46px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title-bar__button:hover {
+  background: var(--color-titlebar-hover);
+}
+
+.title-bar__button--close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `Sidebar.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Sidebar.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+export interface NavItem {
+  key: string
+  label: string
+}
+
+export const NAV_ITEMS: NavItem[] = [
+  { key: 'dashboard', label: 'Dashboard' },
+  { key: 'media-library', label: 'Media Library' },
+  { key: 'search', label: 'Search' },
+  { key: 'duplicates', label: 'Duplicates' },
+  { key: 'collections', label: 'Collections' },
+  { key: 'backup-export', label: 'Backup / Export' },
+  { key: 'settings', label: 'Settings' }
+]
+
+interface SidebarProps {
+  active: string
+  onSelect: (key: string) => void
+}
+
+export default function Sidebar({ active, onSelect }: SidebarProps): JSX.Element {
+  return (
+    <nav className="sidebar">
+      <ul className="sidebar__list">
+        {NAV_ITEMS.map((item) => (
+          <li key={item.key}>
+            <button
+              type="button"
+              className={`sidebar__item${item.key === active ? ' sidebar__item--active' : ''}`}
+              onClick={() => onSelect(item.key)}
+            >
+              {item.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `Sidebar.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { createMainWindow } from './window/createWindow'
+import { registerWindowControlIpc } from './ipc/windowControls'
+import { registerDashboardIpc } from './ipc/dashboard'
+import { getDb, closeDb } from './db'
+import type { IpcResult } from '../shared/types'
+
+let mainWindow: BrowserWindow | null = null
+
+function registerAppIpc(): void {
+  ipcMain.handle('app:getVersion', (): IpcResult<string> => {
+    return { ok: true, data: app.getVersion() }
+  })
+}
+
+app.whenReady().then(() => {
+  getDb() // initialize database + run migrations before the window is shown
+
+  mainWindow = createMainWindow()
+  registerWindowControlIpc(mainWindow)
+  registerDashboardIpc()
+  registerAppIpc()
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      mainWindow = createMainWindow()
+      registerWindowControlIpc(mainWindow)
+    }
+  })
+})
+
+app.on('window-all-closed', () => {
+  closeDb()
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **discdock-api.d.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import type { DiscDockApi } from '../electron/preload'
+
+declare global {
+  interface Window {
+    discdock: DiscDockApi
+  }
+}
+
+export {}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import './styles/global.css'
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+)
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **TitleBar.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+
+interface WindowState {
+  maximized: boolean
+}
+
+// Custom title bar replacing the OS-native one, since the BrowserWindow is created with frame: false.
+export default function TitleBar(): JSX.Element {
+  const [maximized, setMaximized] = useState(false)
+
+  useEffect(() => {
+    void window.discdock.window.isMaximized().then((result) => {
+      if (result.ok) setMaximized(result.data.maximized)
+    })
+    return window.discdock.window.onStateChanged((state: WindowState) => setMaximized(state.maximized))
+  }, [])
+
+  return (
+    <header className="title-bar">
+      <div className="title-bar__drag-region">
+        <span className="title-bar__icon" aria-hidden="true">
+          💿
+        </span>
+        <span className="title-bar__title">DiscDock</span>
+      </div>
+      <div className="title-bar__controls">
+        <button
+          type="button"
+          className="title-bar__button"
+          aria-label="Minimize"
+          onClick={() => void window.discdock.window.minimize()}
+        >
+          &#x2212;
+        </button>
+        <button
+          type="button"
+          className="title-bar__button"
+          aria-label={maximized ? 'Restore' : 'Maximize'}
+          onClick={() => void window.discdock.window.maximize()}
+        >
+          {maximized ? '❐' : '☐'}
+        </button>
+        <button
+          type="button"
+          className="title-bar__button title-bar__button--close"
+          aria-label="Close"
+          onClick={() => void window.discdock.window.close()}
+        >
+          &#x2715;
+        </button>
+      </div>
+    </header>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **TitleBar.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.title-bar {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  background: var(--color-titlebar-bg);
+  color: var(--color-titlebar-fg);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.title-bar__drag-region {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+  height: 100%;
+  flex: 1;
+}
+
+.title-bar__icon {
+  font-size: 14px;
+}
+
+.title-bar__title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.title-bar__controls {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.title-bar__button {
+  width: 46px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title-bar__button:hover {
+  background: var(--color-titlebar-hover);
+}
+
+.title-bar__button--close:hover {
+  background: #e81123;
+  color: #fff;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Sidebar.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+export interface NavItem {
+  key: string
+  label: string
+}
+
+export const NAV_ITEMS: NavItem[] = [
+  { key: 'dashboard', label: 'Dashboard' },
+  { key: 'media-library', label: 'Media Library' },
+  { key: 'search', label: 'Search' },
+  { key: 'duplicates', label: 'Duplicates' },
+  { key: 'collections', label: 'Collections' },
+  { key: 'backup-export', label: 'Backup / Export' },
+  { key: 'settings', label: 'Settings' }
+]
+
+interface SidebarProps {
+  active: string
+  onSelect: (key: string) => void
+}
+
+export default function Sidebar({ active, onSelect }: SidebarProps): JSX.Element {
+  return (
+    <nav className="sidebar">
+      <ul className="sidebar__list">
+        {NAV_ITEMS.map((item) => (
+          <li key={item.key}>
+            <button
+              type="button"
+              className={`sidebar__item${item.key === active ? ' sidebar__item--active' : ''}`}
+              onClick={() => onSelect(item.key)}
+            >
+              {item.label}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Sidebar.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--color-sidebar-bg);
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+}
+
+.sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar__item {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.sidebar__item:hover {
+  background: var(--color-sidebar-hover);
+}
+
+.sidebar__item--active {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `Dashboard.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Dashboard.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+import type { DashboardSummary } from '../../shared/types'
+
+const EMPTY_SUMMARY: DashboardSummary = {
+  totalMediaItems: 0,
+  totalFiles: 0,
+  totalSizeBytes: 0,
+  mediaNeedingVerification: 0
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+export default function Dashboard(): JSX.Element {
+  const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY)
+
+  useEffect(() => {
+    void window.discdock.dashboard.getSummary().then((result) => {
+      if (result.ok) setSummary(result.data)
+    })
+  }, [])
+
+  return (
+    <div className="dashboard">
+      <h1>Dashboard</h1>
+      <div className="dashboard__cards">
+        <div className="card">
+          <span className="card__value">{summary.totalMediaItems}</span>
+          <span className="card__label">Total Media Items</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{summary.totalFiles}</span>
+          <span className="card__label">Total Files Catalogued</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{formatBytes(summary.totalSizeBytes)}</span>
+          <span className="card__label">Total Catalogued Size</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{summary.mediaNeedingVerification}</span>
+          <span className="card__label">Media Needing Verification</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now placeholder views for the remaining nav items, `App.tsx`, and global styles:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `PlaceholderView.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **PlaceholderView.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+interface PlaceholderViewProps {
+  title: string
+}
+
+export default function PlaceholderView({ title }: PlaceholderViewProps): JSX.Element {
+  return (
+    <div className="placeholder-view">
+      <h1>{title}</h1>
+      <p>This section is planned but not yet implemented.</p>
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `App.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **App.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useState } from 'react'
+import TitleBar from './components/TitleBar'
+import Sidebar from './components/Sidebar'
+import Dashboard from './views/Dashboard'
+import PlaceholderView from './views/PlaceholderView'
+import { NAV_ITEMS } from './components/Sidebar'
+
+const VIEW_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.label])
+)
+
+export default function App(): JSX.Element {
+  const [activeView, setActiveView] = useState('dashboard')
+
+  return (
+    <div className="app-shell">
+      <TitleBar />
+      <div className="app-body">
+        <Sidebar active={activeView} onSelect={setActiveView} />
+        <main className="app-content">
+          {activeView === 'dashboard' ? (
+            <Dashboard />
+          ) : (
+            <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
+          )}
+        </main>
+      </div>
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `global.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **global.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+:root {
+  --color-bg: #1e1e1e;
+  --color-text: #e6e6e6;
+  --color-border: #333;
+  --color-titlebar-bg: #171717;
+  --color-titlebar-fg: #e6e6e6;
+  --color-titlebar-hover: #333;
+  --color-sidebar-bg: #181818;
+  --color-sidebar-hover: #2a2a2a;
+  --color-accent: #3b82f6;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: #f5f5f5;
+    --color-text: #1e1e1e;
+    --color-border: #ddd;
+    --color-titlebar-bg: #e8e8e8;
+    --color-titlebar-fg: #1e1e1e;
+    --color-titlebar-hover: #d8d8d8;
+    --color-sidebar-bg: #f0f0f0;
+    --color-sidebar-hover: #e0e0e0;
+    color-scheme: light;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.dashboard__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 20px;
+  min-width: 180px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.card__value {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.card__label {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **TitleBar.tsx**</summary>
+
+@@ lines 2-2 @@
+
+```
+import './TitleBar.css'
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Sidebar.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import './Sidebar.css'
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's create the 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Added 2 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+electron-builder config, and update `.gitignore` for the new build artifacts:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `electron-builder.yml`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **electron-builder.yml**</summary>
+
+@@ lines 1-1 @@
+
+```
+appId: com.discdock.app
+productName: DiscDock
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+linux:
+  category: Utility
+  target:
+    - target: deb
+      arch: [x64]
+    - target: AppImage
+      arch: [x64]
+  desktop:
+    entry:
+      Name: DiscDock
+      Comment: Catalog and search your external media collection
+      Categories: Utility;FileTools;
+deb:
+  depends:
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libgtk-3-0
+  packageCategory: utils
+appImage:
+  license: LICENSE
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `.gitignore`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **.gitignore**</summary>
+
+@@ lines 3-3 @@
+
+```
+dist-electron/
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's build and try running the app. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:electron 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **tsconfig.json**</summary>
+
+@@ lines 5-12 @@
+
+```
+bundler",
+    "outDir": "../dist-electron",
+    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **tsconfig.json**</summary>
+
+@@ lines 5-12 @@
+
+```
+bundler",
+    "outDir": "../dist-electron",
+    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:electron 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_multiReplaceString"><details>
+<summary>Tool use: **copilot_multiReplaceString**</summary>
+
+Replacing 4 lines with 4 lines in `tsconfig.json`, `package.json`, `createWindow.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **tsconfig.json**</summary>
+
+@@ lines 7-7 @@
+
+```
+.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **package.json**</summary>
+
+@@ lines 5-5 @@
+
+```
+electron/
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **createWindow.ts**</summary>
+
+@@ lines 36-36 @@
+
+```
+../
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now install `@types/better-sqlite3` and rebuild: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm install --save-dev @types/better-sqlite3 2>&1 | tail -20`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:electron 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Compiles cleanly. Now build the renderer and check for TS/type errors there:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:renderer 2>&1 | tail -80`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Builds fine (just a benign Vite config warning). Now let's launch the app to verify it actually runs.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` xvfb-run -a npx electron . 2>&1 | head -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` timeout 8 npx electron . --no-sandbox 2>&1 | head -60; echo "EXIT:$?"`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` which Xvfb xvfb-run 2>&1; echo $DISPLAY; apt list --installed 2>/dev/null | ...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+It's idle with no error output — the app launched successfully and is running (a window should be visible on screen). Let's take a screenshot to visually confirm the frameless UI looks right. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="tool_search"><details>
+<summary>Tool use: **tool_search**</summary>
+
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` which scrot gnome-screenshot import 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` import -window root /tmp/discdock-screenshot.png 2>&1 && ls -la /tmp/discdoc...`
+
+Capture a screenshot of the desktop to verify the app window rendering
+
+```bash
+import -window root /tmp/discdock-screenshot.png 2>&1 && ls -la /tmp/discdock-screenshot.png
+```
+
+**Result:**
+
+```
+-rw-rw-r-- 1 kel kel 258012 Aug 13 12:32 /tmp/discdock-screenshot.png
+[image/png embed]
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_viewImage"><details>
+<summary>Tool use: **copilot_viewImage**</summary>
+
+Viewed image `discdock-screenshot.png`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The app renders correctly: 
+
+It's idle with no error output — the app launched successfully and is running (a window should be visible on screen). Let's take a screenshot to visually confirm the frameless UI looks right. 
+
+The app renders correctly: frameless window, custom title bar with DiscDock label and min/restore/close buttons, left sidebar nav, and the Dashboard view pulling live (zeroed) stats from SQLite via IPC. Let's close it now. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+</details></tool-use>

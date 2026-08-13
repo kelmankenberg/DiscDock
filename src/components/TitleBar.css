@@ -1,0 +1,57 @@
+.title-bar {
+  -webkit-app-region: drag;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  background: var(--color-titlebar-bg);
+  color: var(--color-titlebar-fg);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.title-bar__drag-region {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 10px;
+  height: 100%;
+  flex: 1;
+}
+
+.title-bar__icon {
+  font-size: 14px;
+}
+
+.title-bar__title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.title-bar__controls {
+  display: flex;
+  height: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.title-bar__button {
+  width: 46px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title-bar__button:hover {
+  background: var(--color-titlebar-hover);
+}
+
+.title-bar__button--close:hover {
+  background: #e81123;
+  color: #fff;
+}

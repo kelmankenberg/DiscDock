@@ -1,0 +1,30 @@
+appId: com.discdock.app
+productName: DiscDock
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+linux:
+  category: Utility
+  target:
+    - target: deb
+      arch: [x64]
+    - target: AppImage
+      arch: [x64]
+  desktop:
+    entry:
+      Name: DiscDock
+      Comment: Catalog and search your external media collection
+      Categories: Utility;FileTools;
+deb:
+  depends:
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libgtk-3-0
+  packageCategory: utils
+appImage:
+  license: LICENSE
