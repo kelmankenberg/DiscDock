@@ -113,7 +113,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   const handleScan = (mediaId: number): void => {
     void window.discdock.dialogs.pickFolder().then((pickResult) => {
       if (!pickResult.ok || !pickResult.data.path) return
-      void window.discdock.scan.start(mediaId, pickResult.data.path, 'none').then((startResult) => {
+      void window.discdock.scan.start(mediaId, pickResult.data.path).then((startResult) => {
         if (startResult.ok) {
           const jobId = startResult.data.jobId
           setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))

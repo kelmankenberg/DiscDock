@@ -9,11 +9,30 @@ import type { WalkedFile } from '../db/scanRepository'
 const QUICK_HASH_SAMPLE_BYTES = 65536
 const PROGRESS_YIELD_EVERY = 200
 
+export interface ScanOptions {
+  hashMode: HashMode
+  excludePatterns: string[]
+  followSymlinks: boolean
+}
+
 export interface ScanCallbacks {
   onFile: (file: WalkedFile) => void
   onProgress: (filesProcessed: number, bytesProcessed: number, currentPath: string) => void
   onError: (relativePath: string, errorType: string, message: string) => void
   isCancelled: () => boolean
+}
+
+/** Converts a simple glob (`*`, `**`) into a RegExp for exclude-pattern matching (FR-2.4). */
+function globToRegExp(pattern: string): RegExp {
+  let escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+  escaped = escaped.replace(/\*\*\//g, '(?:.*/)?') // "**/" matches zero or more leading path segments
+  escaped = escaped.replace(/\*\*/g, '.*')
+  escaped = escaped.replace(/\*/g, '[^/]*')
+  return new RegExp(`^${escaped}$`)
+}
+
+function isExcluded(relativePath: string, excludeRegexes: RegExp[]): boolean {
+  return excludeRegexes.some((re) => re.test(relativePath))
 }
 
 async function hashFile(absolutePath: string, mode: HashMode, size: number): Promise<string | null> {
@@ -49,9 +68,11 @@ async function hashFile(absolutePath: string, mode: HashMode, size: number): Pro
  */
 export async function walkAndScan(
   rootPath: string,
-  hashMode: HashMode,
+  options: ScanOptions,
   callbacks: ScanCallbacks
 ): Promise<{ filesProcessed: number; bytesProcessed: number }> {
+  const { hashMode, followSymlinks } = options
+  const excludeRegexes = options.excludePatterns.map(globToRegExp)
   const stack: string[] = [rootPath]
   let filesProcessed = 0
   let bytesProcessed = 0
@@ -74,15 +95,17 @@ export async function walkAndScan(
       const absolutePath = path.join(currentDir, entryName)
       const relativePath = path.relative(rootPath, absolutePath)
 
+      if (isExcluded(relativePath, excludeRegexes)) continue
+
       let stat
       try {
-        stat = await fs.lstat(absolutePath)
+        stat = followSymlinks ? await fs.stat(absolutePath) : await fs.lstat(absolutePath)
       } catch (err) {
         callbacks.onError(relativePath, 'stat_failed', (err as Error).message)
         continue
       }
 
-      if (stat.isSymbolicLink()) continue // symlinks not followed by default (FR-2.5)
+      if (!followSymlinks && stat.isSymbolicLink()) continue // symlinks not followed by default (FR-2.5)
 
       if (stat.isDirectory()) {
         stack.push(absolutePath)

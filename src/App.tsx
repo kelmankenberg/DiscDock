@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import TitleBar from './components/TitleBar'
 import Sidebar from './components/Sidebar'
 import Dashboard from './views/Dashboard'
@@ -6,6 +6,7 @@ import MediaLibrary from './views/MediaLibrary'
 import MediaDetail from './views/MediaDetail'
 import Search from './views/Search'
 import Duplicates from './views/Duplicates'
+import SettingsView from './views/Settings'
 import PlaceholderView from './views/PlaceholderView'
 import { NAV_ITEMS } from './components/Sidebar'
 
@@ -16,6 +17,12 @@ const VIEW_TITLES: Record<string, string> = Object.fromEntries(
 export default function App(): JSX.Element {
   const [activeView, setActiveView] = useState('dashboard')
   const [selectedMediaId, setSelectedMediaId] = useState<number | null>(null)
+
+  useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) document.documentElement.dataset.theme = result.data.theme
+    })
+  }, [])
 
   const handleSelectNav = (key: string): void => {
     setSelectedMediaId(null)
@@ -35,6 +42,8 @@ export default function App(): JSX.Element {
         return <Search />
       case 'duplicates':
         return <Duplicates />
+      case 'settings':
+        return <SettingsView />
       default:
         return <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
     }

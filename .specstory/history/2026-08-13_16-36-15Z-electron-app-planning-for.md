@@ -21007,6 +21007,12 @@ continue with what is the next logical step
 
 _**Agent (copilot/auto)**_
 
+<think><details><summary>Thought Process</summary>
+Now update `MediaLibrary.tsx` to accept the `onOpenDetail` prop and make labels clickable:
+</details></think>
+
+_**Agent (copilot/auto)**_
+
 Let me actually dig into this recurring `npm run dev` failure properly this time, since it keeps showing exit code 1.   
 
 _**Agent (copilot/auto)**_
@@ -21015,14 +21021,92 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` ps aux | grep -iE "electron|vite|node" | grep -v grep`
+
+Check for any stray/zombie electron, vite, or node processes that might be holding the dev server port
+
+```bash
+ps aux | grep -iE "electron|vite|node" | grep -v grep
+```
+
+**Result:**
+
+```
+root        4117  0.0  0.0   2712  2016 ?        Ss   08:29   0:00 fusermount3 -
+o rw,nosuid,nodev,fsname=portal,auto_unmount,subtype=portal -- /run/user/1000/do
+c
+kel       109947  0.0  0.0 50356028 3004 ?       Sl   11:32   0:00 /usr/share/co
+de/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --no
+-rate-limit --database=/home/kel/.config/Code/Crashpad --url=appcenter://code?ai
+d=fba07a4d-84bd-4fc8-a125-9640fc8ce171&uid=ffc24eaa-295d-4af9-9502-0fe524428bf1&
+iid=ffc24eaa-295d-4af9-9502-0fe524428bf1&sid=ffc24eaa-295d-4af9-9502-0fe524428bf
+1 --annotation=_companyName=Microsoft --annotation=_productName=VSCode --annotat
+ion=_version=1.133.0 --annotation=lsb-release=Linux Mint 22.3 --annotation=plat=
+Linux --annotation=prod=Electron --annotation=ver=42.8.0 --initial-client-fd=45
+--shared-client-connection
+kel       110292  0.0  0.3 1520364376 104348 ?   Sl   11:32   0:02 /usr/share/co
+de/code --type=utility --utility-sub-type=node.mojom.NodeService --lang=en-US --
+service-sandbox-type=none --crashpad-handler-pid=109947 --enable-crash-reporter=
+59151965-6007-46ad-a126-a43173d7ec1c,no_channel --user-data-dir=/home/kel/.confi
+g/Code --standard-schemes=vscode-webview,vscode-file --enable-sandbox --secure-s
+chemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-managed-remote-r
+esource --cors-schemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-
+managed-remote-resource --fetch-schemes=vscode-webview,vscode-file,vscode-remote
+-resource,vscode-managed-remote-resource --service-worker-schemes=vscode-webview
+ --code-cache-schemes=vscode-webview,vscode-file --shared-files=v8_context_snaps
+hot_data:100 --field-trial-handle=3,i,10608041074799758650,6196970024516502039,2
+62144 --enable-features=DocumentPolicyIncludeJSCallStacksInCrashReports,EarlyEst
+ablishGpuChannel,EstablishGpuChannelAsync,GlobalShortcutsPortal,PdfUseShowSaveFi
+lePicker --disable-features=CalculateNativeWinOcclusion,DropInputEventsWhilePain
+tHolding,LocalNetworkAccessC
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `content.txt`, lines 1 to 120
+
+**Input:**
+
+- endLine: `120`
+- filePath: `/home/kel/.config/Code/User/workspaceStorage/1a5718aa18a0d669d757142822af9cdc/GitHub.copilot-chat/chat-session-resources/07bef4df-d999-442d-8de4-ad92760a6059/toolu_01XirbLeSuTcgrHosTzVdvHe__vscode-1786638978600/content.txt`
+- startLine: `1`
+
+**Result:**
+
+```
+root        4117  0.0  0.0   2712  2016 ?        Ss   08:29   0:00 fusermount3 -
+o rw,nosuid,nodev,fsname=portal,auto_unmount,subtype=portal -- /run/user/1000/do
+c
+kel       109947  0.0  0.0 50356028 3004 ?       Sl   11:32   0:00 /usr/share/co
+de/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --no
+-rate-limit --database=/home/kel/.config/Code/Crashpad --url=appcenter://code?ai
+d=fba07a4d-84bd-4fc8-a125-9640fc8ce171&uid=ffc24eaa-295d-4af9-9502-0fe524428bf1&
+iid=ffc24eaa-295d-4af9-9502-0fe524428bf1&sid=ffc24eaa-295d-4af9-9502-0fe524428bf
+1 --annotation=_companyName=Microsoft --annotation=_productName=VSCode --annotat
+ion=_version=1.133.0 --annotation=lsb-release=Linux Mint 22.3 --annotation=plat=
+Linux --annotation=prod=Electron --annotation=ver=42.8.0 --initial-client-fd=45
+--shared-client-connection
+kel       110292  0.0  0.3 1520364376 104348 ?   Sl   11:32   0:02 /usr/share/co
+de/code --type=utility --utility-sub-type=node.mojom.NodeService --lang=en-US --
+service-sandbox-type=none --crashpad-handler-pid=109947 --enable-crash-reporter=
+59151965-6007-46ad-a126-a43173d7ec1c,no_channel --user-data-dir=/home/kel/.confi
+g/Code --standard-schemes=vscode-webview,vscode-file --enable-sandbox --secure-s
+chemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-managed-remote-r
+esource --cors-schemes=vscode-webview,vscode-file,vscode-remote-resource,vscode-
+managed-remote-resource --fetch-schemes=vscode-webview,vscode-file,vscode-remote
+-resource,vscode-managed-remote-resource --service-worker-schemes=vscode-webview
+ --code-cache-schemes=vscode-webview,vscode-file --shared-files=v8_context_snaps
+hot_data:100 --field-trial-handle=3,i,10608041074799758650,6196970024516502039,2
+62144 --enable-features=DocumentPolicyIncludeJSCallStacksInCrashReports,EarlyEst
+ablishGpuChannel,EstablishGpuChannelAsync,GlobalShortcutsPortal,PdfUseShowSaveFi
+lePicker --disable-features=CalculateNativeWinOcclusion,DropInputEventsWhilePain
+tHolding,LocalNetworkAccessC
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21031,26 +21115,88 @@ Now let's build the **Media Detail view** (folder browsing + scan history) — t
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 143 to 150
+
+**Input:**
+
+- endLine: `150`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `143`
+
+**Result:**
+
+```
+  total: number
+}
+
+export interface DuplicateOccurrence {
+  mediaItemId: number
+  mediaLabel: string
+  path: string
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 150 to 168
+
+**Input:**
+
+- endLine: `168`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `150`
+
+**Result:**
+
+```
+}
+
+export interface DuplicateGroup {
+  hashValue: string
+  sizeBytes: number
+  occurrences: DuplicateOccurrence[]
+}
+
+export interface DuplicateReportFilters {
+  minGroupSize?: number
+  mediaType?: MediaType
+  kind?: FileKind
+}
+
+export interface DuplicateReport {
+  groups: DuplicateGroup[]
+  totalGroups: number
+  totalFiles: number
+  reclaimableBytes: number
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 168 to 170
+
+**Input:**
+
+- endLine: `173`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `168`
+
+**Result:**
+
+```
+  reclaimableBytes: number
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21080,10 +21226,73 @@ Now the file repository for folder browsing:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `fileRepository.ts`
+
+**Input:**
+
+- content:
+
+```
+import { getDb } from './index'
+import type { FileEntry } from '../../shared/types'
+
+interface FileRow {
+  path: string
+  name: string
+  kind: string
+  is_directory: number
+  size_bytes: number
+  modified_at_src: string | null
+}
+
+/**
+ * Returns the immediate children of folderPath ('' for the media root) for the catalogued tree.
+ * Note: folderPath is matched as a literal prefix; paths containing SQL LIKE wildcards (% or _)
+ * are a known v0.1.0 edge case limitation.
+ */
+export function listFolderContents(mediaItemId: number, folderPath: string): FileEntry[] {
+  const prefix = folderPath ? `${folderPath}/` : ''
+
+  const rows = getDb()
+    .prepare(
+      `SELECT path, name, kind, is_directory, size_bytes, modified_at_src
+       FROM file_record
+       WHERE media_item_id = @mediaItemId
+         AND path LIKE @likePrefix
+         AND path != @folderPath
+         AND instr(substr(path, length(@prefix) + 1), '/') = 0
+       ORDER BY is_directory DESC, name COLLATE NOCASE`
+    )
+    .all({
+      mediaItemId,
+      prefix,
+      likePrefix: `${prefix}%`,
+      folderPath
+    }) as FileRow[]
+
+  return rows.map((row) => ({
+    path: row.path,
+    name: row.name,
+    kind: row.kind,
+    isDirectory: row.is_directory === 1,
+    sizeBytes: row.size_bytes,
+    modifiedAtSrc: row.modified_at_src
+  }))
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/db/fileRepository.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/db/fileRepository.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21150,10 +21359,45 @@ Now the IPC handler:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `files.ts`
+
+**Input:**
+
+- content:
+
+```
+import { ipcMain } from 'electron'
+import { listFolderContents } from '../db/fileRepository'
+import type { FileEntry, IpcResult } from '../../shared/types'
+
+export function registerFilesIpc(): void {
+  ipcMain.handle('files:list', (_event, payload: unknown): IpcResult<FileEntry[]> => {
+    const { mediaId, folderPath } = (payload ?? {}) as { mediaId?: unknown; folderPath?: unknown }
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    const path = typeof folderPath === 'string' ? folderPath : ''
+    try {
+      return { ok: true, data: listFolderContents(mediaId, path) }
+    } catch (err) {
+      return { ok: false, error: { code: 'files_error', message: (err as Error).message } }
+    }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/files.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/files.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21200,10 +21444,32 @@ Wire into `main.ts` and `preload.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `main.ts`, lines 1 to 11
+
+**Input:**
+
+- endLine: `11`
+- filePath: `/home/kel/dev/DiscDock/electron/main.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { createMainWindow } from './window/createWindow'
+import { registerWindowControlIpc } from './ipc/windowControls'
+import { registerDashboardIpc } from './ipc/dashboard'
+import { registerMediaIpc } from './ipc/media'
+import { registerDeviceIpc, startDeviceWatcher, stopDeviceWatcher } from './ipc/devices'
+import { registerScanIpc } from './ipc/scan'
+import { registerDialogIpc } from './ipc/dialogs'
+import { registerSearchIpc } from './ipc/search'
+import { registerDuplicatesIpc } from './ipc/duplicates'
+import { initScanManager } from './scanning/scanManager'
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21228,10 +21494,37 @@ import {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 1 to 16
+
+**Input:**
+
+- endLine: `16`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { contextBridge, ipcRenderer } from 'electron'
+import type {
+  DashboardSummary,
+  DetectedDevice,
+  DuplicateReport,
+  DuplicateReportFilters,
+  HashMode,
+  IpcResult,
+  MediaItem,
+  MediaItemInput,
+  ScanJob,
+  ScanProgress,
+  SearchFilters,
+  SearchResultPage,
+  WindowState
+} from '../shared/types'
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21263,10 +21556,204 @@ Now the Media Detail view with Overview/Browse/Scan History tabs:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `MediaDetail.tsx`
+
+**Input:**
+
+- content:
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { FileEntry, MediaItem, ScanJob } from '../../shared/types'
+import './MediaDetail.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+interface MediaDetailProps {
+  mediaId: number
+  onBack: () => void
+}
+
+type Tab = 'overview' | 'browse' | 'history'
+
+export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.Element {
+  const [item, setItem] = useState<MediaItem | null>(null)
+  const [tab, setTab] = useState<Tab>('overview')
+  const [folderPath, setFolderPath] = useState('')
+  const [entries, setEntries] = useState<FileEntry[]>([])
+  const [history, setHistory] = useState<ScanJob[]>([])
+
+  useEffect(() => {
+    void window.discdock.media.get(mediaId).then((result) => {
+      if (result.ok) setItem(result.data)
+    })
+  }, [mediaId])
+
+  useEffect(() => {
+    if (tab !== 'browse') return
+    void window.discdock.files.list(mediaId, folderPath).then((result) => {
+      if (result.ok) setEntries(result.data)
+    })
+  }, [mediaId, folderPath, tab])
+
+  useEffect(() => {
+    if (tab !== 'history') return
+    void window.discdock.scan.history(mediaId).then((result) => {
+      if (result.ok) setHistory(result.data)
+    })
+  }, [mediaId, tab])
+
+  if (!item) return <div className="media-detail">Loading…</div>
+
+  const mediaTypeLabel = MEDIA_TYPES.find((t) => t.value === item.mediaType)?.label ?? item.mediaType
+  const breadcrumbs = folderPath ? folderPath.split('/') : []
+
+  return (
+    <div className="media-detail">
+      <button type="button" className="button button--small media-detail__back" onClick={onBack}>
+        ← Back to Media Library
+      </button>
+
+      <div className="media-detail__header">
+        <h1>{item.label}</h1>
+        <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+      </div>
+      <p className="media-detail__subtitle">
+        {mediaTypeLabel} {item.physicalLocation ? `· ${item.physicalLocation}` : ''}
+      </p>
+
+      <div className="media-detail__tabs">
+        <button type="button" className={tab === 'overview' ? 'tab tab--active' : 'tab'} onClick={() => setTab('overview')}>
+          Overview
+        </button>
+        <button type="button" className={tab === 'browse' ? 'tab tab--active' : 'tab'} onClick={() => setTab('browse')}>
+          Browse
+        </button>
+        <button type="button" className={tab === 'history' ? 'tab tab--active' : 'tab'} onClick={() => setTab('history')}>
+          Scan History
+        </button>
+      </div>
+
+      {tab === 'overview' && (
+        <div className="media-detail__overview">
+          <p>Capacity: {item.capacityBytes ? formatBytes(item.capacityBytes) : 'Unknown'}</p>
+          <p>Last scanned: {item.lastScannedAt ?? 'Never'}</p>
+          <p>Last verified: {item.lastVerifiedAt ?? 'Never'}</p>
+          <p>Notes: {item.notes ?? '—'}</p>
+        </div>
+      )}
+
+      {tab === 'browse' && (
+        <div className="media-detail__browse">
+          <div className="breadcrumbs">
+            <button type="button" onClick={() => setFolderPath('')}>
+              Root
+            </button>
+            {breadcrumbs.map((segment, index) => {
+              const pathAtIndex = breadcrumbs.slice(0, index + 1).join('/')
+              return (
+                <span key={pathAtIndex}>
+                  {' / '}
+                  <button type="button" onClick={() => setFolderPath(pathAtIndex)}>
+                    {segment}
+                  </button>
+                </span>
+              )
+            })}
+          </div>
+
+          {entries.length === 0 ? (
+            <p className="media-detail__status">This folder is empty (or hasn't been scanned yet).</p>
+          ) : (
+            <table className="media-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Kind</th>
+                  <th>Size</th>
+                  <th>Modified</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <tr key={entry.path}>
+                    <td>
+                      {entry.isDirectory ? (
+                        <button type="button" className="link-button" onClick={() => setFolderPath(entry.path)}>
+                          📁 {entry.name}
+                        </button>
+                      ) : (
+                        entry.name
+                      )}
+                    </td>
+                    <td>{entry.isDirectory ? 'folder' : entry.kind}</td>
+                    <td>{entry.isDirectory ? '—' : formatBytes(entry.sizeBytes)}</td>
+                    <td>{entry.modifiedAtSrc ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === 'history' && (
+        <div className="media-detail__history">
+          {history.length === 0 ? (
+            <p className="media-detail__status">No scans yet.</p>
+          ) : (
+            <table className="media-table">
+              <thead>
+                <tr>
+                  <th>Started</th>
+                  <th>Status</th>
+                  <th>Hash Mode</th>
+                  <th>Added</th>
+                  <th>Modified</th>
+                  <th>Removed</th>
+                  <th>Errors</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((job) => (
+                  <tr key={job.id}>
+                    <td>{job.startedAt}</td>
+                    <td>{job.status}</td>
+                    <td>{job.hashMode}</td>
+                    <td>{job.filesAdded}</td>
+                    <td>{job.filesModified}</td>
+                    <td>{job.filesRemoved}</td>
+                    <td>{job.errorCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaDetail.tsx`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/views/MediaDetail.tsx
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21460,10 +21947,97 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `MediaDetail.css`
+
+**Input:**
+
+- content:
+
+```
+.media-detail__back {
+  margin-bottom: 12px;
+}
+
+.media-detail__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.media-detail__subtitle {
+  opacity: 0.7;
+  font-size: 13px;
+  margin-top: 0;
+}
+
+.media-detail__tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border);
+  margin: 16px 0;
+}
+
+.tab {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 2px solid transparent;
+}
+
+.tab--active {
+  border-bottom-color: var(--color-accent);
+  font-weight: 600;
+}
+
+.media-detail__overview p {
+  font-size: 13px;
+}
+
+.breadcrumbs {
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.breadcrumbs button {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  text-align: left;
+}
+
+.media-detail__status {
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaDetail.css`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/views/MediaDetail.css
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21825,10 +22399,61 @@ Now wire it into `App.tsx`, and add a way to open Media Detail from the Media Li
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `App.tsx`, lines 1 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/home/kel/dev/DiscDock/src/App.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useState } from 'react'
+import TitleBar from './components/TitleBar'
+import Sidebar from './components/Sidebar'
+import Dashboard from './views/Dashboard'
+import MediaLibrary from './views/MediaLibrary'
+import Search from './views/Search'
+import Duplicates from './views/Duplicates'
+import PlaceholderView from './views/PlaceholderView'
+import { NAV_ITEMS } from './components/Sidebar'
+
+const VIEW_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.label])
+)
+
+export default function App(): JSX.Element {
+  const [activeView, setActiveView] = useState('dashboard')
+
+  const renderView = (): JSX.Element => {
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'media-library':
+        return <MediaLibrary />
+      case 'search':
+        return <Search />
+      case 'duplicates':
+        return <Duplicates />
+      default:
+        return <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
+    }
+  }
+
+  return (
+    <div className="app-shell">
+      <TitleBar />
+      <div className="app-body">
+        <Sidebar active={activeView} onSelect={setActiveView} />
+        <main className="app-content">{renderView()}</main>
+      </div>
+    </div>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21898,18 +22523,64 @@ Now update `MediaLibrary.tsx` to accept the  prop and make labels clickable:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 1 to 20
+
+**Input:**
+
+- endLine: `20`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `export default function MediaLibrary` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `export default function MediaLibrary`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "export default function MediaLibrary"
+
+src/views/MediaLibrary.tsx
+24:export default function MediaLibrary(): JSX.Element {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21936,10 +22607,65 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `MediaLibrary.tsx`, `fileRepository.ts`, `files.ts`, `main.ts`, `preload.ts`, `App.tsx`, 2 problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/electron/db/fileRepository.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/files.ts",
+  "/home/kel/dev/DiscDock/electron/main.ts",
+  "/home/kel/dev/DiscDock/electron/preload.ts",
+  "/home/kel/dev/DiscDock/src/App.tsx",
+  "/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx"
+]
+```
+
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import './MediaLibrary.css'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+This code at line 18
+```
+interface ActiveScan {
+```
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/db/fileRepository.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/files.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/main.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/preload.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/App.tsx">
+No errors found
+</errors>
+````
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21948,6 +22674,28 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c electron/db/fileRepository.ts electron/ipc/files.ts src/views/MediaDet...`
+
+Verify all new/edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/db/fileRepository.ts electron/ipc/files.ts src/views/MediaDetail.tsx src/views/MediaDetail.css src/App.tsx src/views/MediaLibrary.tsx electron/main.ts electron/preload.ts shared/types.ts
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/db/fileRepository.ts electron/ipc/files.ts src/views/MediaDetail.tsx src/views/MediaDetail.css src/App.tsx src/views/MediaLibrary.tsx electron/main.ts electron/preload.ts shared/types.ts` (terminal ID=286cd411-004e-46b2-b25b-513a95a859ab). This is the output of running that command instead:
+ 1313 electron/db/fileRepository.ts
+  802 electron/ipc/files.ts
+ 6221 src/views/MediaDetail.tsx
+ 1059 src/views/MediaDetail.css
+ 1697 src/App.tsx
+ 8672 src/views/MediaLibrary.tsx
+ 1719 electron/main.ts
+ 5235 electron/preload.ts
+ 3719 shared/types.ts
+30437 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21982,6 +22730,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80`
+
+Clean rebuild with Media Detail feature
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -80
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80` (terminal ID=6b26ca00-d074-487d-a6d4-c5e398bf8517). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 31 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-CUeizk4C.css    6.08 kB │ gzip:  1.55 kB
+dist/assets/index-DuowAuTO.js   210.14 kB │ gzip: 65.10 kB
+
+✓ built in 173ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -21995,4 +22780,1410 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-files.js << 'EOF'
 const Database = require...`
+
+Verify the folder-listing SQL logic correctly returns immediate children at root and nested levels
+
+```bash
+cat > /home/kel/dev/DiscDock/test-files.js << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+db.exec("INSERT INTO media_item (label, media_type) VALUES ('Browse Test', 'cd')")
+const mediaId = db.prepare("SELECT id FROM media_item WHERE label = 'Browse Test'").get().id
+
+const rows = [
+  ['photos', 'photos', 1, 0],
+  ['photos/a.jpg', 'a.jpg', 0, 100],
+  ['photos/sub', 'sub', 1, 0],
+  ['photos/sub/b.jpg', 'b.jpg', 0, 200],
+  ['docs.txt', 'docs.txt', 0, 50]
+]
+for (const [path, name, isDir, size] of rows) {
+  db.prepare("INSERT INTO file_record (media_item_id, path, name, kind, size_bytes, is_directory) VALUES (?, ?, ?, 'other', ?, ?)").run(mediaId, path, name, size, isDir)
+}
+
+function listFolderContents(mediaItemId, folderPath) {
+  const prefix = folderPath ? folderPath + '/' : ''
+  return db.prepare(`
+    SELECT path, name, is_directory FROM file_record
+    WHERE media_item_id = @mediaItemId
+      AND path LIKE @likePrefix
+      AND path != @folderPath
+      AND instr(substr(path, length(@prefix) + 1), '/') = 0
+    ORDER BY is_directory DESC, name COLLATE NOCASE
+  `).all({ mediaItemId, prefix, likePrefix: prefix + '%', folderPath })
+}
+
+console.log('Root:', JSON.stringify(listFolderContents(mediaId, '')))
+console.log('photos/:', JSON.stringify(listFolderContents(mediaId, 'photos')))
+console.log('photos/sub/:', JSON.stringify(listFolderContents(mediaId, 'photos/sub')))
+
+db.prepare('DELETE FROM file_record WHERE media_item_id = ?').run(mediaId)
+db.prepare('DELETE FROM media_item WHERE id = ?').run(mediaId)
+console.log('Cleaned up')
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-files.js 2>&1; rm -f test-files.js
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cat > /home/kel/dev/DiscDock/test-files.js << '
+EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+db.exec("INSERT INTO media_item (label, media_type) VALUES ('Browse Test', 'cd')
+")
+const mediaId = db.prepare("SELECT id FROM media_item WHERE label = 'Browse Test
+'").get().id
+
+const rows = [
+  ['photos', 'photos', 1, 0],
+  ['photos/a.jpg', 'a.jpg', 0, 100],
+  ['photos/sub', 'sub', 1, 0],
+  ['photos/sub/b.jpg', 'b.jpg', 0, 200],
+  ['docs.txt', 'docs.txt', 0, 50]
+]
+for (const [path, name, isDir, size] of rows) {
+  db.prepare("INSERT INTO file_record (media_item_id, path, name, kind, size_byt
+es, is_directory) VALUES (?, ?, ?, 'other', ?, ?)").run(mediaId, path, name, siz
+e, isDir)
+}
+
+function listFolderContents(mediaItemId, folderPath) {
+  const prefix = folderPath ? folderPath + '/' : ''
+  return db.prepare(`
+    SELECT path, name, is_directory FROM file_record
+    WHERE media_item_id = @mediaItemId
+      AND path LIKE @likePrefix
+      AND path != @folderPath
+>&1; rm -f test-files.jsk && ELECTRON_RUN_AS_NODE=1 npx electron test-files.js 2
+Root: [{"path":"photos","name":"photos","is_directory":1},{"path":"docs.txt","na
+me":"docs.txt","is_directory":0}]
+photos/: [{"path":"photos/sub","name":"sub","is_directory":1},{"path":"photos/a.
+jpg","name":"a.jpg","is_directory":0}]
+photos/sub/: [{"path":"photos/sub/b.jpg","name":"b.jpg","is_directory":0}]
+Cleaned up
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Correct at every level: root shows `photos` (folder) and `docs.txt`, `photos/` shows `sub` (folder) and `a.jpg`, `photos/sub/` shows `b.jpg`. Folders sort first. Committing and pushing:     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for Media Detail feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=aae12c26-619e-4c23-8499-687ae41c3562). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  378G   57G  88% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+A  electron/db/fileRepository.ts
+A  electron/ipc/files.ts
+M  electron/main.ts
+M  electron/preload.ts
+M  shared/types.ts
+M  src/App.tsx
+A  src/views/MediaDetail.css
+A  src/views/MediaDetail.tsx
+M  src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+57G free, healthy.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Add Media Detail view: folder browsing and scan history" 2>&1...`
+
+Commit and push the Media Detail feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Add Media Detail view: folder browsing and scan history" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Add Media Detail view: folder browsing and scan history" 2>&1 | tail -20 && git push 2>&1` (terminal ID=6f0693da-f908-4075-970e-18a5ad167242). This is the output of running that command instead:
+[main f9d1cbd] Add Media Detail view: folder browsing and scan history
+ 11 files changed, 2256 insertions(+), 44 deletions(-)
+ create mode 100644 electron/db/fileRepository.ts
+ create mode 100644 electron/ipc/files.ts
+ create mode 100644 src/views/MediaDetail.css
+ create mode 100644 src/views/MediaDetail.tsx
+Enumerating objects: 37, done.
+Counting objects: 100% (37/37), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (20/20), done.
+Writing objects: 100% (21/21), 12.55 KiB | 1.25 MiB/s, done.
+Total 21 (delta 12), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (12/12), completed with 12 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   f3a980f..f9d1cbd  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (57G free, healthy).
+
+**Investigated first:** confirmed no stray Electron/Vite/Node processes holding port 5173 — the recurring `npm run dev` exit-1 in your terminal history appears to be from a stale/past run; a fresh run completes successfully.
+
+**Implemented: Media Detail view (rounds out core navigation)**
+- `fileRepository.ts` — `listFolderContents` returns immediate children of a folder path (root or nested), folders sorted first
+- `files.ts` + `preload.ts` — `files:list` IPC
+- `MediaDetail.tsx` — Overview / Browse / Scan History tabs, breadcrumb folder navigation, opened by clicking a media item's label in the Media Library
+- `App.tsx` now tracks a selected media item to drill into detail and back
+
+**Verified directly against the real DB**: built a 3-level test tree (`photos/`, `photos/sub/`, `docs.txt`) and confirmed the folder-listing query returns exactly the right immediate children at each level, folders-first — then cleaned up test data.
+
+That completes the core MVP navigation loop (Dashboard → Media Library → Media Detail → Search/Duplicates). Remaining MVP gaps per the roadmap: **Settings** (scan defaults, theme) and **Backup/Export** (DB backup/restore, FR-7.2). Let me know which to tackle next.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Wire Media Detail into App and enable navigation from Media Library* (2/2)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 18:30:46Z)**_
+
+continue with what is the next logical step
+
+---
+
+_**Agent (copilot/auto)**_
+
+Let me try to reproduce this more faithfully — running `dev` twice back-to-back without clean teardown, since that's a likely real-world scenario (restarting while a previous instance still holds port 5173). 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run dev 2>&1`
+
+Start the dev server, leave it running to simulate a real dev session
+
+```bash
+cd /home/kel/dev/DiscDock && npm run dev 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run dev 2>&1`, and that command is now running in terminal with ID=e89dd154-f3d2-498e-9031-aba6b71fa09a
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run dev 2>&1
+
+> discdock@0.1.0 dev
+> concurrently -k "vite" "wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron ."
+
+[0] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[0]   - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+[0] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[0] 1:31:16 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+[0] 
+[0]   VITE v8.2.1  ready in 283 ms
+[0] 
+[0]   ➜  Local:   http://localhost:5173/
+[0]   ➜  Network: use --host to expose
+[1] 
+[1] > discdock@0.1.0 build:electron
+[1] > tsc -p electron/tsconfig.json
+[1] 
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="e89dd154-f3d2-498e-9031-aba6b71fa09a" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="e89dd154-f3d2-498e-9031-aba6b71fa09a" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the t
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's start a second instance while this one's still running, without killing it first:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Run in Terminal
+
+Run a second dev instance while the first is still holding port 5173, to reproduce the port-conflict failure
+
+```bash
+cd /home/kel/dev/DiscDock && npm run dev 2>&1; echo "EXIT_CODE:$?"
+```
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 18:31:48Z)**_
+
+[Terminal e89dd154-f3d2-498e-9031-aba6b71fa09a notification: command may be waiting for input — assess the output below.]
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="e89dd154-f3d2-498e-9031-aba6b71fa09a" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="e89dd154-f3d2-498e-9031-aba6b71fa09a" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+Terminal output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run dev 2>&1
+
+> discdock@0.1.0 dev
+> concurrently -k "vite" "wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron ."
+
+[0] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[0]   - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+[0] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[0] 1:31:16 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+[0] 
+[0]   VITE v8.2.1  ready in 283 ms
+[0] 
+[0]   ➜  Local:   http://localhost:5173/
+[0]   ➜  Network: use --host to expose
+[1] 
+[1] > discdock@0.1.0 build:electron
+[1] > tsc -p electron/tsconfig.json
+[1] 
+
+
+
+
+
+
+
+
+---
+
+_**Agent (copilot/auto)**_
+
+This instance is running fine (Electron window opened live, first process holds the terminal). Now let's start a second `dev` while this one is still up, to reproduce the port conflict:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run dev 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Reproduced it exactly: `Error: Port 5173 is already in use` → `vite exited with code 1`. This is the root cause — likely a previous `npm run dev` session (or its Electron window) was still running when you started it again. Let's clean up both test terminals.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+This is not a code bug — it's simply a previous `npm run dev` session still holding port 5173 when a new one starts. Let me confirm and free the port for you now.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` lsof -i :5173 2>/dev/null || ss -ltnp 2>/dev/null | grep 5173 || echo "port ...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Port is free now. Let's save this to memory so it's not re-investigated every time, and continue with the next feature: **Settings** (scan defaults, theme, notifications).   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_memory"><details>
+<summary>Tool use: **copilot_memory**</summary>
+
+Updated memory
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_memory"><details>
+<summary>Tool use: **copilot_memory**</summary>
+
+Updated memory file `discdock-build.md`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now implementing the next feature: **Settings** (scan defaults, theme, notifications) — replacing the placeholder view, per the FR-8.2/UI spec.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `07-ui-ux-specification.md`, lines 58 to 67
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 170 to 179
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 179-179 @@
+
+```
+
+export type Theme = 'light' | 'dark' | 'system'
+
+export interface NotificationSettings {
+  scanCompleted: boolean
+  scanFailed: boolean
+  verificationReminders: boolean
+}
+
+export interface AppSettings {
+  defaultHashMode: HashMode
+  excludePatterns: string[]
+  followSymlinks: boolean
+  theme: Theme
+  notifications: NotificationSettings
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the settings store (JSON file persistence):    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `settingsStore.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **settingsStore.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { app } from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
+import type { AppSettings } from '../../shared/types'
+
+const DEFAULT_SETTINGS: AppSettings = {
+  defaultHashMode: 'none',
+  excludePatterns: ['**/.Trash-*', '**/System Volume Information', '**/.DS_Store'],
+  followSymlinks: false,
+  theme: 'system',
+  notifications: {
+    scanCompleted: true,
+    scanFailed: true,
+    verificationReminders: true
+  }
+}
+
+let cached: AppSettings | null = null
+
+function settingsPath(): string {
+  return path.join(app.getPath('userData'), 'settings.json')
+}
+
+export function getSettings(): AppSettings {
+  if (cached) return cached
+  try {
+    const raw = fs.readFileSync(settingsPath(), 'utf-8')
+    cached = { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<AppSettings>) }
+  } catch {
+    cached = { ...DEFAULT_SETTINGS }
+  }
+  return cached
+}
+
+export function updateSettings(patch: Partial<AppSettings>): AppSettings {
+  const current = getSettings()
+  cached = { ...current, ...patch }
+  fs.mkdirSync(path.dirname(settingsPath()), { recursive: true })
+  fs.writeFileSync(settingsPath(), JSON.stringify(cached, null, 2))
+  return cached
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the IPC handler:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `settings.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **settings.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { getSettings, updateSettings } from '../settings/settingsStore'
+import type { AppSettings, IpcResult } from '../../shared/types'
+
+export function registerSettingsIpc(): void {
+  ipcMain.handle('settings:get', (): IpcResult<AppSettings> => {
+    return { ok: true, data: getSettings() }
+  })
+
+  ipcMain.handle('settings:update', (_event, payload: unknown): IpcResult<AppSettings> => {
+    const patch = (payload && typeof payload === 'object' ? payload : {}) as Partial<AppSettings>
+    return { ok: true, data: updateSettings(patch) }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now wire exclude patterns + followSymlinks support into the scan engine, and apply settings defaults in the scan start flow:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `scanEngine.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_multiReplaceString"><details>
+<summary>Tool use: **copilot_multiReplaceString**</summary>
+
+Multi-Replace String in Files
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanEngine.ts**</summary>
+
+@@ lines 77-85 @@
+
+```
+if (isExcluded(relativePath, excludeRegexes)) continue
+
+      let stat
+      try {
+        stat = followSymlinks ? await fs.stat(absolutePath) : await fs.lstat(absolutePath)
+      } catch (err) {
+        callbacks.onError(relativePath, 'stat_failed', (err as Error).message)
+        continue
+      }
+
+      if (!followSymlinks && 
+```
+
+@@ lines 52-54 @@
+
+```
+options: ScanOptions,
+  callbacks: ScanCallbacks
+): Promise<{ filesProcessed: number; bytesProcessed: number }> {
+  const { hashMode, followSymlinks } = options
+  const excludeRegexes = options.excludePatterns.map(globToRegExp)
+```
+
+@@ lines 12-16 @@
+
+```
+Options {
+  hashMode: HashMode
+  excludePatterns: string[]
+  followSymlinks: boolean
+}
+
+export interface ScanCallbacks {
+  onFile: (file: WalkedFile) => void
+  onProgress: (filesProcessed: number, bytesProcessed: number, currentPath: string) => void
+  onError: (relativePath: string, errorType: string, message: string) => void
+  isCancelled: () => boolean
+}
+
+/** Converts a simple glob (`*`, `**`) into a RegExp for exclude-pattern matching (FR-2.4). */
+function globToRegExp(pattern: string): RegExp {
+  const escaped = pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*/g, '\u0000')
+    .replace(/\*/g, '[^/]*')
+    .replace(/\u0000/g, '.*')
+  return new RegExp(`^${escaped}$`)
+}
+
+function isExcluded(relativePath: string, excludeRegexes: RegExp[]): boolean {
+  return excludeRegexes.some((re) => re.test(relativePath))
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update the remaining  calls within the walk to use  (renamed from  param, still in scope via destructure) — let's verify the rest of the file is consistent:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `scanEngine.ts`, lines 55 to 160
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Good,  still in scope via destructuring. Now update `scanManager.ts` to accept  and pull defaults from settings:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `scanManager.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanManager.ts**</summary>
+
+@@ lines 41-79 @@
+
+```
+  const settings = getSettings()
+
+  let filesAdded = 0
+  let filesModified = 0
+  let filesUnchanged = 0
+  let errorCount = 0
+
+  try {
+    await walkAndScan(
+      rootPath,
+      { hashMode, excludePatterns: settings.excludePatterns, followSymlinks: settings.followSymlinks },
+      {
+        onFile: (file) => {
+          const outcome = upsertFileRecord(mediaItemId, jobId, file)
+          if (outcome === 'added') filesAdded += 1
+          else if (outcome === 'modified') filesModified += 1
+          else filesUnchanged += 1
+        },
+        onProgress: (filesProcessed, bytesProcessed, currentPath) => {
+          const progress: ScanProgress = { jobId, filesProcessed, bytesProcessed, currentPath }
+          win?.webContents.send('scan:progress', progress)
+        },
+        onError: (relativePath, errorType, message) => {
+          errorCount += 1
+          recordScanError(jobId, relativePath, errorType, message)
+        },
+        isCancelled: () => state.cancelled
+      }
+    )
+
+    const filesRemoved = pruneUnseenFiles(mediaItemId, jobId)
+    const status = state.cancelled ? 'cancelled' : 'completed'
+    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
+    finalizeScanJob(jobId, status, counts)
+    markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0 && !state.cancelled)
+
+    if (status === 'completed') {
+      win?.webContents.send('scan:completed', { jobId, summary: counts })
+      if (settings.notifications.scanCompleted) {
+        new Notification({ title: 'DiscDock', body: `Scan completed: ${filesAdded} added, ${filesModified} modified, ${filesRemoved} removed` }).show()
+      }
+    } else {
+      win?.webContents.send('scan:cancelled', { jobId })
+    }
+  } catch (err) {
+    finalizeScanJob(jobId, 'failed', { filesAdded, filesRemoved: 0, filesModified, filesUnchanged, errorCount })
+    win?.webContents.send('scan:failed', { jobId, error: (err as Error).message })
+    if (settings.notifications.scanFailed) {
+      new Notification({ title: 'DiscDock', body: 'Scan failed — see logs for details' }).show()
+    }
+```
+
+@@ lines 1-10 @@
+
+```
+, Notification } from 'electron'
+import { walkAndScan } from './scanEngine'
+import {
+  createScanJob,
+  finalizeScanJob,
+  markMediaScanned,
+  pruneUnseenFiles,
+  recordScanError,
+  upsertFileRecord
+} from '../db/scanRepository'
+import { getSettings } from '../settings/settingsStore
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `scan.ts`, lines 1 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanManager.ts**</summary>
+
+@@ lines 41-79 @@
+
+```
+  const settings = getSettings()
+
+  let filesAdded = 0
+  let filesModified = 0
+  let filesUnchanged = 0
+  let errorCount = 0
+
+  try {
+    await walkAndScan(
+      rootPath,
+      { hashMode, excludePatterns: settings.excludePatterns, followSymlinks: settings.followSymlinks },
+      {
+        onFile: (file) => {
+          const outcome = upsertFileRecord(mediaItemId, jobId, file)
+          if (outcome === 'added') filesAdded += 1
+          else if (outcome === 'modified') filesModified += 1
+          else filesUnchanged += 1
+        },
+        onProgress: (filesProcessed, bytesProcessed, currentPath) => {
+          const progress: ScanProgress = { jobId, filesProcessed, bytesProcessed, currentPath }
+          win?.webContents.send('scan:progress', progress)
+        },
+        onError: (relativePath, errorType, message) => {
+          errorCount += 1
+          recordScanError(jobId, relativePath, errorType, message)
+        },
+        isCancelled: () => state.cancelled
+      }
+    )
+
+    const filesRemoved = pruneUnseenFiles(mediaItemId, jobId)
+    const status = state.cancelled ? 'cancelled' : 'completed'
+    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
+    finalizeScanJob(jobId, status, counts)
+    markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0 && !state.cancelled)
+
+    if (status === 'completed') {
+      win?.webContents.send('scan:completed', { jobId, summary: counts })
+      if (settings.notifications.scanCompleted) {
+        new Notification({ title: 'DiscDock', body: `Scan completed: ${filesAdded} added, ${filesModified} modified, ${filesRemoved} removed` }).show()
+      }
+    } else {
+      win?.webContents.send('scan:cancelled', { jobId })
+    }
+  } catch (err) {
+    finalizeScanJob(jobId, 'failed', { filesAdded, filesRemoved: 0, filesModified, filesUnchanged, errorCount })
+    win?.webContents.send('scan:failed', { jobId, error: (err as Error).message })
+    if (settings.notifications.scanFailed) {
+      new Notification({ title: 'DiscDock', body: 'Scan failed — see logs for details' }).show()
+    }
+```
+
+@@ lines 1-10 @@
+
+```
+, Notification } from 'electron'
+import { walkAndScan } from './scanEngine'
+import {
+  createScanJob,
+  finalizeScanJob,
+  markMediaScanned,
+  pruneUnseenFiles,
+  recordScanError,
+  upsertFileRecord
+} from '../db/scanRepository'
+import { getSettings } from '../settings/settingsStore
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scan.ts**</summary>
+
+@@ lines 21-21 @@
+
+```
+getSettings().defaultHashMode
+```
+
+@@ lines 4-4 @@
+
+```
+{ getSettings } from '../settings/settingsStore'
+import 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `scan.start` (`**/electron/preload.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 62 to 67
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 64-64 @@
+
+```
+?
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Build Settings UI with form controls* (3/5)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update `MediaLibrary.tsx` to omit the hardcoded `'none'`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `scan.start` (`**/src/views/MediaLibrary.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 116-116 @@ (deleted)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now wire `registerSettingsIpc` into `main.ts`, expose  API in `preload.ts`, and build the Settings view. Let's check `main.ts` first:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `main.ts`, lines 1 to 45
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 38-38 @@
+
+```
+registerSettingsIpc()
+  
+```
+
+@@ lines 12-12 @@
+
+```
+registerSettingsIpc } from './ipc/settings'
+import { 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now `preload.ts`:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 1 to 18
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 106-106 @@
+
+```
+,
+  settings: {
+    get: (): Promise<IpcResult<AppSettings>> => ipcRenderer.invoke('settings:get'),
+    update: (patch: Partial<AppSettings>): Promise<IpcResult<AppSettings>> =>
+      ipcRenderer.invoke('settings:update', patch)
+  }
+```
+
+@@ lines 3-3 @@
+
+```
+AppSettings,
+  
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the Settings view, with real theme application support:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `Settings.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+import type { AppSettings, HashMode, Theme } from '../../shared/types'
+import './Settings.css'
+
+const HASH_MODES: { value: HashMode; label: string }[] = [
+  { value: 'none', label: 'None (metadata only, fastest)' },
+  { value: 'quick', label: 'Quick (partial hash)' },
+  { value: 'full', label: 'Full (SHA-256, most accurate)' }
+]
+
+export default function Settings(): JSX.Element {
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) setSettings(result.data)
+    })
+  }, [])
+
+  const save = (patch: Partial<AppSettings>): void => {
+    void window.discdock.settings.update(patch).then((result) => {
+      if (result.ok) {
+        setSettings(result.data)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 1500)
+      }
+    })
+  }
+
+  if (!settings) return <div className="settings-view">Loading…</div>
+
+  return (
+    <div className="settings-view">
+      <h1>Settings</h1>
+      {saved && <p className="settings-view__saved">Saved</p>}
+
+      <section className="settings-section">
+        <h2>Scanning Defaults</h2>
+        <label>
+          Default hash mode
+          <select
+            value={settings.defaultHashMode}
+            onChange={(e) => save({ defaultHashMode: e.target.value as HashMode })}
+          >
+            {HASH_MODES.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Exclude patterns (one per line)
+          <textarea
+            value={settings.excludePatterns.join('\n')}
+            onChange={(e) => save({ excludePatterns: e.target.value.split('\n').filter(Boolean) })}
+            rows={4}
+          />
+        </label>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.followSymlinks}
+            onChange={(e) => save({ followSymlinks: e.target.checked })}
+          />
+          Follow symbolic links during scans
+        </label>
+      </section>
+
+      <section className="settings-section">
+        <h2>Appearance</h2>
+        <label>
+          Theme
+          <select value={settings.theme} onChange={(e) => save({ theme: e.target.value as Theme })}>
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+      </section>
+
+      <section className="settings-section">
+        <h2>Notifications</h2>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.notifications.scanCompleted}
+            onChange={(e) =>
+              save({ notifications: { ...settings.notifications, scanCompleted: e.target.checked } })
+            }
+          />
+          Notify when a scan completes
+        </label>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.notifications.scanFailed}
+            onChange={(e) =>
+              save({ notifications: { ...settings.notifications, scanFailed: e.target.checked } })
+            }
+          />
+          Notify when a scan fails
+        </label>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.notifications.verificationReminders}
+            onChange={(e) =>
+              save({ notifications: { ...settings.notifications, verificationReminders: e.target.checked } })
+            }
+          />
+          Remind me about media needing re-verification
+        </label>
+      </section>
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `Settings.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.settings-view__saved {
+  color: var(--color-accent);
+  font-size: 13px;
+}
+
+.settings-section {
+  margin: 20px 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-section h2 {
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.settings-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  max-width: 420px;
+}
+
+.settings-section select,
+.settings-section textarea {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.settings-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's wire up actual theme application (currently only responds to OS preference via media query) and register `Settings` in `App.tsx`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `global.css`, lines 1 to 28
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **global.css**</summary>
+
+@@ lines 15-25 @@
+
+```
+:not([data-theme='dark']) {
+    --color-bg: #f5f5f5;
+    --color-text: #1e1e1e;
+    --color-border: #ddd;
+    --color-titlebar-bg: #e8e8e8;
+    --color-titlebar-fg: #1e1e1e;
+    --color-titlebar-hover: #d8d8d8;
+    --color-sidebar-bg: #f0f0f0;
+    --color-sidebar-hover: #e0e0e0;
+    color-scheme: light;
+  }
+}
+
+/* Explicit theme override (Settings > Appearance), independent of OS preference. */
+:root[data-theme='light'] {
+  --color-bg: #f5f5f5;
+  --color-text: #1e1e1e;
+  --color-border: #ddd;
+  --color-titlebar-bg: #e8e8e8;
+  --color-titlebar-fg: #1e1e1e;
+  --color-titlebar-hover: #d8d8d8;
+  --color-sidebar-bg: #f0f0f0;
+  --color-sidebar-hover: #e0e0e0;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #1e1e1e;
+  --color-text: #e6e6e6;
+  --color-border: #333;
+  --color-titlebar-bg: #171717;
+  --color-titlebar-fg: #e6e6e6;
+  --color-titlebar-hover: #333;
+  --color-sidebar-bg: #181818;
+  --color-sidebar-hover: #2a2a2a;
+  color-scheme: dark;
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now apply `data-theme` on app load and when changed in Settings:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `App.tsx`, lines 1 to 45
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **App.tsx**</summary>
+
+@@ lines 20-37 @@
+
+```
+useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) document.documentElement.dataset.theme = result.data.theme
+    })
+  }, [])
+
+  const handleSelectNav = (key: string): void => {
+    setSelectedMediaId(null)
+    setActiveView(key)
+  }
+
+  const renderView = (): JSX.Element => {
+    if (activeView === 'media-library' && selectedMediaId !== null) {
+      return <MediaDetail mediaId={selectedMediaId} onBack={() => setSelectedMediaId(null)} />
+    }
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'media-library':
+        return <MediaLibrary onOpenDetail={setSelectedMediaId} />
+      case 'search':
+        return <Search />
+      case 'duplicates':
+        return <Duplicates />
+      case 'settings':
+        return <SettingsView
+```
+
+@@ lines 1-8 @@
+
+```
+Effect, useState } from 'react'
+import TitleBar from './components/TitleBar'
+import Sidebar from './components/Sidebar'
+import Dashboard from './views/Dashboard'
+import MediaLibrary from './views/MediaLibrary'
+import MediaDetail from './views/MediaDetail'
+import Search from './views/Search'
+import Duplicates from './views/Duplicates'
+import SettingsView from './views/Setting
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Updated todo list
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now make the theme apply live when changed in `Settings.tsx`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.tsx**</summary>
+
+@@ lines 25-25 @@
+
+```
+if (patch.theme) document.documentElement.dataset.theme = result.data.theme
+        
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `settingsStore.ts`, `settings.ts`, `scanEngine.ts`, `scanManager.ts`, `scan.ts`, `main.ts`, `preload.ts`, `App.tsx`, `Settings.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Let's verify all files have content and run a full build.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/settings/settingsStore.ts electron/ipc/settings.ts electron/s...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact. Building:     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's directly test the / glob matching logic and the settings store, since those are the new pieces of business logic:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && node -e "
+const \{ walkAndScan \} = require\('./di...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Found a real bug: my  doesn't handle `**/` matching zero leading path segments (so `**/.Trash-*` fails to match a top-level `.Trash-1000`). Fixing it:  
+
+Found a real bug: my  doesn't handle `**/` matching zero leading path segments (so `**/.Trash-*` fails to match a top-level `.Trash-1000`). Fixing it:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanEngine.ts**</summary>
+
+@@ lines 27-31 @@
+
+```
+let escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+  escaped = escaped.replace(/\*\*\//g, '(?:.*/)?') // "**/" matches zero or more leading path segments
+  escaped = escaped.replace(/\*\*/g, '.*')
+  escaped = escaped.replace(/\*/g, '[^/]
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Rebuild and retest:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:electron 2>&1 | tail -20`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && mkdir -p /tmp/scan-test2/.Trash-1000 /tmp/scan-...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Fixed — `.Trash-1000` and `sub/.Trash-2000` are both correctly excluded now at any depth, while `keep.txt`, `sub`, and `sub/keep2.txt` are correctly included. Let's also quickly verify the settings store round-trips correctly:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-settings.js << 'EOF'
+process.env.XDG\_CONFI...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Settings store works correctly — defaults load, partial updates merge and persist. Let's do a final full build and quick GUI launch check, then commit.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -40`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
 </details></tool-use>

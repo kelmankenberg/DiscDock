@@ -176,3 +176,19 @@ export interface FileEntry {
   sizeBytes: number
   modifiedAtSrc: string | null
 }
+
+export type Theme = 'light' | 'dark' | 'system'
+
+export interface NotificationSettings {
+  scanCompleted: boolean
+  scanFailed: boolean
+  verificationReminders: boolean
+}
+
+export interface AppSettings {
+  defaultHashMode: HashMode
+  excludePatterns: string[]
+  followSymlinks: boolean
+  theme: Theme
+  notifications: NotificationSettings
+}

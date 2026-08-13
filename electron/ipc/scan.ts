@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { cancelScan, startScan } from '../scanning/scanManager'
 import { listScanJobsForMedia } from '../db/scanRepository'
+import { getSettings } from '../settings/settingsStore'
 import type { HashMode, IpcResult, ScanJob } from '../../shared/types'
 
 export function registerScanIpc(): void {
@@ -18,7 +19,7 @@ export function registerScanIpc(): void {
       return { ok: false, error: { code: 'invalid_input', message: 'A rootPath is required' } }
     }
     const validModes: HashMode[] = ['none', 'quick', 'full']
-    const mode = validModes.includes(hashMode as HashMode) ? (hashMode as HashMode) : 'none'
+    const mode = validModes.includes(hashMode as HashMode) ? (hashMode as HashMode) : getSettings().defaultHashMode
 
     const jobId = startScan(mediaId, rootPath, mode)
     return { ok: true, data: { jobId } }

@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
+  AppSettings,
   DashboardSummary,
   DetectedDevice,
   DuplicateReport,
@@ -61,7 +62,7 @@ const api = {
     }
   },
   scan: {
-    start: (mediaId: number, rootPath: string, hashMode: HashMode): Promise<IpcResult<{ jobId: number }>> =>
+    start: (mediaId: number, rootPath: string, hashMode?: HashMode): Promise<IpcResult<{ jobId: number }>> =>
       ipcRenderer.invoke('scan:start', { mediaId, rootPath, hashMode }),
     cancel: (jobId: number): Promise<IpcResult<{ cancelled: boolean }>> =>
       ipcRenderer.invoke('scan:cancel', { jobId }),
@@ -103,6 +104,11 @@ const api = {
   files: {
     list: (mediaId: number, folderPath: string): Promise<IpcResult<FileEntry[]>> =>
       ipcRenderer.invoke('files:list', { mediaId, folderPath })
+  },
+  settings: {
+    get: (): Promise<IpcResult<AppSettings>> => ipcRenderer.invoke('settings:get'),
+    update: (patch: Partial<AppSettings>): Promise<IpcResult<AppSettings>> =>
+      ipcRenderer.invoke('settings:update', patch)
   }
 }
 
