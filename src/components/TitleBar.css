@@ -19,6 +19,25 @@
   flex: 1;
 }
 
+.title-bar__sidebar-toggle {
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 6px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.title-bar__sidebar-toggle:hover {
+  background: var(--color-titlebar-hover);
+}
+
 .title-bar__icon {
   font-size: 14px;
 }

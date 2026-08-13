@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import {
   LayoutDashboard,
   Library,
@@ -6,9 +5,7 @@ import {
   Copy,
   FolderOpen,
   DatabaseBackup,
-  Settings,
-  PanelLeftClose,
-  PanelLeftOpen
+  Settings
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import './Sidebar.css'
@@ -29,35 +26,15 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'settings', label: 'Settings', icon: Settings }
 ]
 
-const COLLAPSED_STORAGE_KEY = 'discdock:sidebar-collapsed'
-
 interface SidebarProps {
   active: string
   onSelect: (key: string) => void
+  collapsed: boolean
 }
 
-export default function Sidebar({ active, onSelect }: SidebarProps): JSX.Element {
-  const [collapsed, setCollapsed] = useState<boolean>(() => localStorage.getItem(COLLAPSED_STORAGE_KEY) === 'true')
-
-  const toggleCollapsed = (): void => {
-    setCollapsed((prev) => {
-      const next = !prev
-      localStorage.setItem(COLLAPSED_STORAGE_KEY, String(next))
-      return next
-    })
-  }
-
+export default function Sidebar({ active, onSelect, collapsed }: SidebarProps): JSX.Element {
   return (
     <nav className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`}>
-      <button
-        type="button"
-        className="sidebar__toggle"
-        onClick={toggleCollapsed}
-        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {collapsed ? <PanelLeftOpen size={18} aria-hidden="true" /> : <PanelLeftClose size={18} aria-hidden="true" />}
-      </button>
       <ul className="sidebar__list">
         {NAV_ITEMS.map((item) => (
           <li key={item.key}>

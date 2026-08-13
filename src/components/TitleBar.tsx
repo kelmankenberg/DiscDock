@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Disc3, Minus, Square, Copy, X } from 'lucide-react'
+import { Disc3, Minus, Square, Copy, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import './TitleBar.css'
 
 interface WindowState {
   maximized: boolean
 }
 
+interface TitleBarProps {
+  sidebarCollapsed: boolean
+  onToggleSidebar: () => void
+}
+
 // Custom title bar replacing the OS-native one, since the BrowserWindow is created with frame: false.
-export default function TitleBar(): JSX.Element {
+export default function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBarProps): JSX.Element {
   const [maximized, setMaximized] = useState(false)
 
   useEffect(() => {
@@ -20,6 +25,15 @@ export default function TitleBar(): JSX.Element {
   return (
     <header className="title-bar">
       <div className="title-bar__drag-region">
+        <button
+          type="button"
+          className="title-bar__sidebar-toggle"
+          onClick={onToggleSidebar}
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
+        </button>
         <Disc3 size={16} className="title-bar__icon" aria-hidden="true" />
         <span className="title-bar__title">DiscDock</span>
       </div>
