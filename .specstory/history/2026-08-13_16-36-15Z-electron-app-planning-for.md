@@ -33316,10 +33316,62 @@ Uncaught ReferenceError: Cannot access 'filteredItems' before initialization
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<think><details><summary>Thought Process</summary>
+Confirmed — `sortedItems` uses `filteredItems` before it's declared. Let's reorder.
+</details></think>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 46 to 80
+
+**Input:**
+
+- endLine: `80`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `46`
+
+**Result:**
+
+```
+
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [sortKey, setSortKey] = useState<SortKey>('label')
+  const [sortAsc, setSortAsc] = useState(true)
+
+  const handleSort = (key: SortKey): void => {
+    if (key === sortKey) {
+      setSortAsc((prev) => !prev)
+    } else {
+      setSortKey(key)
+      setSortAsc(true)
+    }
+  }
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
+  const [containerFilter, setContainerFilter] = useState<string>('')
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
+  const [editingLocationValue, setEditingLocationValue] = useState('')
+
+  const knownLocations = Array.from(
+    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
+  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+
+  const filteredItems = containerFilter ? items.filter((item) => item.physicalLocation === containerFilter) : items
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -33359,10 +33411,38 @@ Now let's rebuild and verify with a live launch that this actually resolves the 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `MediaLibrary.tsx`, 2 problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx"]`
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import './MediaLibrary.css'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+This code at line 18
+```
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+```
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+````
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -33375,14 +33455,113 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c src/views/MediaLibrary.tsx && rm -rf dist dist-electron && npm run bui...`
+
+Verify content and rebuild after fixing the initialization order bug
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/views/MediaLibrary.tsx && rm -rf dist dist-electron && npm run build 2>&1 | tail -40
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/views/MediaLibrary.tsx && rm -rf dist dist-electron && npm run build 2>&1 | tail -40` (terminal ID=11e727e7-84b5-4c63-a52f-785a67236c0a). This is the output of running that command instead:
+15304 src/views/MediaLibrary.tsx
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 35 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-EXLTdRqz.css    8.47 kB │ gzip:  1.91 kB
+dist/assets/index-CTKiKaQ5.js   219.79 kB │ gzip: 67.41 kB
+
+✓ built in 175ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 47 to 100
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `47`
+
+**Result:**
+
+```
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [sortKey, setSortKey] = useState<SortKey>('label')
+  const [sortAsc, setSortAsc] = useState(true)
+
+  const handleSort = (key: SortKey): void => {
+    if (key === sortKey) {
+      setSortAsc((prev) => !prev)
+    } else {
+      setSortKey(key)
+      setSortAsc(true)
+    }
+  }
+
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
+  const [containerFilter, setContainerFilter] = useState<string>('')
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
+  const [editingLocationValue, setEditingLocationValue] = useState('')
+
+  const knownLocations = Array.from(
+    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
+  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+
+  const filteredItems = containerFilter ? items.filter((item) => item.physicalLocation === containerFilter) : items
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
+
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+
+  useEffect(() => {
+    void window.discdock.devices.list().then((result) => {
+      if (result.ok) setDevices(result.data)
+    })
+
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -33395,7 +33574,505 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app to check for the ReferenceError in console output
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=29d85ae5-f6ff-466f-99f0-8f0492a70d6d
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="29d85ae5-f6ff-466f-99f0-8f0492a70d6d" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="29d85ae5-f6ff-466f-99f0-8f0492a70d6d" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
 </details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `29d85ae5-f6ff-466f-99f0-8f0492a70d6d`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 29d85ae5-f6ff-466f-99f0-8f0492a70d6d. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` grep -o "filteredItems" dist/assets/\*.js | wc -l`
+
+Confirm the built bundle actually contains the updated MediaLibrary code (sanity check that rebuild picked up the change)
+
+```bash
+cd /home/kel/dev/DiscDock && grep -o "filteredItems" dist/assets/*.js | wc -l
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` grep -o "filteredItems" dist/assets/*.js | wc -l` (terminal ID=865b3396-aeb6-4211-b943-fa002b1edf71). This is the output of running that command instead:
+0
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+That's expected — esbuild's minifier renames local identifiers, so the literal name won't appear; the differing bundle hash (`CTKiKaQ5` vs the prior `BRX3tTnE`) already confirms the rebuild picked up the fix. This was a straightforward declare-before-use ordering bug (a JS temporal dead zone violation), which is deterministic — moving the declarations above their use point fully resolves it. Committing.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the crash fix
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=71533e20-a042-4d81-b854-bdbaaac143f2). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  398G   36G  92% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+36G free — dropping again but still safe.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Fix crash: filteredItems used before initialization in MediaL...`
+
+Commit and push the crash fix
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Fix crash: filteredItems used before initialization in MediaLibrary" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Fix crash: filteredItems used before initialization in MediaLibrary" 2>&1 | tail -20 && git push 2>&1` (terminal ID=fcaea03f-74e7-439d-9b8c-50668f3e7f9e). This is the output of running that command instead:
+[main 5500750] Fix crash: filteredItems used before initialization in MediaLibra
+ry
+ 3 files changed, 767 insertions(+), 31 deletions(-)
+Enumerating objects: 17, done.
+Counting objects: 100% (17/17), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (9/9), done.
+Writing objects: 100% (9/9), 4.50 KiB | 307.00 KiB/s, done.
+Total 9 (delta 6), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (6/6), completed with 6 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   3355fe1..5500750  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Fixed and pushed (36G free — please reload the app / `npm run dev` to pick up the fix).
+
+**Root cause:** in my previous edit adding the Container filter, I inserted  (which references ) *before* the , , and  declarations in the component body — a `const`/`let` temporal-dead-zone violation. React re-rendered the component, hit that line, and threw before Media Library could render at all.
+
+**Fix:** reordered the declarations so everything  depends on (, , ) is declared first. Verified the new build's JS bundle hash changed (confirming the fix is included) and reviewed the full declaration order in the source to confirm nothing else in that block has the same issue.
+
+Apologies for shipping that — I should have run a live click-through before marking the Container feature done, but I don't have a way to script clicks into the desktop app, only static code review + build success as my earlier verification, which wasn't sufficient to catch a runtime-only ordering bug like this. Please give Media Library a try now and let me know if it renders correctly.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 19:43:52Z)**_
+
+A couple changes to the Media Library page. I shold be able to multiselect list items and have certain features available for a batch edit: Location values, Retire, and Delete. Perhaps a checkbox column with Select All/None column header and the ability to multiselect via Ctrl/Shift+Click.
+
+---
+
+_**Agent (copilot/auto)**_
+
+Let's add multi-select with checkboxes, Shift/Ctrl-click range/toggle, and a batch action bar (Location, Retire, Delete).  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 1 to 100
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's add selection state and handlers after the sort logic:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 81-81 @@
+
+```
+
+
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null)
+  const [batchLocationValue, setBatchLocationValue] = useState('')
+
+  const handleRowCheckboxClick = (
+    event: React.MouseEvent<HTMLInputElement>,
+    item: MediaItem,
+    index: number
+  ): void => {
+    if (event.shiftKey && lastClickedIndex !== null) {
+      const [start, end] = [lastClickedIndex, index].sort((a, b) => a - b)
+      const rangeIds = sortedItems.slice(start, end + 1).map((i) => i.id)
+      setSelectedIds((prev) => new Set([...prev, ...rangeIds]))
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(item.id)) next.delete(item.id)
+        else next.add(item.id)
+        return next
+      })
+    }
+    setLastClickedIndex(index)
+  }
+
+  const handleSelectAll = (): void => {
+    setSelectedIds((prev) =>
+      prev.size === sortedItems.length ? new Set() : new Set(sortedItems.map((i) => i.id))
+    )
+  }
+
+  const clearSelection = (): void => {
+    setSelectedIds(new Set())
+    setLastClickedIndex(null)
+  }
+
+  const handleBatchSetLocation = (): void => {
+    const value = batchLocationValue.trim() || null
+    void Promise.all(
+      Array.from(selectedIds).map((id) => window.discdock.media.update(id, { physicalLocation: value }))
+    ).then(() => {
+      setBatchLocationValue('')
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const handleBatchRetire = (): void => {
+    if (!window.confirm(`Retire ${selectedIds.size} selected media item(s)?`)) return
+    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.retire(id))).then(() => {
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const handleBatchDelete = (): void => {
+    if (!window.confirm(`Delete ${selectedIds.size} selected media item(s) and their catalogs? This cannot be undone.`))
+      return
+    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.delete(id))).then(() => {
+      clearSelection()
+      loadItems()
+    })
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's update the table header (Select All checkbox column) and rows (per-row checkbox), plus the batch action bar:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `knownLocations.length > 0 &&` (`**/src/views/MediaLibrary.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 393 to 460
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 429-432 @@
+
+```
+, index) => {
+              const scan = scansByMedia[item.id]
+              return (
+                <tr key={item.id} className={selectedIds.has(item.id) ? 'media-table__row--selected' : ''}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => {}}
+                      onClick={(e) => handleRowCheckboxClick(e, item, index)}
+                      aria-label={`Select ${item.label}`}
+                    />
+                  </td
+```
+
+@@ lines 414-416 @@
+
+```
+
+          {selectedIds.size > 0 && (
+            <div className="batch-actions">
+              <span className="batch-actions__count">{selectedIds.size} selected</span>
+              <input
+                type="text"
+                list="location-suggestions"
+                placeholder="Set container…"
+                value={batchLocationValue}
+                onChange={(e) => setBatchLocationValue(e.target.value)}
+              />
+              <button type="button" className="button button--small" onClick={handleBatchSetLocation}>
+                Apply Container
+              </button>
+              <button type="button" className="button button--small" onClick={handleBatchRetire}>
+                Retire Selected
+              </button>
+              <button type="button" className="button button--small button--danger" onClick={handleBatchDelete}>
+                Delete Selected
+              </button>
+              <button type="button" className="button button--small" onClick={clearSelection}>
+                Clear Selection
+              </button>
+            </div>
+          )}
+
+          <table className="media-table">
+          <thead>
+            <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size > 0 && selectedIds.size === sortedItems.length}
+                  onChange={handleSelectAll}
+                  aria-label="Select all"
+                />
+              </th
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 414 to 450
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Looks correct. Now let's check for errors, verify integrity, and build.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `MediaLibrary.tsx`, 2 problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Known non-blocking IDE quirk. Now let's add the CSS for the batch action bar and selected-row highlighting:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `.container-filter select` (`**/src/views/MediaLibrary.css`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.css`, lines 119 to 128
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.css**</summary>
+
+@@ lines 128-128 @@
+
+```
+batch-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin: 12px 0;
+  border: 1px solid var(--color-accent);
+  border-radius: 6px;
+  flex-wrap: wrap;
+}
+
+.batch-actions__count {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.batch-actions input[type='text'] {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.media-table__row--selected {
+  background: var(--color-sidebar-hover);
+}
+
+.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now verify content and build:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Given the last incident, let me be more careful this time — reviewing the entire component top-to-bottom for ordering correctness before considering this done.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 47 to 220
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 220 to 300
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Confirmed correct — all the new handlers only reference //etc. inside async callbacks (executed later, after the full component body has already run), not directly in initializer expressions. That's the safe pattern, unlike the earlier bug where 's initializer directly read  before it existed. Let's do a launch smoke test and commit.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors on launch. Closing and committing.    
 
 _**Agent (copilot/auto)**_
 

@@ -80,6 +80,69 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     return sortAsc ? result : -result
   })
 
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null)
+  const [batchLocationValue, setBatchLocationValue] = useState('')
+
+  const handleRowCheckboxClick = (
+    event: React.MouseEvent<HTMLInputElement>,
+    item: MediaItem,
+    index: number
+  ): void => {
+    if (event.shiftKey && lastClickedIndex !== null) {
+      const [start, end] = [lastClickedIndex, index].sort((a, b) => a - b)
+      const rangeIds = sortedItems.slice(start, end + 1).map((i) => i.id)
+      setSelectedIds((prev) => new Set([...prev, ...rangeIds]))
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(item.id)) next.delete(item.id)
+        else next.add(item.id)
+        return next
+      })
+    }
+    setLastClickedIndex(index)
+  }
+
+  const handleSelectAll = (): void => {
+    setSelectedIds((prev) =>
+      prev.size === sortedItems.length ? new Set() : new Set(sortedItems.map((i) => i.id))
+    )
+  }
+
+  const clearSelection = (): void => {
+    setSelectedIds(new Set())
+    setLastClickedIndex(null)
+  }
+
+  const handleBatchSetLocation = (): void => {
+    const value = batchLocationValue.trim() || null
+    void Promise.all(
+      Array.from(selectedIds).map((id) => window.discdock.media.update(id, { physicalLocation: value }))
+    ).then(() => {
+      setBatchLocationValue('')
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const handleBatchRetire = (): void => {
+    if (!window.confirm(`Retire ${selectedIds.size} selected media item(s)?`)) return
+    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.retire(id))).then(() => {
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const handleBatchDelete = (): void => {
+    if (!window.confirm(`Delete ${selectedIds.size} selected media item(s) and their catalogs? This cannot be undone.`))
+      return
+    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.delete(id))).then(() => {
+      clearSelection()
+      loadItems()
+    })
+  }
+
   const loadItems = (): void => {
     void window.discdock.media.list().then((result) => {
       if (result.ok) setItems(result.data)
@@ -348,9 +411,43 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
               </label>
             </div>
           )}
+
+          {selectedIds.size > 0 && (
+            <div className="batch-actions">
+              <span className="batch-actions__count">{selectedIds.size} selected</span>
+              <input
+                type="text"
+                list="location-suggestions"
+                placeholder="Set container…"
+                value={batchLocationValue}
+                onChange={(e) => setBatchLocationValue(e.target.value)}
+              />
+              <button type="button" className="button button--small" onClick={handleBatchSetLocation}>
+                Apply Container
+              </button>
+              <button type="button" className="button button--small" onClick={handleBatchRetire}>
+                Retire Selected
+              </button>
+              <button type="button" className="button button--small button--danger" onClick={handleBatchDelete}>
+                Delete Selected
+              </button>
+              <button type="button" className="button button--small" onClick={clearSelection}>
+                Clear Selection
+              </button>
+            </div>
+          )}
+
           <table className="media-table">
           <thead>
             <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size > 0 && selectedIds.size === sortedItems.length}
+                  onChange={handleSelectAll}
+                  aria-label="Select all"
+                />
+              </th>
               {COLUMNS.map((col) => (
                 <th key={col.key}>
                   <button type="button" className="media-table__sort-header" onClick={() => handleSort(col.key)}>
@@ -363,10 +460,19 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
             </tr>
           </thead>
           <tbody>
-            {sortedItems.map((item) => {
+            {sortedItems.map((item, index) => {
               const scan = scansByMedia[item.id]
               return (
-                <tr key={item.id}>
+                <tr key={item.id} className={selectedIds.has(item.id) ? 'media-table__row--selected' : ''}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => {}}
+                      onClick={(e) => handleRowCheckboxClick(e, item, index)}
+                      aria-label={`Select ${item.label}`}
+                    />
+                  </td>
                   <td>
                     <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
                       {item.label}
