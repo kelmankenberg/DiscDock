@@ -41575,10 +41575,67 @@ Let's make Ctrl+Shift+I toggle the Dev tools instead of only showing it
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<think><details><summary>Thought Process</summary>
+That's likely a real bug — my `before-input-event` handler fires on both `keyDown` and `keyUp`, so a single press of Ctrl+Shift+I calls `toggleDevTools()` twice (once per event), causing it to open then immediately close (or vice versa) instead of cleanly toggling once. Let's fix it by only reacting to `keyDown`.
+</details></think>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `createWindow.ts`, lines 1 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/home/kel/dev/DiscDock/electron/window/createWindow.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { BrowserWindow, shell } from 'electron'
+import path from 'node:path'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export function createMainWindow(): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
+    // Frameless: DiscDock renders its own title bar/toolbar and window controls.
+    frame: false,
+    backgroundColor: '#1e1e1e',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => win.show())
+
+  // Never allow navigation to or opening of remote content from the renderer.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  // DevTools are not opened automatically; toggle manually with Ctrl+Shift+I.
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.control && input.shift && input.key.toLowerCase() === 'i') {
+      win.webContents.toggleDevTools()
+    }
+  })
+
+  if (isDev) {
+    void win.loadURL('http://localhost:5173')
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -41606,10 +41663,22 @@ Let's check for errors, verify integrity/sync, and build.
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `createWindow.ts`, no problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/electron/window/createWindow.ts"]`
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/electron/window/createWindow.ts">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -41617,5 +41686,626 @@ _**Agent (copilot/auto)**_
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-Run in Terminal
+Running ` wc -c electron/window/createWindow.ts && git fetch origin 2>&1 | tail -5 && ...`
+
+Verify edited file has content and check for concurrent commits before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/window/createWindow.ts && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/window/createWindow.ts && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1` (terminal ID=ff94d764-92e7-4198-b7c3-46ae533454af). This is the output of running that command instead:
+1476 electron/window/createWindow.ts
+6494ff9 (HEAD -> main, origin/main) Do not auto-open DevTools in dev mode; toggl
+e manually with Ctrl+Shift+I
+6494ff9 (HEAD -> main, origin/main) Do not auto-open DevTools in dev mode; toggl
+e manually with Ctrl+Shift+I
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact, in sync. Building.           
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with the toggle fix
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=a5d53332-2d9d-467e-83fb-a65bd963c2af). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 1813 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-WVIIgVP-.css   10.97 kB │ gzip:  2.38 kB
+dist/assets/index-Cyo8TABM.js   231.87 kB │ gzip: 71.21 kB
+
+✓ built in 187ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+I can't script actual key-press simulation for the desktop window, but checking `input.type === 'keyDown'` is the standard, well-documented Electron pattern to prevent this exact double-fire issue. Committing.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the toggle fix
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=26bd662b-41d2-435e-a8d8-f2966b1a4bad). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  378G   57G  87% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  electron/window/createWindow.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+57G free, healthy.           
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Fix Ctrl\+Shift\+I firing twice per press \(keyDown\+keyUp\), brea...`
+
+Commit and push the toggle fix
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Fix Ctrl+Shift+I firing twice per press (keyDown+keyUp), breaking clean DevTools toggle" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Fix Ctrl+Shift+I firing twice per press (keyDown+keyUp), breaking clean DevTools toggle" 2>&1 | tail -20 && git push 2>&1` (terminal ID=ad0c3826-46da-41ef-848c-ffcaf680b1b7). This is the output of running that command instead:
+kel@kel-EQ-Mint:~/dev/DiscDock$  git commit -m "Fix Ctrl+Shift+I firing twice pe
+r press (keyDown+keyUp), breaking clean DevTools toggle" 2>&1 | tail -20 && git
+push 2>&1
+[main 5783239] Fix Ctrl+Shift+I firing twice per press (keyDown+keyUp), breaking
+ clean DevTools toggle
+ 3 files changed, 362 insertions(+), 10 deletions(-)
+Enumerating objects: 17, done.
+Counting objects: 100% (17/17), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (8/8), done.
+Writing objects: 100% (9/9), 2.50 KiB | 182.00 KiB/s, done.
+Total 9 (delta 5), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (5/5), completed with 5 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   6494ff9..5783239  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (57G free, healthy).
+
+**Root cause:** `before-input-event` fires for both `keyDown` and `keyUp`. Since the handler didn't filter by event type, a single press-and-release of Ctrl+Shift+I called  twice in quick succession — open, then immediately close again — so it never stayed open/closed cleanly on alternating presses.
+
+**Fix:** added `input.type === 'keyDown'` to the condition, so it only reacts once per physical key press.
+
+Restart your `npm run dev` session to pick this up (main-process change).
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 21:07:22Z)**_
+
+Good. Let's add a More menu (kebab icon) next to the toolbar control menus with the following items so far:
+- Restart DiscDock (that should be tied to Ctrl+Shift+R, and there should be smaller text indicating that next to the label)
+- Show Dev Tools (Ctrl+Shift+I)
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ls node\_modules/lucide-react/dist/esm/icons/ | grep -iE "^more-vertical|^ell...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `createWindow.ts`, lines 1 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **createWindow.ts**</summary>
+
+@@ lines 1-37 @@
+
+```
+app, BrowserWindow, shell } from 'electron'
+import path from 'node:path'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export function createMainWindow(): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
+    // Frameless: DiscDock renders its own title bar/toolbar and window controls.
+    frame: false,
+    backgroundColor: '#1e1e1e',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => win.show())
+
+  // Never allow navigation to or opening of remote content from the renderer.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  // DevTools are not opened automatically; toggle manually with Ctrl+Shift+I.
+  // Restart is bound to Ctrl+Shift+R. Only react to keyDown — before-input-event also fires
+  // on keyUp, which would otherwise double-fire (e.g. toggle open then immediately close again).
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type !== 'keyDown' || !input.control || !input.shift) return
+    const key = input.key.toLowerCase()
+    if (key === 'i') {
+      win.webContents.toggleDevTools()
+    } else if (key === 'r') {
+      app.relaunch()
+      app.exit(0
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's add IPC handlers for the renderer's More menu (restart + toggle devtools), reusing the existing `windowControls.ts` module:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `windowControls.ts`, lines 1 to 30
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `windowControls.ts`, lines 28 to 36
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **windowControls.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+app, 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **windowControls.ts**</summary>
+
+@@ lines 30-30 @@
+
+```
+ipcMain.handle('app:restart', (): IpcResult<null> => {
+    app.relaunch()
+    app.exit(0)
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('app:toggleDevTools', (): IpcResult<null> => {
+    win.webContents.toggleDevTools()
+    return { ok: true, data: null }
+  })
+
+  
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's expose these in `preload.ts`:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `window: {` (`**/electron/preload.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 18 to 45
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `app: {` (`**/electron/preload.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 46 to 50
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 47-47 @@
+
+```
+,
+    restart: (): Promise<IpcResult<null>> => ipcRenderer.invoke('app:restart'),
+    toggleDevTools: (): Promise<IpcResult<null>> => ipcRenderer.invoke('app:toggleDevTools')
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 47-47 @@
+
+```
+,
+    restart: (): Promise<IpcResult<null>> => ipcRenderer.invoke('app:restart'),
+    toggleDevTools: (): Promise<IpcResult<null>> => ipcRenderer.invoke('app:toggleDevTools')
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's build the "More" menu (kebab) UI in `TitleBar.tsx`:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `TitleBar.tsx`, lines 1 to 65
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **TitleBar.tsx**</summary>
+
+@@ lines 1-40 @@
+
+```
+Ref, useState } from 'react'
+import { Disc3, Minus, Square, Copy, X, PanelLeftClose, PanelLeftOpen, MoreVertical, RefreshCw, Bug } from 'lucide-react'
+import './TitleBar.css'
+
+interface WindowState {
+  maximized: boolean
+}
+
+interface TitleBarProps {
+  sidebarCollapsed: boolean
+  onToggleSidebar: () => void
+}
+
+// Custom title bar replacing the OS-native one, since the BrowserWindow is created with frame: false.
+export default function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBarProps): JSX.Element {
+  const [maximized, setMaximized] = useState(false)
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false)
+  const moreMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    void window.discdock.window.isMaximized().then((result) => {
+      if (result.ok) setMaximized(result.data.maximized)
+    })
+    return window.discdock.window.onStateChanged((state: WindowState) => setMaximized(state.maximized))
+  }, [])
+
+  useEffect(() => {
+    if (!moreMenuOpen) return
+    const handleClickOutside = (event: MouseEvent): void => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setMoreMenuOpen(false)
+      }
+    }
+    const handleEscape = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setMoreMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('keydown', handleEscape)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [moreMenuOpen])
+
+  return (
+    <header className="title-bar">
+      <div className="title-bar__drag-region">
+        <button
+          type="button"
+          className="title-bar__sidebar-toggle"
+          onClick={onToggleSidebar}
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {sidebarCollapsed ? <PanelLeftOpen size={16} aria-hidden="true" /> : <PanelLeftClose size={16} aria-hidden="true" />}
+        </button>
+        <Disc3 size={16} className="title-bar__icon" aria-hidden="true" />
+        <span className="title-bar__title">DiscDock</span>
+      </div>
+      <div className="title-bar__controls">
+        <div className="title-bar__more" ref={moreMenuRef}>
+          <button
+            type="button"
+            className="title-bar__button"
+            aria-label="More"
+            aria-haspopup="menu"
+            aria-expanded={moreMenuOpen}
+            onClick={() => setMoreMenuOpen((prev) => !prev)}
+          >
+            <MoreVertical size={14} />
+          </button>
+          {moreMenuOpen && (
+            <div className="title-bar__menu" role="menu">
+              <button
+                type="button"
+                className="title-bar__menu-item"
+                role="menuitem"
+                onClick={() => {
+                  setMoreMenuOpen(false)
+                  void window.discdock.app.restart()
+                }}
+              >
+                <RefreshCw size={14} aria-hidden="true" />
+                <span className="title-bar__menu-item-label">Restart DiscDock</span>
+                <span className="title-bar__menu-item-shortcut">Ctrl+Shift+R</span>
+              </button>
+              <button
+                type="button"
+                className="title-bar__menu-item"
+                role="menuitem"
+                onClick={() => {
+                  setMoreMenuOpen(false)
+                  void window.discdock.app.toggleDevTools()
+                }}
+              >
+                <Bug size={14} aria-hidden="true" />
+                <span className="title-bar__menu-item-label">Show Dev Tools</span>
+                <span className="title-bar__menu-item-shortcut">Ctrl+Shift+I</span>
+              </button>
+            </div>
+          )}
+        </div
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's add the CSS for the More menu dropdown:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `TitleBar.css`, lines 1 to 55
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **TitleBar.css**</summary>
+
+@@ lines 55-55 @@
+
+```
+
+.title-bar__more {
+  position: relative;
+  height: 100%;
+}
+
+.title-bar__menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 2px;
+  min-width: 220px;
+  background: var(--color-sidebar-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 4px;
+  z-index: 100;
+}
+
+.title-bar__menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.title-bar__menu-item:hover {
+  background: var(--color-sidebar-hover);
+}
+
+.title-bar__menu-item-label {
+  flex: 1;
+}
+
+.title-bar__menu-item-shortcut {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's check for errors, verify integrity/sync, and build.        
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `createWindow.ts`, `windowControls.ts`, `preload.ts`, `TitleBar.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Verify content and sync.         
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/window/createWindow.ts electron/ipc/windowControls.ts electro...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact, in sync. Building.           
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's launch and screenshot to visually verify the kebab menu.        
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Let's screenshot to see the kebab icon in the title bar.         
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` import -window root /tmp/discdock-more-menu.png && echo done`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_viewImage"><details>
+<summary>Tool use: **copilot_viewImage**</summary>
+
+Viewed image `discdock-more-menu.png`
 </details></tool-use>

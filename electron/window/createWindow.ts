@@ -1,4 +1,4 @@
-import { BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
 import path from 'node:path'
 
 const isDev = process.env.NODE_ENV === 'development'
@@ -30,11 +30,16 @@ export function createMainWindow(): BrowserWindow {
   })
 
   // DevTools are not opened automatically; toggle manually with Ctrl+Shift+I.
-  // Only react to keyDown — before-input-event also fires on keyUp, which would otherwise
-  // toggle twice per press (open then immediately close again).
+  // Restart is bound to Ctrl+Shift+R. Only react to keyDown — before-input-event also fires
+  // on keyUp, which would otherwise double-fire (e.g. toggle open then immediately close again).
   win.webContents.on('before-input-event', (_event, input) => {
-    if (input.type === 'keyDown' && input.control && input.shift && input.key.toLowerCase() === 'i') {
+    if (input.type !== 'keyDown' || !input.control || !input.shift) return
+    const key = input.key.toLowerCase()
+    if (key === 'i') {
       win.webContents.toggleDevTools()
+    } else if (key === 'r') {
+      app.relaunch()
+      app.exit(0)
     }
   })
 

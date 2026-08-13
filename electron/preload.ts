@@ -44,7 +44,9 @@ const api = {
       ipcRenderer.invoke('media:delete', { id })
   },
   app: {
-    getVersion: (): Promise<IpcResult<string>> => ipcRenderer.invoke('app:getVersion')
+    getVersion: (): Promise<IpcResult<string>> => ipcRenderer.invoke('app:getVersion'),
+    restart: (): Promise<IpcResult<null>> => ipcRenderer.invoke('app:restart'),
+    toggleDevTools: (): Promise<IpcResult<null>> => ipcRenderer.invoke('app:toggleDevTools')
   },
   devices: {
     list: (): Promise<IpcResult<DetectedDevice[]>> => ipcRenderer.invoke('devices:list'),

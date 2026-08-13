@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import type { IpcResult, WindowState } from '../../shared/types'
 
 // Window-control channels only ever act on the given BrowserWindow instance —
@@ -25,6 +25,17 @@ export function registerWindowControlIpc(win: BrowserWindow): void {
 
   ipcMain.handle('window:isMaximized', (): IpcResult<WindowState> => {
     return { ok: true, data: { maximized: win.isMaximized() } }
+  })
+
+  ipcMain.handle('app:restart', (): IpcResult<null> => {
+    app.relaunch()
+    app.exit(0)
+    return { ok: true, data: null }
+  })
+
+  ipcMain.handle('app:toggleDevTools', (): IpcResult<null> => {
+    win.webContents.toggleDevTools()
+    return { ok: true, data: null }
   })
 
   const sendState = (): void => {
