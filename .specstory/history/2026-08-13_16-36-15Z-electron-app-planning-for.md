@@ -39387,14 +39387,46 @@ there appears to be an issue in the filtering. Do you see it in the screencaps?
 
 _**Agent (copilot/auto)**_
 
+<think><details><summary>Thought Process</summary>
+Found it — `buildMatchQuery` only splits the search text on **whitespace**, so `"C.ini"` stays as one quoted term. When SQLite's FTS5 tokenizer parses that quoted phrase, it splits on the period internally (`c`, `ini`) and treats it as a **strict adjacency phrase query** — requiring a token literally `c` immediately followed by a token starting with `ini`. Real filenames like `5631_DIG.INI` tokenize to `5631`, `dig`, `ini` — no literal `c` token — so it correctly (by FTS5 rules) finds nothing, even though that's not what a user typing "C.ini" would expect. Let's fix it by splitting on any non-alphanumeric character, not just whitespace.  
+
+Clean build. Now let's directly test the exact compiled `searchFiles` function against the real dev DB with the reported query to confirm the actual end-to-end fix.
+</details></think>
+
+_**Agent (copilot/auto)**_
+
 Yes — I can see it. Let's check the query-building logic. 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `searchRepository.ts`, lines 28 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/home/kel/dev/DiscDock/electron/db/searchRepository.ts`
+- startLine: `28`
+
+**Result:**
+
+```
+/** Builds an FTS5 MATCH expression doing a prefix match per term (FR-3.2: partial/substring search). */
+function buildMatchQuery(text: string): string | null {
+  const terms = text
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((term) => term.replace(/["*]/g, ''))
+    .filter(Boolean)
+  if (terms.length === 0) return null
+  return terms.map((term) => `"${term}"*`).join(' AND ')
+}
+
+export function searchFiles(text: string, filters: SearchFilters, page: number, pageSize: number): SearchResultPage {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39430,6 +39462,21 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm run build:electron 2>&1 | tail -20`
+
+Rebuild electron main process with the search query fix
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:electron 2>&1 | tail -20
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build:electron 2>&1 | tail -20` (terminal ID=00b1fb58-672d-435d-ac1c-5da950a123e4). This is the output of running that command instead:
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39439,6 +39486,73 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-search-fix.js << 'EOF'
 const Database = re...`
+
+Directly compare old vs new query-building behavior against the real database using the exact reported search term
+
+```bash
+cat > /home/kel/dev/DiscDock/test-search-fix.js << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+function buildMatchQuery(text) {
+  const terms = text.trim().split(/[^a-zA-Z0-9]+/).map(t => t.replace(/["*]/g, '')).filter(Boolean)
+  if (terms.length === 0) return null
+  return terms.map(t => `"${t}"*`).join(' AND ')
+}
+
+const oldQuery = `"C.ini"*` // old behavior: single quoted phrase
+const newQuery = buildMatchQuery('C.ini')
+console.log('New FTS query for "C.ini":', newQuery)
+
+const oldResults = db.prepare(`SELECT fr.name FROM file_record_fts fts JOIN file_record fr ON fr.id = fts.rowid WHERE file_record_fts MATCH ?`).all(oldQuery)
+console.log('OLD behavior match count:', oldResults.length)
+
+const newResults = db.prepare(`SELECT fr.name FROM file_record_fts fts JOIN file_record fr ON fr.id = fts.rowid WHERE file_record_fts MATCH ?`).all(newQuery)
+console.log('NEW behavior match count:', newResults.length)
+console.log('Sample new matches:', JSON.stringify(newResults.slice(0, 5)))
+
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-search-fix.js 2>&1; rm -f test-search-fix.js
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cat > /home/kel/dev/DiscDock/test-search-fix.js
+ << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+function buildMatchQuery(text) {
+  const terms = text.trim().split(/[^a-zA-Z0-9]+/).map(t => t.replace(/["*]/g, '
+')).filter(Boolean)
+  if (terms.length === 0) return null
+  return terms.map(t => `"${t}"*`).join(' AND ')
+}
+
+const oldQuery = `"C.ini"*` // old behavior: single quoted phrase
+const newQuery = buildMatchQuery('C.ini')
+console.log('New FTS query for "C.ini":', newQuery)
+
+const oldResults = db.prepare(`SELECT fr.name FROM file_record_fts fts JOIN file
+_record fr ON fr.id = fts.rowid WHERE file_record_fts MATCH ?`).all(oldQuery)
+console.log('OLD behavior match count:', oldResults.length)
+
+const newResults = db.prepare(`SELECT fr.name FROM file_record_fts fts JOIN file
+_record fr ON fr.id = fts.rowid WHERE file_record_fts MATCH ?`).all(newQuery)
+console.log('NEW behavior match count:', newResults.length)
+console.log('Sample new matches:', JSON.stringify(newResults.slice(0, 5)))
+
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-search-fix
+.js 2>&1; rm -f test-search-fix.js
+New FTS query for "C.ini": "C"* AND "ini"*
+OLD behavior match count: 0
+NEW behavior match count: 0
+Sample new matches: []
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39448,6 +39562,86 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-search-fix2.js << 'EOF'
 const Database = r...`
+
+Check if any indexed tokens start with C to understand why the AND query returns zero results
+
+```bash
+cat > /home/kel/dev/DiscDock/test-search-fix2.js << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+const cOnly = db.prepare(`SELECT fr.name, fr.path FROM file_record_fts fts JOIN file_record fr ON fr.id = fts.rowid WHERE file_record_fts MATCH '"C"*' LIMIT 10`).all()
+console.log('Files with a token starting with C:', JSON.stringify(cOnly, null, 2))
+console.log('count:', cOnly.length)
+
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-search-fix2.js 2>&1; rm -f test-search-fix2.js
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cat > /home/kel/dev/DiscDock/test-search-fix2.j
+s << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+const cOnly = db.prepare(`SELECT fr.name, fr.path FROM file_record_fts fts JOIN
+file_record fr ON fr.id = fts.rowid WHERE file_record_fts MATCH '"C"*' LIMIT 10`
+).all()
+console.log('Files with a token starting with C:', JSON.stringify(cOnly, null, 2
+))
+console.log('count:', cOnly.length)
+
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-search-fix
+2.js 2>&1; rm -f test-search-fix2.js
+Files with a token starting with C: [
+  {
+    "name": "A_F.cab",
+    "path": "A_F.cab"
+  },
+  {
+    "name": "CutH.cab",
+    "path": "CutH.cab"
+  },
+  {
+    "name": "CutL.cab",
+    "path": "CutL.cab"
+  },
+  {
+    "name": "Missio~1.cab",
+    "path": "Missio~1.cab"
+  },
+  {
+    "name": "Streams4.cab",
+    "path": "Streams4.cab"
+  },
+  {
+    "name": "ZH1.cab",
+    "path": "ZH1.cab"
+  },
+  {
+    "name": "ZH2.cab",
+    "path": "ZH2.cab"
+  },
+  {
+    "name": "ZH3.cab",
+    "path": "ZH3.cab"
+  },
+  {
+    "name": "ZH4.cab",
+    "path": "ZH4.cab"
+  },
+  {
+    "name": "ZH5.cab",
+    "path": "ZH5.cab"
+  }
+]
+count: 10
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39461,6 +39655,85 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-search-like.js << 'EOF'
 const Database = r...`
+
+Check whether a literal substring LIKE query would find matches for the reported search term
+
+```bash
+cat > /home/kel/dev/DiscDock/test-search-like.js << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+const likeResults = db.prepare(`SELECT name, path FROM file_record WHERE (name LIKE ? OR path LIKE ?) AND is_directory = 0 LIMIT 10`).all('%C.ini%', '%C.ini%')
+console.log('LIKE substring matches for "C.ini":', JSON.stringify(likeResults, null, 2))
+console.log('count:', likeResults.length)
+
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-search-like.js 2>&1; rm -f test-search-like.js
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cat > /home/kel/dev/DiscDock/test-search-like.j
+s << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+const likeResults = db.prepare(`SELECT name, path FROM file_record WHERE (name L
+IKE ? OR path LIKE ?) AND is_directory = 0 LIMIT 10`).all('%C.ini%', '%C.ini%')
+console.log('LIKE substring matches for "C.ini":', JSON.stringify(likeResults, n
+ull, 2))
+console.log('count:', likeResults.length)
+
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-search-lik
+e.js 2>&1; rm -f test-search-like.js
+LIKE substring matches for "C.ini": [
+  {
+    "name": "5631_hwc.ini",
+    "path": "directx/drivers/eng/5631_hwc.ini"
+  },
+  {
+    "name": "5631_swc.ini",
+    "path": "directx/drivers/eng/5631_swc.ini"
+  },
+  {
+    "name": "8811_hwc.ini",
+    "path": "directx/drivers/eng/8811_hwc.ini"
+  },
+  {
+    "name": "8811_swc.ini",
+    "path": "directx/drivers/eng/8811_swc.ini"
+  },
+  {
+    "name": "8814_hwc.ini",
+    "path": "directx/drivers/eng/8814_hwc.ini"
+  },
+  {
+    "name": "8814_swc.ini",
+    "path": "directx/drivers/eng/8814_swc.ini"
+  },
+  {
+    "name": "5631_HWC.INI",
+    "path": "DIRECTX/DRVSJ/DISPLAY/BIN/5631_HWC.INI"
+  },
+  {
+    "name": "5631_SWC.INI",
+    "path": "DIRECTX/DRVSJ/DISPLAY/BIN/5631_SWC.INI"
+  },
+  {
+    "name": "883D_HWC.INI",
+    "path": "DIRECTX/DRVSJ/DISPLAY/BIN/883D_HWC.INI"
+  },
+  {
+    "name": "883D_SWC.INI",
+    "path": "DIRECTX/DRVSJ/DISPLAY/BIN/883D_SWC.INI"
+  }
+]
+count: 10
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39469,26 +39742,132 @@ That's exactly it — `5631_HWC.INI` contains "C.INI" as a literal substring, wh
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `searchRepository.ts`, lines 1 to 100
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/home/kel/dev/DiscDock/electron/db/searchRepository.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { getDb } from './index'
+import type { FileSearchResult, SearchFilters, SearchResultPage } from '../../shared/types'
+
+interface FileSearchRow {
+  id: number
+  media_item_id: number
+  media_label: string
+  path: string
+  name: string
+  size_bytes: number
+  modified_at_src: string | null
+  kind: string
+}
+
+function toResult(row: FileSearchRow): FileSearchResult {
+  return {
+    id: row.id,
+    mediaItemId: row.media_item_id,
+    mediaLabel: row.media_label,
+    path: row.path,
+    name: row.name,
+    sizeBytes: row.size_bytes,
+    modifiedAtSrc: row.modified_at_src,
+    kind: row.kind
+  }
+}
+
+/** Builds an FTS5 MATCH expression doing a prefix match per term (FR-3.2: partial/substring search). */
+function buildMatchQuery(text: string): string | null {
+  // Split on any non-alphanumeric separator (not just whitespace) so punctuation like "." or "_"
+  // in a query (e.g. "report.ini") produces separate AND'd prefix terms rather than a single quoted
+  // phrase — FTS5 would otherwise tokenize a quoted multi-word phrase itself and require strict
+  // token adjacency, causing real matches to be missed (e.g. "c.ini" would require a literal "c"
+  // token immediately followed by "ini", which most filenames don't have).
+  const terms = text
+    .trim()
+    .split(/[^a-zA-Z0-9]+/)
+    .map((term) => term.replace(/["*]/g, ''))
+    .filter(Boolean)
+  if (terms.length === 0) return null
+  return terms.map((term) => `"${term}"*`).join(' AND ')
+}
+
+export function searchFiles(text: string, filters: SearchFilters, page: number, pageSize: number): SearchResultPage {
+  const db = getDb()
+  const matchQuery = buildMatchQuery(text)
+
+  const conditions: string[] = ['fr.is_directory = 0']
+  const params: Record<string, unknown> = {}
+
+  if (filters.mediaItemId !== undefined) {
+    conditions.push('fr.media_item_id = @mediaItemId')
+    params.mediaItemId = filters.mediaItemId
+  }
+  if (filters.mediaType !== undefined) {
+    conditions.push('mi.media_type = @mediaType')
+    params.mediaTy
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `searchRepository.ts`, lines 100 to 106
+
+**Input:**
+
+- endLine: `106`
+- filePath: `/home/kel/dev/DiscDock/electron/db/searchRepository.ts`
+- startLine: `100`
+
+**Result:**
+
+```
+         ${baseQuery}
+         ORDER BY fr.name
+         LIMIT @limit OFFSET @offset`
+      )
+      .all({ ...params, limit: pageSize, offset }) as FileSearchRow[]
+  ).map(toResult)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `searchRepository.ts`, lines 100 to 109
+
+**Input:**
+
+- endLine: `115`
+- filePath: `/home/kel/dev/DiscDock/electron/db/searchRepository.ts`
+- startLine: `100`
+
+**Result:**
+
+```
+         ${baseQuery}
+         ORDER BY fr.name
+         LIMIT @limit OFFSET @offset`
+      )
+      .all({ ...params, limit: pageSize, offset }) as FileSearchRow[]
+  ).map(toResult)
+
+  return { results, total }
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39552,10 +39931,22 @@ Let's check for errors, verify integrity, and rebuild.
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `searchRepository.ts`, no problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/electron/db/searchRepository.ts"]`
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/electron/db/searchRepository.ts">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39576,6 +39967,23 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c electron/db/searchRepository.ts && git fetch origin 2>&1 | tail -5 && ...`
+
+Verify edited file has content and check for concurrent commits before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/db/searchRepository.ts && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/db/searchRepository.ts && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1` (terminal ID=817e5f32-b3d6-46dc-942b-b8193349371b). This is the output of running that command instead:
+5302 electron/db/searchRepository.ts
+3fb083d (HEAD -> main, origin/main) Make Search a live filter: debounced auto-se
+arch, instant filter dropdowns, clear button
+3fb083d (HEAD -> main, origin/main) Make Search a live filter: debounced auto-se
+arch, instant filter dropdowns, clear button
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39588,6 +39996,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with the search fix
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=c0221b1b-9542-49bd-910b-f56e4643afca). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 1813 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-Bm5DD_nh.css   10.69 kB │ gzip:  2.34 kB
+dist/assets/index-BOAvBg-6.js   231.06 kB │ gzip: 71.02 kB
+
+✓ built in 234ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39601,6 +40046,30 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-search-e2e.js << 'EOF'
 const \{ app \} = req...`
+
+Directly test the full searchFiles function end-to-end with the exact reported query to confirm the fix works
+
+```bash
+cat > /home/kel/dev/DiscDock/test-search-e2e.js << 'EOF'
+const { app } = require('electron')
+app.whenReady().then(async () => {
+  const { searchFiles } = require('./dist-electron/electron/db/searchRepository')
+  const result1 = searchFiles('ini', {}, 0, 100)
+  console.log('"ini" -> total:', result1.total)
+  const result2 = searchFiles('C.ini', {}, 0, 100)
+  console.log('"C.ini" -> total:', result2.total, 'sample:', JSON.stringify(result2.results.slice(0, 3).map(r => r.name)))
+  app.quit()
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-search-e2e.js --no-sandbox 2>&1; rm -f test-search-e2e.js
+```
+
+**Result:**
+
+```
+"ini" -> total: 0
+"C.ini" -> total: 0 sample: []
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39610,6 +40079,29 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-search-e2e.js << 'EOF'
 const \{ app \} = req...`
+
+Check which userData path is being resolved to diagnose the unexpected zero result for a previously-working query
+
+```bash
+cat > /home/kel/dev/DiscDock/test-search-e2e.js << 'EOF'
+const { app } = require('electron')
+app.whenReady().then(async () => {
+  console.log('userData path:', app.getPath('userData'))
+  const { searchFiles } = require('./dist-electron/electron/db/searchRepository')
+  const result1 = searchFiles('ini', {}, 0, 100)
+  console.log('"ini" -> total:', result1.total)
+  app.quit()
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-search-e2e.js --no-sandbox 2>&1; rm -f test-search-e2e.js
+```
+
+**Result:**
+
+```
+userData path: /home/kel/.config/Electron
+"ini" -> total: 0
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39619,6 +40111,33 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-search-e2e.js << 'EOF'
 const \{ app \} = req...`
+
+Retest with the correct app name set so userData resolves to the real dev database
+
+```bash
+cat > /home/kel/dev/DiscDock/test-search-e2e.js << 'EOF'
+const { app } = require('electron')
+app.setName('discdock')
+app.whenReady().then(async () => {
+  console.log('userData path:', app.getPath('userData'))
+  const { searchFiles } = require('./dist-electron/electron/db/searchRepository')
+  const result1 = searchFiles('ini', {}, 0, 100)
+  console.log('"ini" -> total:', result1.total)
+  const result2 = searchFiles('C.ini', {}, 0, 100)
+  console.log('"C.ini" -> total:', result2.total, 'sample:', JSON.stringify(result2.results.slice(0, 5).map(r => r.name)))
+  app.quit()
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-search-e2e.js --no-sandbox 2>&1; rm -f test-search-e2e.js
+```
+
+**Result:**
+
+```
+userData path: /home/kel/.config/discdock
+"ini" -> total: 43
+"C.ini" -> total: 18 sample: ["5631_HWC.INI","5631_HWC.INI","5631_SWC.INI","5631_SWC.INI","5631_hwc.ini"]
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39631,6 +40150,52 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app for final smoke test
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=cdcf03ae-759d-47ab-98d4-0568357bdc93
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="cdcf03ae-759d-47ab-98d4-0568357bdc93" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="cdcf03ae-759d-47ab-98d4-0568357bdc93" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -39643,4 +40208,524 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **kill_terminal**</summary>
 
 Killed terminal
+
+**Input:**
+
+- id: `cdcf03ae-759d-47ab-98d4-0568357bdc93`
+
+**Result:**
+
+```
+Successfully killed persistent terminal cdcf03ae-759d-47ab-98d4-0568357bdc93. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the search fix
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=89397308-b487-4297-9a2a-feb61f0d9d90). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  384G   50G  89% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  electron/db/searchRepository.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+50G free, healthy.        
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Fix search: punctuation-containing queries missed substring m...`
+
+Commit and push the search fix
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Fix search: punctuation-containing queries missed substring matches across word boundaries" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Fix search: punctuation-containing queries missed substring matches across word boundaries" 2>&1 | tail -20 && git push 2>&1` (terminal ID=0500b6f8-1c35-430e-87e6-e44de92bbdb8). This is the output of running that command instead:
+[main 0f5bd00] Fix search: punctuation-containing queries missed substring match
+es across word boundaries
+ 3 files changed, 708 insertions(+), 15 deletions(-)
+Enumerating objects: 17, done.
+Counting objects: 100% (17/17), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (9/9), done.
+Writing objects: 100% (9/9), 5.23 KiB | 315.00 KiB/s, done.
+Total 9 (delta 6), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (6/6), completed with 6 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   3fb083d..0f5bd00  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Fixed, 
+
+Fixed, verified, and pushed (50G free, healthy).
+
+**Root cause:** typing `"C.ini"` was passed to FTS5 as a single quoted phrase (`"C.ini"*`). SQLite's tokenizer splits on punctuation internally, turning that into a **strict adjacency phrase query** — requiring a literal  token immediately followed by a token starting with `ini`. Real filenames like `5631_HWC.INI` tokenize to `5631`/`hwc`/`ini` — no standalone  token — so it correctly-by-FTS5-rules found nothing, even though `hwc.ini` visibly contains "c.ini" as a substring.
+
+**Fix:**  now splits on any non-alphanumeric character (not just whitespace) into separate AND'd prefix terms, and — since FTS5's word-based index fundamentally can't match substrings spanning a word boundary — added a **LIKE-based substring fallback** across / that kicks in whenever the FTS query returns zero results.
+
+**Verified directly against your real database:** "ini" still correctly returns all 43 results (unchanged), and "C.ini" now correctly returns 18 results (previously 0), matching files like `5631_HWC.INI` and `5631_hwc.ini` exactly as expected.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Implement LIKE-based fallback for substring search* (1/3)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 20:51:13Z)**_
+
+issue seems to persist
+
+---
+
+_**Agent (copilot/auto)**_
+
+Let me check whether the actual code matches what I tested, since my direct backend test worked but the live UI still shows no results — could be an escaping bug in the generated SQL or the running app using a stale build.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `searchRepository.ts`, lines 108 to 148
+
+**Input:**
+
+- endLine: `148`
+- filePath: `/home/kel/dev/DiscDock/electron/db/searchRepository.ts`
+- startLine: `108`
+
+**Result:**
+
+```
+  // can miss real substring matches that span a word boundary (e.g. "5631_hwc.ini" contains
+  // "c.ini" but tokenizes to "5631"/"hwc"/"ini", none of which is "c"). Fall back to a plain
+  // substring LIKE search across name/path when the FTS-based query finds nothing.
+  if (matchQuery && total === 0) {
+    return searchByLikeFallback(text, conditions, params, page, pageSize)
+  }
+
+  return { results, total }
+}
+
+function searchByLikeFallback(
+  text: string,
+  baseConditions: string[],
+  baseParams: Record<string, unknown>,
+  page: number,
+  pageSize: number
+): SearchResultPage {
+  const db = getDb()
+  const likePattern = `%${text.trim().replace(/[%_]/g, (c) => `\\${c}`)}%`
+  const conditions = [...baseConditions, '(fr.name LIKE @likePattern ESCAPE \'\\\' OR fr.path LIKE @likePattern ESCAPE \'\\\')']
+  const params = { ...baseParams, likePattern }
+  const offset = Math.max(0, page) * pageSize
+
+  const fromClause = `FROM file_record fr JOIN media_item mi ON mi.id = fr.media_item_id`
+  const whereClause = `WHERE ${conditions.join(' AND ')}`
+
+  const total = (
+    db.prepare(`SELECT COUNT(*) as count ${fromClause} ${whereClause}`).get(params) as { count: number }
+  ).count
+
+  const results = (
+    db
+      .prepare(
+        `SELECT fr.id, fr.media_item_id, mi.label as media_label, fr.path, fr.name, fr.size_bytes,
+                fr.modified_at_src, fr.kind
+         ${fromClause} ${whereClause}
+         ORDER BY fr.name
+         LIMIT @limit OFFSET @offset`
+      )
+      .all({ ...params, limit: pageSize, offset }) as FileSearchRow[]
+  ).map(toResult)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+That's very likely just a **stale running process** — Electron's main process (where the search logic lives) doesn't hot-reload like the Vite renderer does. If your `npm run dev` session was started before my fix, the UI reflects live changes but the backend search handler is still running the old compiled code until the whole app is restarted. Let me re-verify the fix is solid, then have you restart.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ls -la dist-electron/electron/db/searchRepository.js 2>&1 && grep -c "search...`
+
+Confirm the compiled dist-electron output actually contains the fix
+
+```bash
+cd /home/kel/dev/DiscDock && ls -la dist-electron/electron/db/searchRepository.js 2>&1 && grep -c "searchByLikeFallback" dist-electron/electron/db/searchRepository.js
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` ls -la dist-electron/electron/db/searchRepository.js 2>&1 && grep -c "searchByLikeFallback" dist-electron/electron/db/searchRepository.js` (terminal ID=be105421-95c1-4888-9a2d-72d57e45fac8). This is the output of running that command instead:
+-rw-rw-r-- 1 kel kel 5031 Aug 13 15:48 dist-electron/electron/db/searchRepositor
+y.js
+2
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ps aux | grep -iE "electron" | grep -v grep`
+
+Check for any currently running Electron processes that might be using stale code
+
+```bash
+ps aux | grep -iE "electron" | grep -v grep
+```
+
+**Result:**
+
+```
+kel       109947  0.0  0.0 50356028 3004 ?       Sl   11:32   0:00 /usr/share/co
+de/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --no
+-rate-limit --database=/home/kel/.config/Code/Crashpad --url=appcenter://code?ai
+d=fba07a4d-84bd-4fc8-a125-9640fc8ce171&uid=ffc24eaa-295d-4af9-9502-0fe524428bf1&
+iid=ffc24eaa-295d-4af9-9502-0fe524428bf1&sid=ffc24eaa-295d-4af9-9502-0fe524428bf
+1 --annotation=_companyName=Microsoft --annotation=_productName=VSCode --annotat
+ion=_version=1.133.0 --annotation=lsb-release=Linux Mint 22.3 --annotation=plat=
+Linux --annotation=prod=Electron --annotation=ver=42.8.0 --initial-client-fd=45
+--shared-client-connection
+kel       370070  0.0  0.0   2812  1848 pts/2    S+   15:39   0:00 sh -c concurr
+ently -k "vite" "wait-on tcp:5173 && npm run build:electron && cross-env NODE_EN
+V=development electron ."
+kel       370071  0.0  0.1 994744 51828 pts/2    Sl+  15:39   0:00 node /home/ke
+l/dev/DiscDock/node_modules/.bin/concurrently -k vite wait-on tcp:5173 && npm ru
+n build:electron && cross-env NODE_ENV=development electron .
+kel       370080  0.0  0.0   2812  1856 pts/2    S+   15:39   0:00 /bin/sh -c wa
+it-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development elect
+ron .
+kel       370185  0.0  0.1 959032 48624 pts/2    Sl+  15:39   0:00 node /home/ke
+l/dev/DiscDock/node_modules/.bin/cross-env NODE_ENV=development electron .
+kel       370196  0.0  0.1 728360 41680 pts/2    Sl+  15:39   0:00 node /home/ke
+l/dev/DiscDock/node_modules/.bin/electron .
+kel       370203  0.6  0.5 1459912488 168108 pts/2 Sl+ 15:39   0:04 /home/kel/de
+v/DiscDock/node_modules/electron/dist/electron .
+kel       370210  0.0  0.1 50870768 55668 pts/2  S+   15:39   0:00 /home/kel/dev
+/DiscDock/node_modules/electron/dist/electron --type=zygote --no-zygote-sandbox
+kel       370211  0.0  0.1 50870752 55608 pts/2  S+   15:39   0:00 /home/kel/dev
+/DiscDock/node_modules/electron/dist/electron --type=zygote
+kel       370213  0.0  0.0 508707
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Found it — you have a **stale `npm run dev` session running since 15:39**, before my fix was rebuilt at 15:48. Electron's main process caches its compiled modules in memory at startup, so it's still using the old buggy search logic even though the files on disk are fixed. Let me restart it for you.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` kill 370070 2>&1; sleep 1; ps aux | grep -iE "electron|vite" | grep -v grep ...`
+
+Kill the stale npm run dev process group so it can be restarted with the fixed code
+
+```bash
+kill 370070 2>&1; sleep 1; ps aux | grep -iE "electron|vite" | grep -v grep | head -5
+```
+
+**Result:**
+
+```
+bash: kill: (370070) - No such process
+kel       109947  0.0  0.0 50356028 3004 ?       Sl   11:32   0:00 /usr/share/co
+de/chrome_crashpad_handler --monitor-self-annotation=ptype=crashpad-handler --no
+-rate-limit --database=/home/kel/.config/Code/Crashpad --url=appcenter://code?ai
+d=fba07a4d-84bd-4fc8-a125-9640fc8ce171&uid=ffc24eaa-295d-4af9-9502-0fe524428bf1&
+iid=ffc24eaa-295d-4af9-9502-0fe524428bf1&sid=ffc24eaa-295d-4af9-9502-0fe524428bf
+1 --annotation=_companyName=Microsoft --annotation=_productName=VSCode --annotat
+ion=_version=1.133.0 --annotation=lsb-release=Linux Mint 22.3 --annotation=plat=
+Linux --annotation=prod=Electron --annotation=ver=42.8.0 --initial-client-fd=45
+--shared-client-connection
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` lsof -i :5173 2>/dev/null || echo "port 5173 free"; ps aux | grep -iE "elect...`
+
+Confirm no stale processes remain and port 5173 is free for a clean restart
+
+```bash
+lsof -i :5173 2>/dev/null || echo "port 5173 free"; ps aux | grep -iE "electron|vite" | grep -v grep | wc -l
+```
+
+**Result:**
+
+```
+port 5173 free
+1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All clear now — the stale session had already stopped on its own (it's no longer in the process list), and port 5173 is free.
+
+**What happened:** the fix was correct and verified against the real database, but your running `npm run dev` session had been started at 15:39, before I rebuilt the fix at 15:48. Electron's main process (where the search logic actually runs) loads its compiled code once at startup and doesn't hot-reload like the Vite renderer does — so your UI was showing live style/layout changes, but still hitting the old, buggy search handler underneath.
+
+**Please run `npm run dev` fresh now** and test "C.ini" again — it should return 18 results this time. If it still fails after a genuinely fresh restart, let me know and I'll dig further, but the backend logic itself is confirmed working correctly against your actual data.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 20:54:26Z)**_
+
+very good. two small Keyboard shortcuts. Ctrl+F should open the Search page; Ctrl+, should open Settings. Add a Keyboard Shortcuts section to Settings to display them.
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `App.tsx`, lines 1 to 70
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **App.tsx**</summary>
+
+@@ lines 41-41 @@
+
+```
+// Global keyboard shortcuts: Ctrl+F -> Search, Ctrl+, -> Settings.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (!event.ctrlKey) return
+      if (event.key.toLowerCase() === 'f') {
+        event.preventDefault()
+        handleSelectNav('search')
+      } else if (event.key === ',') {
+        event.preventDefault()
+        handleSelectNav('settings')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's add the Keyboard Shortcuts section to Settings: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Settings.tsx`, lines 1 to 30
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `Notifications` (`**/src/views/Settings.tsx`), 7 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Settings.tsx`, lines 108 to 120
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.tsx**</summary>
+
+@@ lines 117-117 @@
+
+```
+
+      <section className="settings-section">
+        <h2>Keyboard Shortcuts</h2>
+        <table className="shortcuts-table">
+          <tbody>
+            <tr>
+              <td>
+                <kbd>Ctrl</kbd> + <kbd>F</kbd>
+              </td>
+              <td>Open Search</td>
+            </tr>
+            <tr>
+              <td>
+                <kbd>Ctrl</kbd> + <kbd>,</kbd>
+              </td>
+              <td>Open Settings</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's add CSS for `.shortcuts-table` and  styling:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Settings.css`, lines 1 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Settings.css`, lines 36 to 42
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.css**</summary>
+
+@@ lines 42-42 @@
+
+```
+
+.shortcuts-table {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.shortcuts-table td {
+  padding: 6px 16px 6px 0;
+}
+
+.shortcuts-table kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-sidebar-hover);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's check for errors, verify integrity/sync, and build.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `App.tsx`, `Settings.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Verify content and sync status.      
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/App.tsx src/views/Settings.tsx src/views/Settings.css && git fetch...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact, in sync. Building.        
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's launch and check for runtime errors.       
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
 </details></tool-use>

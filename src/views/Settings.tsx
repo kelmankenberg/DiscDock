@@ -114,6 +114,26 @@ export default function Settings(): JSX.Element {
           Remind me about media needing re-verification
         </label>
       </section>
+
+      <section className="settings-section">
+        <h2>Keyboard Shortcuts</h2>
+        <table className="shortcuts-table">
+          <tbody>
+            <tr>
+              <td>
+                <kbd>Ctrl</kbd> + <kbd>F</kbd>
+              </td>
+              <td>Open Search</td>
+            </tr>
+            <tr>
+              <td>
+                <kbd>Ctrl</kbd> + <kbd>,</kbd>
+              </td>
+              <td>Open Settings</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
     </div>
   )
 }

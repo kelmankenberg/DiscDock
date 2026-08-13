@@ -38,6 +38,22 @@ export default function App(): JSX.Element {
     })
   }, [])
 
+  // Global keyboard shortcuts: Ctrl+F -> Search, Ctrl+, -> Settings.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (!event.ctrlKey) return
+      if (event.key.toLowerCase() === 'f') {
+        event.preventDefault()
+        handleSelectNav('search')
+      } else if (event.key === ',') {
+        event.preventDefault()
+        handleSelectNav('settings')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const handleSelectNav = (key: string): void => {
     setSelectedMediaId(null)
     setActiveView(key)

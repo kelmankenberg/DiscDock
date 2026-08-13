@@ -39,3 +39,22 @@
   align-items: center;
   gap: 8px !important;
 }
+
+.shortcuts-table {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.shortcuts-table td {
+  padding: 6px 16px 6px 0;
+}
+
+.shortcuts-table kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-sidebar-hover);
+  font-family: inherit;
+  font-size: 12px;
+}
