@@ -162,6 +162,11 @@ body {
   font-size: 12px;
 }
 
+.button--icon-only {
+  padding: 6px;
+  line-height: 0;
+}
+
 .button--danger {
   border-color: #e81123;
   color: #e81123;

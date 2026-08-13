@@ -572,39 +572,62 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                   </td>
                   <td className="media-table__actions">
                     {scan ? (
-                      <button type="button" className="button button--small" onClick={() => handleCancelScan(item.id)}>
-                        <CircleX size={14} aria-hidden="true" /> Cancel
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Cancel scan"
+                        aria-label="Cancel scan"
+                        onClick={() => handleCancelScan(item.id)}
+                      >
+                        <CircleX size={16} aria-hidden="true" />
                       </button>
                     ) : (
-                      <button type="button" className="button button--small" onClick={() => handleScan(item.id)}>
-                        <Scan size={14} aria-hidden="true" /> Scan
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Scan"
+                        aria-label="Scan"
+                        onClick={() => handleScan(item.id)}
+                      >
+                        <Scan size={16} aria-hidden="true" />
                       </button>
                     )}
                     {item.status === 'active' && !scan && (
-                      <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
-                        <Archive size={14} aria-hidden="true" /> Retire
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Retire"
+                        aria-label="Retire"
+                        onClick={() => handleRetire(item.id)}
+                      >
+                        <Archive size={16} aria-hidden="true" />
                       </button>
                     )}
                     <button
                       type="button"
-                      className="button button--small button--danger"
+                      className="button button--small button--icon-only button--danger"
+                      title="Delete"
+                      aria-label="Delete"
                       onClick={() => handleDelete(item.id)}
                     >
-                      <Trash2 size={14} aria-hidden="true" /> Delete
+                      <Trash2 size={16} aria-hidden="true" />
                     </button>
                     {presentDevice && (
                       <button
                         type="button"
-                        className="button button--small"
+                        className="button button--small button--icon-only"
                         disabled={ejectingIds.has(item.id)}
+                        title={
+                          ejectingIds.has(item.id)
+                            ? 'Ejecting…'
+                            : presentDevice.isOptical
+                              ? 'Eject'
+                              : 'Safely Remove'
+                        }
+                        aria-label={presentDevice.isOptical ? 'Eject' : 'Safely Remove'}
                         onClick={() => handleEject(item, presentDevice)}
                       >
-                        <EjectIcon size={14} aria-hidden="true" />{' '}
-                        {ejectingIds.has(item.id)
-                          ? 'Ejecting…'
-                          : presentDevice.isOptical
-                            ? 'Eject'
-                            : 'Safely Remove'}
+                        <EjectIcon size={16} aria-hidden="true" />
                       </button>
                     )}
                   </td>
