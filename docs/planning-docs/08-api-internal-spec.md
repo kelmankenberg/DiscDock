@@ -87,8 +87,22 @@ The renderer never accesses Node.js/Electron APIs directly. All communication go
 | `app:getVersion` | invoke | Returns app version for display in Settings/About |
 | `notifications:show` | main-internal only | Not exposed to renderer directly; main process triggers OS notifications based on settings |
 
-## 11. Security Notes
+## 11. Window Controls
+
+Backs the custom top toolbar / title-bar replacement required by the frameless window (see [UI/UX Specification §1](07-ui-ux-specification.md#1-application-shell) and [Technical Specification §3](05-technical-specification.md#3-window-management-frameless-shell)).
+
+| Channel | Direction | Payload → | Returns / Notes |
+|---|---|---|---|
+| `window:minimize` | invoke | — | `{ ok: true }` |
+| `window:maximize` | invoke | — | `{ ok: true }` (toggles maximize/restore) |
+| `window:close` | invoke | — | `{ ok: true }` |
+| `window:isMaximized` | invoke | — | `{ maximized: boolean }` (for initial toolbar icon state on load) |
+| `window:stateChanged` | event (main→renderer) | — | `{ maximized: boolean }`, fired on native maximize/unmaximize so the toolbar can swap its Maximize/Restore icon |
+
+## 12. Security Notes
 
 - Every `invoke` handler validates its input payload shape (e.g., via a schema validator) before touching the database or filesystem; malformed requests return `ok: false` with a validation error code rather than throwing.
 - Path-accepting channels (`files:openInFileManager`, manual root path selection) validate the resolved path stays within the expected media root / OS-provided picker result — never accept arbitrary renderer-supplied absolute paths without validation, to avoid path traversal from a compromised renderer.
 - No channel exposes raw Node.js `child_process`, `fs`, or shell execution primitives to the renderer; all such operations are fully implemented in the main process and only their results are returned.
+- Window-control channels (§11) only ever act on the single application `BrowserWindow` instance owned by the main process; they accept no renderer-supplied window handle/target, preventing a compromised renderer from manipulating other windows.
+

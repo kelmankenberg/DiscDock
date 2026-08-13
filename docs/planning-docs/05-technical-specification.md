@@ -48,12 +48,22 @@ flowchart LR
 **Process boundaries:**
 - **Renderer**: pure presentation, no direct Node/fs access. Communicates only via the preload-exposed API (`window.discdock.*`).
 - **Preload**: thin `contextBridge` layer exposing a typed, minimal API (invoke/on wrappers) — no business logic.
-- **Main process**: owns the SQLite connection, device detection, job orchestration (scan queue), and IPC handler registration.
+- **Main process**: owns the SQLite connection, device detection, job orchestration (scan queue), window management, and IPC handler registration.
 - **Worker threads / utility process**: perform the actual recursive directory walk and hashing so scans never block the main process event loop (which also services IPC and DB writes). Workers stream progress messages and batched file records back to the main process, which performs batched DB inserts.
 
-## 3. Module Breakdown (Main Process)
+## 3. Window Management (Frameless Shell)
+
+- The main `BrowserWindow` is created with `frame: false` (and `titleBarStyle: 'hidden'` as a no-op safeguard on platforms that respect it) — there is no OS-native title bar or window controls.
+- The renderer's custom top toolbar (see [UI/UX Specification §1](07-ui-ux-specification.md#1-application-shell)) supplies the title label and Minimize/Maximize/Restore/Close buttons, replacing the OS title bar entirely.
+- The toolbar's draggable background region is implemented via CSS `-webkit-app-region: drag`, with all interactive elements inside it (buttons, search input) set to `-webkit-app-region: no-drag` so they remain clickable.
+- Window control actions (minimize/maximize/close) are not directly callable from the renderer; they are requested via IPC (`window:minimize`, `window:maximize`, `window:close` — see [IPC Contract §12](08-api-internal-spec.md#12-window-controls)) and executed in the main process against the `BrowserWindow` instance.
+- The main process listens for the window's native `maximize`/`unmaximize`/`enter-full-screen`/`leave-full-screen` events and forwards state changes to the renderer (`window:stateChanged`) so the toolbar can swap the Maximize/Restore icon accordingly.
+- Platform note: since v1 targets Linux only, frameless-window behavior (drag regions, double-click-to-maximize, snapping) is verified specifically under common Linux desktop environments (GNOME, KDE) during QA, as window-manager behavior for frameless windows can vary.
+
+## 4. Module Breakdown (Main Process)
 
 - `db/` — SQLite connection setup, migrations runner, repositories (MediaRepository, FileRepository, TagRepository, ScanRepository, CollectionRepository).
+- `window/` — creates the frameless `BrowserWindow`, registers window-control IPC handlers, forwards native window state events to the renderer.
 - `devices/` — device detection service abstracting udisks2/lsblk, emits `device-connected` / `device-disconnected` events.
 - `scanning/` — scan job manager (queue, concurrency control), worker pool, diffing engine (compares new scan results to prior snapshot).
 - `hashing/` — pluggable hash strategies (none/quick/full).
@@ -63,14 +73,14 @@ flowchart LR
 - `notifications/` — wraps Electron `Notification` API for scan/backup/verification alerts.
 - `logging/` — rotating file logger, unhandled exception hooks.
 
-## 4. Module Breakdown (Renderer)
+## 5. Module Breakdown (Renderer)
 
 - `views/` — Dashboard, MediaList, MediaDetail, Search, DuplicateReport, Collections, Settings, Backup.
-- `components/` — shared UI (DataTable/virtualized list, TagInput, ProgressBar, FolderTree, FilterPanel).
-- `store/` — client-side state (current media selection, active filters, scan job status subscriptions).
+- `components/` — shared UI (DataTable/virtualized list, TagInput, ProgressBar, FolderTree, FilterPanel), plus `TitleBar` (custom top toolbar/title bar with window controls, drag region, title label, and toolbar contents).
+- `store/` — client-side state (current media selection, active filters, scan job status subscriptions, window maximize/restore state).
 - `api/` — typed wrapper around `window.discdock` calls (mirrors preload surface 1:1).
 
-## 5. Scanning Engine Design
+## 6. Scanning Engine Design
 
 1. User triggers a scan on a media record (must have a resolved root path — either the live mount point or a manually chosen folder for archived/disconnected media re-import).
 2. Main process enqueues a `ScanJob` (status `queued`) and, when its turn comes, spawns/dispatches to a worker.
@@ -81,25 +91,25 @@ flowchart LR
 7. Progress events (`scan:progress`) are forwarded to the renderer via IPC throughout; a final `scan:completed` (or `scan:failed` / `scan:cancelled`) event is emitted.
 8. Cancellation: renderer sends `scan:cancel(jobId)`; worker checks a cancellation flag between files and exits cleanly; already-inserted staging rows are discarded (job marked `cancelled`, prior snapshot untouched).
 
-## 6. Device Detection Design (Linux)
+## 7. Device Detection Design (Linux)
 
 - Primary: subscribe to `udisks2` D-Bus signals (`InterfacesAdded`/`InterfacesRemoved` on `org.freedesktop.UDisks2`) to detect block device/filesystem mount changes in real time.
 - Fallback: poll `/proc/mounts` (or run `lsblk -J -o NAME,LABEL,FSTYPE,MOUNTPOINT,SIZE,RM`) every few seconds if D-Bus is unavailable (e.g., minimal/sandboxed environments), diffing against the previous poll to synthesize connect/disconnect events.
 - Detected devices are matched to existing media records via a stored device fingerprint (filesystem UUID where available, else label + size heuristic) so the same USB drive is recognized across sessions.
 
-## 7. Search Implementation
+## 8. Search Implementation
 
 - SQLite FTS5 virtual table indexing file `name` and `path` for fast substring/prefix search, joined back to the main `files` table for metadata/filter columns.
 - Structured filters (media type, size range, date range, tags) compiled into a parameterized `WHERE` clause combined with the FTS `MATCH` query.
 - Pagination via `LIMIT`/`OFFSET` with a stable sort key; renderer uses a virtualized list to render only visible rows.
 
-## 8. Error Handling Strategy
+## 9. Error Handling Strategy
 
 - All IPC handlers wrap calls in try/catch, returning a discriminated `{ ok: true, data } | { ok: false, error }` result shape (no thrown exceptions crossing the IPC boundary).
 - Scan/worker errors are captured per-file (I/O errors don't abort the whole job) and job-level (uncaught worker crash marks the job `failed` with a logged stack trace).
 - Renderer surfaces recoverable errors via toast/notification components; fatal/unexpected errors are logged and shown via a generic error boundary.
 
-## 9. Build & Dev Workflow
+## 10. Build & Dev Workflow
 
 - Vite dev server for renderer HMR; Electron main/preload compiled via `tsc`/`esbuild` watch.
 - `electron-builder` config (see [Packaging & Deployment](09-packaging-deployment.md)) drives `.deb` and `.AppImage` output from a single build pipeline.

@@ -2,10 +2,16 @@
 
 ## 1. Application Shell
 
-- **Layout:** Fixed left sidebar navigation + top toolbar + main content area, standard desktop app pattern.
+- **Window Chrome:** The application window is **frameless** (`frame: false` in Electron) — the OS's native title bar and window controls are not used. DiscDock renders its own custom top toolbar in-app, which doubles as the window's title bar/drag region.
+- **Custom Top Toolbar (title bar replacement):**
+  - Left section: application icon + title label ("DiscDock"), and, when viewing a specific screen, a contextual page/section label (e.g., "Media Library").
+  - Center/left-of-right section: global search input (always accessible), "Add Media" quick action, active scan job indicator (spinner + count badge linking to Scan Queue), theme toggle.
+  - Right section: custom window control buttons — Minimize, Maximize/Restore, Close — styled to match the app theme (light/dark) rather than OS-native controls.
+  - The toolbar background (excluding interactive controls) is a draggable region (`-webkit-app-region: drag`) so the frameless window can still be moved; all buttons/inputs within it are explicitly marked non-draggable (`-webkit-app-region: no-drag`).
+  - Double-clicking the draggable toolbar area toggles maximize/restore, matching standard title-bar behavior.
+- **Layout:** Custom top toolbar (title bar + controls) + fixed left sidebar navigation + main content area, standard desktop app pattern below the toolbar.
 - **Left Sidebar (collapsible):** Dashboard, Media Library, Search, Duplicates, Collections, Backup/Export, Settings.
-- **Top Toolbar:** Global search input (always accessible), "Add Media" quick action, active scan job indicator (spinner + count badge linking to Scan Queue), theme toggle.
-- **Theming:** Light and Dark themes, following OS preference by default, override in Settings.
+- **Theming:** Light and Dark themes, following OS preference by default, override in Settings. Custom window control button icons/colors must adapt to the active theme.
 
 ## 2. Screens
 

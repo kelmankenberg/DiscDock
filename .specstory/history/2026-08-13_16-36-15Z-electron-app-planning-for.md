@@ -3613,3 +3613,776 @@ assumptions are acceptable
 _**Agent (copilot/auto)**_
 
 Good — assumptions confirmed, so the docs stand as-is. Ready to move into implementation scaffolding (Electron + React/TS + Vite project setup, electron-builder config, SQLite schema/migrations) whenever you want to proceed.
+
+---
+
+_**User (2026-08-13 17:03:25Z)**_
+
+let's initialize this and push it to 'https://github.com/kelmankenberg/DiscDock.git'
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git status 2>&1 | head -30`
+
+Check if git repo already exists
+
+```bash
+cd /home/kel/dev/DiscDock && git status 2>&1 | head -30
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git status 2>&1 | head -30` (terminal ID=10503482-a1fa-4881-bb6b-c39619eb9901). This is the output of running that command instead:
+fatal: not a git repository (or any of the parent directories): .git
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Not yet a git repo. I'll initialize it, add a `.gitignore` (Node/Electron project conventions), commit, then add the remote and push. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `.gitignore`
+
+**Input:**
+
+- content:
+
+```
+node_modules/
+dist/
+release/
+build/
+out/
+*.log
+.env
+.DS_Store
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/.gitignore`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/.gitignore
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **.gitignore**</summary>
+
+@@ lines 1-1 @@
+
+```
+node_modules/
+dist/
+release/
+build/
+out/
+*.log
+.env
+.DS_Store
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git init -b main && git add -A && git commit -m "Add planning documentation ...`
+
+Initialize git repo and create first commit
+
+```bash
+cd /home/kel/dev/DiscDock && git init -b main && git add -A && git commit -m "Add planning documentation for DiscDock" 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git init -b main && git add -A && git commit -m "Add planning documentation for DiscDock" 2>&1` (terminal ID=bc717ac0-739f-4b63-9505-547e8e4a29cb). This is the output of running that command instead:
+Initialized empty Git repository in /home/kel/dev/DiscDock/.git/
+[main (root-commit) d3f8ba1] Add planning documentation for DiscDock
+ 18 files changed, 4764 insertions(+)
+ create mode 100644 .gitignore
+ create mode 100644 .specstory/.project.json
+ create mode 100644 .specstory/cli/config.toml
+ create mode 100644 .specstory/history/2026-08-13_16-36-15Z-electron-app-plannin
+g-for.md
+ create mode 100644 .specstory/statistics.json
+ create mode 100644 docs/planning-docs/01-product-requirements.md
+ create mode 100644 docs/planning-docs/02-user-stories.md
+ create mode 100644 docs/planning-docs/03-functional-requirements.md
+ create mode 100644 docs/planning-docs/04-non-functional-requirements.md
+ create mode 100644 docs/planning-docs/05-technical-specification.md
+ create mode 100644 docs/planning-docs/06-data-model.md
+ create mode 100644 docs/planning-docs/07-ui-ux-specification.md
+ create mode 100644 docs/planning-docs/08-api-internal-spec.md
+ create mode 100644 docs/planning-docs/09-packaging-deployment.md
+ create mode 100644 docs/planning-docs/10-security-privacy.md
+ create mode 100644 docs/planning-docs/11-roadmap.md
+ create mode 100644 docs/planning-docs/12-glossary.md
+ create mode 100644 docs/planning-docs/README.md
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git remote add origin https://github.com/kelmankenberg/DiscDock.git && git p...`
+
+Add remote and push to GitHub
+
+```bash
+cd /home/kel/dev/DiscDock && git remote add origin https://github.com/kelmankenberg/DiscDock.git && git push -u origin main 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git remote add origin https://github.com/kelmankenberg/DiscDock.git && git push -u origin main 2>&1` (terminal ID=2cd2b8b0-bf37-405e-a99a-c977c21cddd7). This is the output of running that command instead:
+Enumerating objects: 25, done.
+Counting objects: 100% (25/25), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (23/23), done.
+Writing objects: 100% (25/25), 72.11 KiB | 5.55 MiB/s, done.
+Total 25 (delta 2), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (2/2), done.
+To https://github.com/kelmankenberg/DiscDock.git
+ * [new branch]      main -> main
+branch 'main' set up to track 'origin/main'.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Repo initialized and pushed to [github.com/kelmankenberg/DiscDock](https://github.com/kelmankenberg/DiscDock) on `main`, with the planning docs and a `.gitignore` for Node/Electron build artifacts.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 5 todos
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 17:07:18Z)**_
+
+Now this app UI needs to be formless and have a custom top toolbar to contain control buttons and title label. update the planning docs accordingly.
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `07-ui-ux-specification.md`, lines 1 to 10
+
+**Input:**
+
+- endLine: `10`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/07-ui-ux-specification.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# UI/UX Specification
+
+## 1. Application Shell
+
+- **Layout:** Fixed left sidebar navigation + top toolbar + main content area, standard desktop app pattern.
+- **Left Sidebar (collapsible):** Dashboard, Media Library, Search, Duplicates, Collections, Backup/Export, Settings.
+- **Top Toolbar:** Global search input (always accessible), "Add Media" quick action, active scan job indicator (spinner + count badge linking to Scan Queue), theme toggle.
+- **Theming:** Light and Dark themes, following OS preference by default, override in Settings.
+
+## 2. Screens
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **07-ui-ux-specification.md**</summary>
+
+@@ lines 5-8 @@
+
+```
+Window Chrome:** The application window is **frameless** (`frame: false` in Electron) — the OS's native title bar and window controls are not used. DiscDock renders its own custom top toolbar in-app, which doubles as the window's title bar/drag region.
+- **Custom Top Toolbar (title bar replacement):**
+  - Left section: application icon + title label ("DiscDock"), and, when viewing a specific screen, a contextual page/section label (e.g., "Media Library").
+  - Center/left-of-right section: global search input (always accessible), "Add Media" quick action, active scan job indicator (spinner + count badge linking to Scan Queue), theme toggle.
+  - Right section: custom window control buttons — Minimize, Maximize/Restore, Close — styled to match the app theme (light/dark) rather than OS-native controls.
+  - The toolbar background (excluding interactive controls) is a draggable region (`-webkit-app-region: drag`) so the frameless window can still be moved; all buttons/inputs within it are explicitly marked non-draggable (`-webkit-app-region: no-drag`).
+  - Double-clicking the draggable toolbar area toggles maximize/restore, matching standard title-bar behavior.
+- **Layout:** Custom top toolbar (title bar + controls) + fixed left sidebar navigation + main content area, standard desktop app pattern below the toolbar.
+- **Left Sidebar (collapsible):** Dashboard, Media Library, Search, Duplicates, Collections, Backup/Export, Settings.
+- **Theming:** Light and Dark themes, following OS preference by default, override in Settings. Custom window control button icons/colors must adapt to the active theme
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update the technical spec (frameless `BrowserWindow` config, IPC for window controls) and IPC contract doc. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `05-technical-specification.md`, lines 1 to 30
+
+**Input:**
+
+- endLine: `30`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/05-technical-specification.md`
+- startLine: `1`
+
+**Result:**
+
+````
+# Technical Specification
+
+## 1. Technology Stack
+
+| Layer | Choice | Notes |
+|---|---|---|
+| Application shell | **Electron** (latest stable) | Main + preload + renderer processes |
+| Renderer UI | **React + TypeScript**, Vite bundler | Fast dev/build; component-driven |
+| State management | React context + a lightweight store (e.g., Zustand) | Avoid over-engineering; no Redux needed |
+| Styling | CSS Modules or Tailwind CSS | Team preference; must support light/dark theming |
+| Main process language | **TypeScript** (compiled Node.js) | Shared types with renderer via a `shared/` package |
+| Local database | **SQLite** via `better-sqlite3` | Synchronous, fast, WAL mode enabled |
+| Scanning/hashing workers | Node.js `worker_threads` (or a dedicated Electron **Utility Process**) | Keeps main/renderer responsive |
+| Device detection (Linux) | `udisks2` over D-Bus (`dbus-next` or similar), fallback to `lsblk -J` / `/proc/mounts` parsing | No root required for user-mounted media |
+| Packaging | **electron-builder** | Targets: `deb`, `AppImage` |
+| Testing | Vitest/Jest (unit), Playwright (E2E renderer) | Scan/diff logic unit-tested independent of Electron |
+| Logging | `electron-log` or equivalent rotating file logger | Main-process centric |
+
+## 2. High-Level Architecture
+
+```mermaid
+flowchart LR
+    subgraph Renderer[Renderer Process (React UI)]
+        UI[Views: Dashboard, Media List, Media Detail, Search, Settings]
+    end
+    subgraph Preload[Preload (contextBridge)]
+        API[window.discdock API surface]
+    end
+    subgraph Main[Main Process]
+        IPC[IPC Handlers]
+````
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `05-technical-specification.md`, lines 30 to 60
+
+**Input:**
+
+- endLine: `60`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/05-technical-specification.md`
+- startLine: `30`
+
+**Result:**
+
+````
+        IPC[IPC Handlers]
+        Svc[Application Services]
+        DB[(SQLite DB via better-sqlite3)]
+        Dev[Device Detection Service - udisks2/lsblk]
+    end
+    subgraph Worker[Scan Worker Threads / Utility Process]
+        Scanner[Filesystem Walker + Hasher]
+    end
+
+    UI <--> API
+    API <--> IPC
+    IPC --> Svc
+    Svc --> DB
+    Svc --> Dev
+    Svc --> Worker
+    Worker --> DB
+```
+
+**Process boundaries:**
+- **Renderer**: pure presentation, no direct Node/fs access. Communicates only via the preload-exposed API (`window.discdock.*`).
+- **Preload**: thin `contextBridge` layer exposing a typed, minimal API (invoke/on wrappers) — no business logic.
+- **Main process**: owns the SQLite connection, device detection, job orchestration (scan queue), and IPC handler registration.
+- **Worker threads / utility process**: perform the actual recursive directory walk and hashing so scans never block the main process event loop (which also services IPC and DB writes). Workers stream progress messages and batched file records back to the main process, which performs batched DB inserts.
+
+## 3. Module Breakdown (Main Process)
+
+- `db/` — SQLite connection setup, migrations runner, repositories (MediaRepository, FileRepository, TagRepository, ScanRepository, CollectionRepository).
+- `devices/` — device detection service abstracting udisks2/lsblk, emits `device-connected` / `device-disconnected` events.
+- `scanning/` — scan job manager (queue, concurrency control), worker pool, diffing engine (compares new scan results to prior snapshot).
+- `hashing/` — pluggable hash strategies (none/quick/full).
+- `search/` — query builder translating UI filter state into parameterized SQL against indexed columns/FTS table.
+````
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **05-technical-specification.md**</summary>
+
+@@ lines 66-70 @@
+
+```
+5. Module Breakdown (Renderer)
+
+- `views/` — Dashboard, MediaList, MediaDetail, Search, DuplicateReport, Collections, Settings, Backup.
+- `components/` — shared UI (DataTable/virtualized list, TagInput, ProgressBar, FolderTree, FilterPanel), plus `TitleBar` (custom top toolbar/title bar with window controls, drag region, title label, and toolbar contents).
+- `store/` — client-side state (current media selection, active filters, scan job status subscriptions, window maximize/restore state
+```
+
+@@ lines 51-56 @@
+
+```
+window management, and IPC handler registration.
+- **Worker threads / utility process**: perform the actual recursive directory walk and hashing so scans never block the main process event loop (which also services IPC and DB writes). Workers stream progress messages and batched file records back to the main process, which performs batched DB inserts.
+
+## 3. Window Management (Frameless Shell)
+
+- The main `BrowserWindow` is created with `frame: false` (and `titleBarStyle: 'hidden'` as a no-op safeguard on platforms that respect it) — there is no OS-native title bar or window controls.
+- The renderer's custom top toolbar (see [UI/UX Specification §1](07-ui-ux-specification.md#1-application-shell)) supplies the title label and Minimize/Maximize/Restore/Close buttons, replacing the OS title bar entirely.
+- The toolbar's draggable background region is implemented via CSS `-webkit-app-region: drag`, with all interactive elements inside it (buttons, search input) set to `-webkit-app-region: no-drag` so they remain clickable.
+- Window control actions (minimize/maximize/close) are not directly callable from the renderer; they are requested via IPC (`window:minimize`, `window:maximize`, `window:close` — see [IPC Contract §12](08-api-internal-spec.md#12-window-controls)) and executed in the main process against the `BrowserWindow` instance.
+- The main process listens for the window's native `maximize`/`unmaximize`/`enter-full-screen`/`leave-full-screen` events and forwards state changes to the renderer (`window:stateChanged`) so the toolbar can swap the Maximize/Restore icon accordingly.
+- Platform note: since v1 targets Linux only, frameless-window behavior (drag regions, double-click-to-maximize, snapping) is verified specifically under common Linux desktop environments (GNOME, KDE) during QA, as window-manager behavior for frameless windows can vary.
+
+## 4. Module Breakdown (Main Process)
+
+- `db/` — SQLite connection setup, migrations runner, repositories (MediaRepository, FileRepository, TagRepository, ScanRepository, CollectionRepository).
+- `window/` — creates the frameless `BrowserWindow`, registers window-control IPC handlers, forwards native window state events to the renderer
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `05-technical-specification.md`, lines 60 to 110
+
+**Input:**
+
+- endLine: `110`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/05-technical-specification.md`
+- startLine: `60`
+
+**Result:**
+
+```
+- The main process listens for the window's native `maximize`/`unmaximize`/`enter-full-screen`/`leave-full-screen` events and forwards state changes to the renderer (`window:stateChanged`) so the toolbar can swap the Maximize/Restore icon accordingly.
+- Platform note: since v1 targets Linux only, frameless-window behavior (drag regions, double-click-to-maximize, snapping) is verified specifically under common Linux desktop environments (GNOME, KDE) during QA, as window-manager behavior for frameless windows can vary.
+
+## 4. Module Breakdown (Main Process)
+
+- `db/` — SQLite connection setup, migrations runner, repositories (MediaRepository, FileRepository, TagRepository, ScanRepository, CollectionRepository).
+- `window/` — creates the frameless `BrowserWindow`, registers window-control IPC handlers, forwards native window state events to the renderer.
+- `devices/` — device detection service abstracting udisks2/lsblk, emits `device-connected` / `device-disconnected` events.
+- `scanning/` — scan job manager (queue, concurrency control), worker pool, diffing engine (compares new scan results to prior snapshot).
+- `hashing/` — pluggable hash strategies (none/quick/full).
+- `search/` — query builder translating UI filter state into parameterized SQL against indexed columns/FTS table.
+- `export/` — JSON/CSV export and DB backup/restore routines.
+- `ipc/` — one handler module per feature area, registered against typed channel names (see [IPC contract](08-api-internal-spec.md)).
+- `notifications/` — wraps Electron `Notification` API for scan/backup/verification alerts.
+- `logging/` — rotating file logger, unhandled exception hooks.
+
+## 5. Module Breakdown (Renderer)
+
+- `views/` — Dashboard, MediaList, MediaDetail, Search, DuplicateReport, Collections, Settings, Backup.
+- `components/` — shared UI (DataTable/virtualized list, TagInput, ProgressBar, FolderTree, FilterPanel), plus `TitleBar` (custom top toolbar/title bar with window controls, drag region, title label, and toolb
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `05-technical-specification.md`, lines 110 to 117
+
+**Input:**
+
+- endLine: `120`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/05-technical-specification.md`
+- startLine: `110`
+
+**Result:**
+
+```
+- Renderer surfaces recoverable errors via toast/notification components; fatal/unexpected errors are logged and shown via a generic error boundary.
+
+## 9. Build & Dev Workflow
+
+- Vite dev server for renderer HMR; Electron main/preload compiled via `tsc`/`esbuild` watch.
+- `electron-builder` config (see [Packaging & Deployment](09-packaging-deployment.md)) drives `.deb` and `.AppImage` output from a single build pipeline.
+- CI: lint → unit tests → build renderer + main → package (deb/AppImage) → smoke test artifact.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now renumber sections 5→6, 6→7, 7→8, 8→9, 9→10: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **05-technical-specification.md**</summary>
+
+@@ lines 112-112 @@
+
+```
+10
+```
+
+@@ lines 106-106 @@
+
+```
+9
+```
+
+@@ lines 100-100 @@
+
+```
+8
+```
+
+@@ lines 94-94 @@
+
+```
+7
+```
+
+@@ lines 83-83 @@
+
+```
+6
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+add the window-controls IPC section to the API contract doc. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `08-api-internal-spec.md`, lines 58 to 70
+
+**Input:**
+
+- endLine: `70`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/08-api-internal-spec.md`
+- startLine: `58`
+
+**Result:**
+
+```
+
+| Channel | Direction | Payload → | Returns |
+|---|---|---|---|
+| `tags:list` | invoke | — | `Tag[]` |
+| `tags:apply` | invoke | `{ targetType: 'media'\|'file', targetId, tagNames: string[] }` | updated tag list |
+| `collections:list` / `create` / `update` / `delete` | invoke | standard CRUD | `Collection[]` / `Collection` |
+| `collections:addMember` / `removeMember` | invoke | `{ collectionId, mediaId }` | `Collection` |
+
+## 8. Export / Backup
+
+| Channel | Direction | Payload → | Returns |
+|---|---|---|---|
+| `export:run` | invoke | `{ scope, format, destinationPath }` | `{ jobId }` |
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `08-api-internal-spec.md`, lines 70 to 95
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/08-api-internal-spec.md`
+- startLine: `70`
+
+**Result:**
+
+```
+| `export:run` | invoke | `{ scope, format, destinationPath }` | `{ jobId }` |
+| `export:progress` / `export:completed` | event | — | progress/result |
+| `backup:run` | invoke | `{ destinationPath }` | `{ jobId }` |
+| `backup:restore` | invoke | `{ sourcePath }` | `{ ok: true }` (after safety backup + confirmation already handled in renderer) |
+
+## 9. Settings
+
+| Channel | Direction | Payload → | Returns |
+|---|---|---|---|
+| `settings:get` | invoke | — | `AppSettings` |
+| `settings:update` | invoke | `Partial<AppSettings>` | `AppSettings` |
+| `mediaTypes:list` / `create` / `delete` | invoke | standard CRUD | `MediaType[]` |
+
+## 10. Notifications & App
+
+| Channel | Direction | Notes |
+|---|---|---|
+| `app:getVersion` | invoke | Returns app version for display in Settings/About |
+| `notifications:show` | main-internal only | Not exposed to renderer directly; main process triggers OS notifications based on settings |
+
+## 11. Security Notes
+
+- Every `invoke` handler validates its input payload shape (e.g., via a schema validator) before touching the database or filesystem; malformed requests return `ok: false` with a validation error code rather than throwing.
+- Path-accepting channels (`files:openInFileManager`, manual root path selection) validate the resolved path stays within the expected media root / OS-provided picker result — never accept arbitrary renderer-supplied absolute paths without validation, to avoid path traversal from a compromised renderer.
+- No channel exposes raw Node.js `child_process`, `fs`, or shell execution primitives to the renderer; all such operations are fully implemented in the main process and only their results are returned.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **08-api-internal-spec.md**</summary>
+
+@@ lines 90-94 @@
+
+```
+Window Controls
+
+Backs the custom top toolbar / title-bar replacement required by the frameless window (see [UI/UX Specification §1](07-ui-ux-specification.md#1-application-shell) and [Technical Specification §3](05-technical-specification.md#3-window-management-frameless-shell)).
+
+| Channel | Direction | Payload → | Returns / Notes |
+|---|---|---|---|
+| `window:minimize` | invoke | — | `{ ok: true }` |
+| `window:maximize` | invoke | — | `{ ok: true }` (toggles maximize/restore) |
+| `window:close` | invoke | — | `{ ok: true }` |
+| `window:isMaximized` | invoke | — | `{ maximized: boolean }` (for initial toolbar icon state on load) |
+| `window:stateChanged` | event (main→renderer) | — | `{ maximized: boolean }`, fired on native maximize/unmaximize so the toolbar can swap its Maximize/Restore icon |
+
+## 12. Security Notes
+
+- Every `invoke` handler validates its input payload shape (e.g., via a schema validator) before touching the database or filesystem; malformed requests return `ok: false` with a validation error code rather than throwing.
+- Path-accepting channels (`files:openInFileManager`, manual root path selection) validate the resolved path stays within the expected media root / OS-provided picker result — never accept arbitrary renderer-supplied absolute paths without validation, to avoid path traversal from a compromised renderer.
+- No channel exposes raw Node.js `child_process`, `fs`, or shell execution primitives to the renderer; all such operations are fully implemented in the main process and only their results are returned.
+- Window-control channels (§11) only ever act on the single application `BrowserWindow` instance owned by the main process; they accept no renderer-supplied window handle/target, preventing a compromised renderer from manipulating other windows.
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's check the README index still matches (no section count changes needed there) and verify no other doc references old section numbers. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `§[0-9]|section 5|Module Breakdown \(Renderer\)` (`**/docs/planning-docs/*.md`), 7 results
+
+**Input:**
+
+- includePattern: `docs/planning-docs/*.md`
+- isRegexp: `true`
+- query: `§[0-9]|section 5|Module Breakdown \(Renderer\)`
+
+**Result:**
+
+```
+Found 7 matches in 3 files for "§[0-9]|section 5|Module Breakdown \(Renderer\)"
+
+docs/planning-docs/05-technical-specification.md
+57:- The renderer's custom top toolbar (see [UI/UX Specification §1](07-ui-ux-specification.md#1-application-shell)) supplies the title label and Minimize/Maximize/Restore/Close buttons, replacing the OS title bar entirely.
+59:- Window control actions (minimize/maximize/close) are not directly callable from the renderer; they are requested via IPC (`window:minimize`, `window:maximize`, `window:close` — see [IPC Contract §12](08-api-internal-spec.md#12-window-controls)) and executed in the main process against the `BrowserWindow` instance.
+76:## 5. Module Breakdown (Renderer)
+
+docs/planning-docs/08-api-internal-spec.md
+92:Backs the custom top toolbar / title-bar replacement required by the frameless window (see [UI/UX Specification §1](07-ui-ux-specification.md#1-application-shell) and [Technical Specification §3](05-technical-specification.md#3-window-management-frameless-shell)).
+107:- Window-control channels (§11) only ever act on the single application `BrowserWindow` instance owned by the main process; they accept no renderer-supplied window handle/target, preventing a compromised renderer from manipulating other windows.
+
+docs/planning-docs/11-roadmap.md
+17:- Media Library list + Media Detail (Overview, Browse, Scan History) — UI spec §2.2–2.3
+21:- `.deb` + `.AppImage` packaging finalized with QA checklist passed — Packaging doc §7
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for text `Dashboard with summary` (`**/docs/planning-docs/11-roadmap.md`), 1 result
+
+**Input:**
+
+- includePattern: `docs/planning-docs/11-roadmap.md`
+- isRegexp: `false`
+- query: `Dashboard with summary`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "Dashboard with summary"
+
+docs/planning-docs/11-roadmap.md
+18:- Dashboard with summary stats and attention panel — FR-8.1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Good enough — roadmap doesn't need frameless-specific callouts since it's an implementation detail of the shell already covered by "Media Library list + Media Detail" MVP scope. The docs are updated consistently:
+
+- `docs/planning-docs/07-ui-ux-specification.md` — frameless window shell, custom top toolbar/title bar with window controls, drag regions
+- `docs/planning-docs/05-technical-specification.md` — new §3 "Window Management (Frameless Shell)", `window/` main-process module, `TitleBar` renderer component (sections renumbered accordingly)
+- `docs/planning-docs/08-api-internal-spec.md` — new §11 "Window Controls" IPC channels (`window:minimize/maximize/close/isMaximized/stateChanged`) and a security note restricting them to the single owned `BrowserWindow`
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Added 1 todo
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 17:11:27Z)**_
+
+do the planning docs detail categorizing the type of media scanned (DVD, CD, USB, etc.) within sections of the UI?
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for text `media type` (`**/docs/planning-docs/07-ui-ux-specification.md`), 3 results
+
+**Input:**
+
+- includePattern: `docs/planning-docs/07-ui-ux-specification.md`
+- isRegexp: `false`
+- query: `media type`
+
+**Result:**
+
+```
+Found 3 matches in 1 file for "media type"
+
+docs/planning-docs/07-ui-ux-specification.md
+45:- Left filter panel: media type, media item picker, tags, file kind (image/video/audio/document/archive/other), size range slider, date range picker.
+51:- Filter by minimum group size, media type, file kind.
+67:- **Media Types & Custom Fields:** manage the list of media types; manage custom metadata fields available on media records.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `07-ui-ux-specification.md`, lines 1 to 30
+
+**Input:**
+
+- endLine: `30`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/07-ui-ux-specification.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# UI/UX Specification
+
+## 1. Application Shell
+
+- **Window Chrome:** The application window is **frameless** (`frame: false` in Electron) — the OS's native title bar and window controls are not used. DiscDock renders its own custom top toolbar in-app, which doubles as the window's title bar/drag region.
+- **Custom Top Toolbar (title bar replacement):**
+  - Left section: application icon + title label ("DiscDock"), and, when viewing a specific screen, a contextual page/section label (e.g., "Media Library").
+  - Center/left-of-right section: global search input (always accessible), "Add Media" quick action, active scan job indicator (spinner + count badge linking to Scan Queue), theme toggle.
+  - Right section: custom window control buttons — Minimize, Maximize/Restore, Close — styled to match the app theme (light/dark) rather than OS-native controls.
+  - The toolbar background (excluding interactive controls) is a draggable region (`-webkit-app-region: drag`) so the frameless window can still be moved; all buttons/inputs within it are explicitly marked non-draggable (`-webkit-app-region: no-drag`).
+  - Double-clicking the draggable toolbar area toggles maximize/restore, matching standard title-bar behavior.
+- **Layout:** Custom top toolbar (title bar + controls) + fixed left sidebar navigation + main content area, standard desktop app pattern below the toolbar.
+- **Left Sidebar (collapsible):** Dashboard, Media Library, Search, Duplicates, Collections, Backup/Export, Settings.
+- **Theming:** Light and Dark themes, following OS preference by default, override in Settings. Custom window control button icons/colors must adapt to the active theme.
+
+## 2. Screens
+
+### 2.1 Dashboard (Home)
+- Summary cards: Total Media Items, Total Files Catalogued, Total Catalogued Size, Media Needing Verification.
+- "Recent Scans" list (last 5) with status and quick link to scan report.
+- "Attention Needed" panel: media not verified within threshold, media with unresolved read errors.
+- "
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Yes, but only as a **filter/attribute**, not as a structural navigation grouping. Specifically:
+
+- **Media Library view** (`docs/planning-docs/07-ui-ux-specification.md`): media type shown as a "type icon" column and is filterable/sortable, but all types (CD, DVD, USB, external HDD, etc.) live in one flat table — there's no dedicated sub-section per type.
+- **Search view**: media type is one of the filter-panel facets (media type, media item, tags, file kind, size, date).
+- **Duplicate Report**: filterable by media type.
+- **Settings → Media Types & Custom Fields**: lets users manage/customize the *list* of media types, but this is admin config, not a browsing section.
+- **Dashboard**: no type-based breakdown — summary cards are aggregate totals only (not split "CDs: X, USB: Y").
+
+There's no sidebar/nav item or dashboard widget that groups media *by type* (e.g., a "CDs" section vs. "USB Drives" section) in the current docs — it's currently modeled as a filterable attribute on a unified list, consistent with the Data Model's single `media_item` table with a `media_type` column.
+
+Want me to add a type-based grouping to the UI spec (e.g., group/collapse the Media Library by type, or add per-type counts to the Dashboard)?
+
+---
+
+_**User (2026-08-13 17:13:04Z)**_
+
+no, as long as the user can filter the type, that is sufficient.
+
+---
+
+_**Agent (copilot/auto)**_
+
+Understood — filter-based categorization is sufficient as-is, no doc changes needed.
