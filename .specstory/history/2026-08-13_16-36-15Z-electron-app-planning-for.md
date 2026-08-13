@@ -35728,18 +35728,83 @@ in the Media Library buttons, let's reduce those to icons only with tooltips in 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `CircleX size={14}` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `CircleX size={14}`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "CircleX size={14}"
+
+src/views/MediaLibrary.tsx
+576:                        <CircleX size={14} aria-hidden="true" /> Cancel
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 572 to 610
+
+**Input:**
+
+- endLine: `610`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `572`
+
+**Result:**
+
+```
+                  </td>
+                  <td className="media-table__actions">
+                    {scan ? (
+                      <button type="button" className="button button--small" onClick={() => handleCancelScan(item.id)}>
+                        <CircleX size={14} aria-hidden="true" /> Cancel
+                      </button>
+                    ) : (
+                      <button type="button" className="button button--small" onClick={() => handleScan(item.id)}>
+                        <Scan size={14} aria-hidden="true" /> Scan
+                      </button>
+                    )}
+                    {item.status === 'active' && !scan && (
+                      <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
+                        <Archive size={14} aria-hidden="true" /> Retire
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="button button--small button--danger"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash2 size={14} aria-hidden="true" /> Delete
+                    </button>
+                    {presentDevice && (
+                      <button
+                        type="button"
+                        className="button button--small"
+                        disabled={ejectingIds.has(item.id)}
+                        onClick={() => handleEject(item, presentDevice)}
+                      >
+                        <EjectIcon size={14} aria-hidden="true" />{' '}
+                        {ejectingIds.has(item.id)
+                          ? 'Ejecting…'
+                          : presentDevice.isOptical
+                            ? 'Eject'
+                            : 'Safely Remove'}
+                      </button>
+                    )}
+                  </td>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -35815,18 +35880,53 @@ Now let's add the `.button--icon-only` CSS (square, compact padding) in `global.
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `.button--small` (`**/src/styles/global.css`), 1 result
+
+**Input:**
+
+- includePattern: `src/styles/global.css`
+- isRegexp: `false`
+- query: `.button--small`
+
+**Result:**
+
+```
+Found 1 match in 1 file for ".button--small"
+
+src/styles/global.css
+160:.button--small {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `global.css`, lines 160 to 168
+
+**Input:**
+
+- endLine: `168`
+- filePath: `/home/kel/dev/DiscDock/src/styles/global.css`
+- startLine: `160`
+
+**Result:**
+
+```
+.button--small {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.button--danger {
+  border-color: #e81123;
+  color: #e81123;
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -35848,10 +35948,35 @@ icon-only {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `MediaLibrary.tsx`, 2 problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx"]`
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+At line 18
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+````
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -35872,6 +35997,21 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c src/views/MediaLibrary.tsx src/styles/global.css`
+
+Verify edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/views/MediaLibrary.tsx src/styles/global.css
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/views/MediaLibrary.tsx src/styles/global.css` (terminal ID=50dc4891-a893-44e0-8751-cd6665885595). This is the output of running that command instead:
+23208 src/views/MediaLibrary.tsx
+ 3274 src/styles/global.css
+26482 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -35880,6 +36020,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with icon-only buttons
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=3744dccf-2aca-4e10-809a-2fbb2168901d). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 1813 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-CPCccnJK.css    9.92 kB │ gzip:  2.19 kB
+dist/assets/index-CO2iz2YW.js   229.19 kB │ gzip: 70.48 kB
+
+✓ built in 218ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -35892,6 +36069,52 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app to verify icon-only buttons render correctly
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=3afe7e7e-ead6-4548-b165-22811715551d
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="3afe7e7e-ead6-4548-b165-22811715551d" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="3afe7e7e-ead6-4548-b165-22811715551d" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -35900,14 +36123,30 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` import -window root /tmp/discdock-iconbuttons.png && echo done`
+
+Screenshot current state to check for any rendering issues
+
+```bash
+import -window root /tmp/discdock-iconbuttons.png && echo done
+```
+
+**Result:**
+
+```
+done
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_viewImage"><details>
-<summary>Tool use: **copilot_viewImage**</summary>
+<tool-use data-tool-type="generic" data-tool-name="view_image"><details>
+<summary>Tool use: **view_image**</summary>
 
 Viewed image `discdock-iconbuttons.png`
+
+**Input:**
+
+- filePath: `/tmp/discdock-iconbuttons.png`
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -35920,6 +36159,28 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` git status --short && echo "---DIFF STAT---" && git diff --stat`
+
+Check current working tree state to see if concurrent edits from another process have changed files unexpectedly
+
+```bash
+cd /home/kel/dev/DiscDock && git status --short && echo "---DIFF STAT---" && git diff --stat
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git status --short && echo "---DIFF STAT---" && git diff --stat` (terminal ID=c7391ace-63b6-4bb7-be7f-88fb46c4da2f). This is the output of running that command instead:
+ M .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+ M .specstory/statistics.json
+ M src/styles/global.css
+ M src/views/MediaLibrary.tsx
+---DIFF STAT---
+ ...26-08-13_16-36-15Z-electron-app-planning-for.md | 689 ++++++++++++++++++++-
+ .specstory/statistics.json                         |  10 +-
+ src/styles/global.css                              |   5 +
+ src/views/MediaLibrary.tsx                         |  53 +-
+ 4 files changed, 727 insertions(+), 30 deletions(-)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -35928,4 +36189,477 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` grep -c "button--icon-only" src/views/MediaLibrary.tsx`
+
+Confirm my icon-only button changes are still present and intact in the file
+
+```bash
+cd /home/kel/dev/DiscDock && grep -c "button--icon-only" src/views/MediaLibrary.tsx
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` grep -c "button--icon-only" src/views/MediaLibrary.tsx` (terminal ID=e84fc76e-e1b5-4387-a736-c9bdd1a444b1). This is the output of running that command instead:
+5
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+This is a critical finding — I can see the **"Claude Code" panel is actively running right now** (spinner active, "Refactor Media Library buttons to ico..." task, 26 files changed) doing the **exact same task** I'm doing, and there's a live `npm run dev` Vite HMR process picking up file changes to `MediaLibrary.tsx` and `global.css` in real time. This is genuine concurrent editing happening simultaneously. Let me immediately check whether my files have been affected.   
+
+My changes are intact (5 occurrences of `button--icon-only`, matching the 5 buttons I converted). No corruption. Let's close the test window and commit immediately to minimize the window for conflict.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `3afe7e7e-ead6-4548-b165-22811715551d`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 3afe7e7e-ead6-4548-b165-22811715551d. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git fetch origin 2>&1 && git log --oneline origin/main -3 && echo "---LOCAL-...`
+
+Check for any commits pushed by the other agent before I commit, to avoid a conflicting push
+
+```bash
+cd /home/kel/dev/DiscDock && git fetch origin 2>&1 && git log --oneline origin/main -3 && echo "---LOCAL---" && git log --oneline -3
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git fetch origin 2>&1 && git log --oneline origin/main -3 && echo "---LOCAL---" && git log --oneline -3` (terminal ID=463afed0-8d8c-4e8a-ae7d-666342f4ef9c). This is the output of running that command instead:
+ec480cd (HEAD -> main, origin/main) Add appropriate lucide icons to sidebar navi
+gation items
+bf7ead6 Adopt lucide-react icon library: title bar controls and Media Library ac
+tion buttons
+1f41b51 Show a prominent banner on Media Library when unregistered media is dete
+cted
+---LOCAL---
+ec480cd (HEAD -> main, origin/main) Add appropriate lucide icons to sidebar navi
+gation items
+bf7ead6 Adopt lucide-react icon library: title bar controls and Media Library ac
+tion buttons
+1f41b51 Show a prominent banner on Media Library when unregistered media is dete
+cted
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Still in sync, no divergence. Committing now to lock in my work before any further concurrent activity.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git commit -m "Convert Media Library acti...`
+
+Stage, commit, and immediately push the icon-only buttons change to minimize conflict window
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git commit -m "Convert Media Library action buttons to icon-only with tooltips" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git commit -m "Convert Media Library action buttons to icon-only with tooltips" 2>&1 | tail -20 && git push 2>&1` (terminal ID=877c3b8a-68d7-41a6-8f39-a2dc70bb1a23). This is the output of running that command instead:
+kel@kel-EQ-Mint:~/dev/DiscDock$  df -h / | tail -1 && git add -A && git commit -
+m "Convert Media Library action buttons to icon-only with tooltips" 2>&1 | tail
+-20 && git push 2>&1
+/dev/nvme1n1p2  457G  394G   41G  91% /
+[main f08aab2] Convert Media Library action buttons to icon-only with tooltips
+ 4 files changed, 763 insertions(+), 30 deletions(-)
+Enumerating objects: 21, done.
+Counting objects: 100% (21/21), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (11/11), 5.81 KiB | 349.00 KiB/s, done.
+Total 11 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   ec480cd..f08aab2  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed successfully with no conflicts (41G free).
+
+**Implemented: Icon-only Media Library buttons**
+- Scan, Cancel, Retire, Delete, and Eject/Safely Remove buttons are now icon-only (16px lucide icons), with  (hover tooltip) and  (screen reader accessible name) on each — kept both for real accessibility rather than relying on  alone
+- Added a compact `.button--icon-only` style (square padding, no text) to `global.css`
+
+**⚠️ Important — please read:** Your screenshot revealed the "Claude Code" panel is 
+
+**⚠️ Important — please read:** Your screenshot revealed the "Claude Code" panel is **actively running right now** (live spinner, "Refactor Media Library buttons to ico..." task in progress, 26 files changed) doing the *same task* on the *same files* I was editing, and there's a live `npm run dev` Vite HMR process hot-reloading `MediaLibrary.tsx`/`global.css` changes in real time. This is genuine simultaneous editing, not just a stale panel.
+
+I verified carefully before and after committing (file content checks, `git status`/`diff --stat`, `git fetch` for divergence) and my changes went through cleanly with no corruption or conflicting remote commits — but this was good fortune from timing, not something to rely on. **Please stop one of the two agents (this session or Claude Code) before continuing**, since both editing the same files concurrently can silently overwrite each other's uncommitted work, and I have no way to coordinate with or detect the other agent's in-progress edits beyond what's visible in a screenshot.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Refactor Media Library buttons to icons only* (2/2)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 20:26:06Z)**_
+
+Good. Now we need a way to collapse the left sidebar nav (left rail). When collapse the labels should disappear and tooltips should be used for the button labels. Do you understand the ask?
+
+---
+
+_**Agent (copilot/auto)**_
+
+Yes, understood — add a collapse toggle for the left rail; when collapsed, only icons show (reduced width), and each nav item gets a / tooltip with its label. Let me check available icons for the toggle control first.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ls node\_modules/lucide-react/dist/esm/icons/ | grep -iE "^panel-left|^chevro...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+`PanelLeftClose`/`PanelLeftOpen` are perfect for this. Let's implement.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Sidebar.tsx`, lines 1 to 42
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Sidebar.tsx**</summary>
+
+@@ lines 1-38 @@
+
+```
+useState } from 'react'
+import {
+  LayoutDashboard,
+  Library,
+  Search,
+  Copy,
+  FolderOpen,
+  DatabaseBackup,
+  Settings,
+  PanelLeftClose,
+  PanelLeftOpen
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import './Sidebar.css'
+
+export interface NavItem {
+  key: string
+  label: string
+  icon: LucideIcon
+}
+
+export const NAV_ITEMS: NavItem[] = [
+  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { key: 'media-library', label: 'Media Library', icon: Library },
+  { key: 'search', label: 'Search', icon: Search },
+  { key: 'duplicates', label: 'Duplicates', icon: Copy },
+  { key: 'collections', label: 'Collections', icon: FolderOpen },
+  { key: 'backup-export', label: 'Backup / Export', icon: DatabaseBackup },
+  { key: 'settings', label: 'Settings', icon: Settings }
+]
+
+const COLLAPSED_STORAGE_KEY = 'discdock:sidebar-collapsed'
+
+interface SidebarProps {
+  active: string
+  onSelect: (key: string) => void
+}
+
+export default function Sidebar({ active, onSelect }: SidebarProps): JSX.Element {
+  const [collapsed, setCollapsed] = useState<boolean>(() => localStorage.getItem(COLLAPSED_STORAGE_KEY) === 'true')
+
+  const toggleCollapsed = (): void => {
+    setCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem(COLLAPSED_STORAGE_KEY, String(next))
+      return next
+    })
+  }
+
+  return (
+    <nav className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`}>
+      <button
+        type="button"
+        className="sidebar__toggle"
+        onClick={toggleCollapsed}
+        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {collapsed ? <PanelLeftOpen size={18} aria-hidden="true" /> : <PanelLeftClose size={18} aria-hidden="true" />}
+      </button>
+      <ul className="sidebar__list">
+        {NAV_ITEMS.map((item) => (
+          <li key={item.key}>
+            <button
+              type="button"
+              className={`sidebar__item${item.key === active ? ' sidebar__item--active' : ''}`}
+              onClick={() => onSelect(item.key)}
+              title={collapsed ? item.label : undefined}
+              aria-label={item.label}
+            >
+              <item.icon size={16} aria-hidden="true" />
+              {!collapsed && 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's add the CSS for collapsed state and the toggle button:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Sidebar.css`, lines 1 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Sidebar.css**</summary>
+
+@@ lines 7-30 @@
+
+```
+  transition: width 0.15s ease;
+}
+
+.sidebar--collapsed {
+  width: 56px;
+}
+
+.sidebar__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.sidebar__toggle:hover {
+  background: var(--color-sidebar-hover);
+}
+
+.sidebar--collapsed .sidebar__toggle {
+  justify-content: center;
+}
+
+.sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar__item {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.sidebar--collapsed .sidebar__item {
+  justify-content: center;
+  padding: 8
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `Sidebar.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Sidebar.css**</summary>
+
+@@ lines 7-30 @@
+
+```
+  transition: width 0.15s ease;
+}
+
+.sidebar--collapsed {
+  width: 56px;
+}
+
+.sidebar__toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.sidebar__toggle:hover {
+  background: var(--color-sidebar-hover);
+}
+
+.sidebar--collapsed .sidebar__toggle {
+  justify-content: center;
+}
+
+.sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar__item {
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.sidebar--collapsed .sidebar__item {
+  justify-content: center;
+  padding: 8
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Verify content and build.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/components/Sidebar.tsx src/components/Sidebar.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git l...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Still in sync, good. Building.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's launch and screenshot to visually verify the toggle and collapsed state.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Let's screenshot to confirm the toggle button and expanded sidebar render correctly.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` import -window root /tmp/discdock-sidebar-toggle.png && echo done`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_viewImage"><details>
+<summary>Tool use: **copilot_viewImage**</summary>
+
+Viewed image `discdock-sidebar-toggle.png`
 </details></tool-use>
