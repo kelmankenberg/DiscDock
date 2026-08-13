@@ -2290,1022 +2290,6 @@ The following files were successfully edited:
 _**Agent (copilot/auto)**_
 
 <tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **README.md**</summary>
-
-@@ lines 1-1 @@
-
-```
-# DiscDock — Planning Documentation
-
-DiscDock is a cross-platform-ready (Linux-first) Electron desktop application for cataloging external and removable media — optical discs (CD/DVD/Blu-ray), USB flash drives, external HDD/SSD drives, SD cards, and disc images (ISO) — so users can search "what's on that drive/disc?" without physically connecting it.
-
-This directory contains the full planning package for handoff to a development team.
-
-## Document Index
-
-| # | Document | Purpose |
-|---|----------|---------|
-| 01 | [Product Requirements Document](01-product-requirements.md) | Vision, goals, target users, scope, success metrics |
-| 02 | [User Stories & Epics](02-user-stories.md) | Backlog of user stories with acceptance criteria |
-| 03 | [Functional Requirements](03-functional-requirements.md) | Detailed feature-by-feature requirements |
-| 04 | [Non-Functional Requirements](04-non-functional-requirements.md) | Performance, reliability, compatibility, accessibility |
-| 05 | [Technical Specification](05-technical-specification.md) | Architecture, stack, module design, IPC, scanning engine |
-| 06 | [Data Model](06-data-model.md) | Database schema, ERD, entity definitions |
-| 07 | [UI/UX Specification](07-ui-ux-specification.md) | Screens, navigation, layout, interaction design |
-| 08 | [Internal API / IPC Contract](08-api-internal-spec.md) | Main↔renderer IPC channels and payload contracts |
-| 09 | [Packaging & Deployment](09-packaging-deployment.md) | electron-builder config, deb/AppImage build & release |
-| 10 | [Security & Privacy](10-security-privacy.md) | Threat model, hardening, data handling |
-| 11 | [Roadmap & Release Plan](11-roadmap.md) | MVP scope, phased releases, future ideas |
-| 12 | [Glossary](12-glossary.md) | Terminology reference |
-
-## Product Snapshot
-
-- **Name:** DiscDock
-- **Platform (v1):** Linux only, packaged as `.deb` and `.AppImage`
-- **Framework:** Electron (Chromium + Node.js)
-- **Primary Use Case:** Catalog the contents of removable/external media so it can be searched, tagged, and located later without re-inserting the physical media.
-- **Primary Users:** Home archivists, IT hobbyists, photographers/videographers with large backup collections, small offices/labs managing physical media libraries.
-
-## How to Use This Package
-
-Start with the [PRD](01-product-requirements.md) for context, then [User Stories](02-user-stories.md) for scope, then the [Technical Specification](05-technical-specification.md) and [Data Model](06-data-model.md) for implementation design. The [UI/UX Specification](07-ui-ux-specification.md) and [IPC Contract](08-api-internal-spec.md) are the primary references for building the renderer and main process respectively.
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **01-product-requirements.md**</summary>
-
-@@ lines 1-1 @@
-
-```
-# Product Requirements Document (PRD)
-
-## 1. Overview
-
-**Product:** DiscDock
-**Type:** Electron desktop application
-**Target OS (v1):** Linux (`.deb` package, `.AppImage`)
-**Elevator Pitch:** DiscDock lets you scan any external or removable media once, catalog everything on it, and then search, browse, and locate files across your entire physical media collection — without ever having to plug the drive or disc back in.
-
-## 2. Problem Statement
-
-People accumulate large collections of physical/removable storage over the years: burned CDs/DVDs from the 2000s, backup external hard drives, USB flash drives, SD cards, old NAS exports, etc. There is no easy way to know:
-
-- What is actually stored on a given disc/drive without inserting it.
-- Which physical item contains a specific file, folder, or type of content.
-- Whether a file has been backed up in multiple places (redundancy) or is a duplicate.
-- Which drives/discs are aging, unread in years, or unverified.
-
-DiscDock solves this by building a searchable local catalog (index) of file metadata (name, path, size, type, hash, dates) tied to a physical media record, without needing to keep the media connected or store the actual files.
-
-## 3. Goals
-
-1. Allow a user to register a physical media item (disc, USB key, external drive, SD card) with descriptive metadata (label, type, physical location).
-2. Scan the media's file system and persist a full catalog (folder tree + file metadata) to a local database.
-3. Provide fast full-text and filtered search across all catalogued media, even when disconnected.
-4. Detect duplicate files across media using content hashing.
-5. Track the physical location of media items (e.g., "Box 3, Shelf B") for easy retrieval.
-6. Notify users about aging/unverified media that may need to be re-checked for read errors (bit rot, degraded optical media).
-7. Package cleanly for Linux as both `.deb` and `.AppImage` with no non-Linux distribution required for v1.
-
-## 4. Non-Goals (v1)
-
-- Cloud sync or multi-device sync.
-- Actually backing up/copying file contents into DiscDock (this is a catalog/index, not a backup tool).
-- Windows/macOS builds (architecture should not preclude it later, but not delivered in v1).
-- Media burning/writing (creating new CDs/DVDs).
-- Streaming/playback of media content from within the app (may be a stretch goal for local files still connected).
-
-## 5. Target Users & Personas
-
-| Persona | Description | Key Need |
-|---|---|---|
-| **Home Archivist** | Has 100+ burned discs and several backup drives from over a decade | Find "which disc has my 2011 wedding photos" |
-| **IT Hobbyist / Homelab User** | Manages spare drives, USB keys, recovery media | Inventory of what's on each drive, avoid re-scanning |
-| **Creative Professional** | Photographer/videographer with many external drives of raw footage | Locate footage by shoot/project without connecting every drive |
-| **Small Office/Lab Admin** | Manages a shelf of backup/archive media for compliance | Physical location tracking + verification/audit trail |
-
-## 6. Key Features (Summary)
-
-- Media registration wizard (type, label, capacity, physical location, notes, tags)
-- Automatic detection of inserted/mounted removable media (via udisks2/lsblk on Linux)
-- Recursive file-system scan with progress reporting, producing a full folder/file catalog
-- Content hashing (configurable: none / quick / full SHA-256) for duplicate & integrity detection
-- Global search (filename, path, tags, media label) with filters (media type, file type, size, date, tags)
-- Duplicate file report across the whole catalog
-- Physical location & container hierarchy (e.g., Box → Shelf → Media)
-- Media health/status tracking: last verified date, read error count, "needs re-verification" flags
-- Tagging and collections (user-defined groupings, e.g., "Tax Records 2015-2019")
-- Catalog import/export (JSON/CSV) and full database backup/restore
-- Reporting/dashboard: storage totals by type, media count, duplicate summary, aging media
-
-## 7. Success Metrics
-
-- Time to catalog a 50GB drive with 20,000 files completes within acceptable UX (progress shown, cancellable, resumable).
-- Search returns results across 100+ catalogued media items in under 500ms for typical queries (indexed DB).
-- Zero data loss on catalog database across app updates (migrations tested).
-- Successful `.deb` install and `.AppImage` execution on at least two major Linux distros (e.g., Ubuntu LTS, Fedora) for QA.
-
-## 8. Assumptions & Constraints
-
-- Local-only storage; catalog database lives in the user's local app-data directory (e.g., SQLite file).
-- Linux desktop environment provides standard mount points (`/media`, `/run/media`, or user-configured) and `udisks2`/`lsblk`/`blkid` are available for device metadata; app must gracefully degrade (manual path selection) if unavailable.
-- Application does not require elevated/root privileges for normal scanning of user-mounted media.
-- Users are responsible for physically labeling their media consistent with the app's registered metadata (app can generate printable labels/QR codes as a nice-to-have).
-
-## 9. Stakeholders
-
-- Product Owner (defines scope/priorities)
-- Development Team (Electron/Node engineers, UI/UX)
-- QA (packaging verification across distros)
-- End users (personas above), via beta feedback
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **02-user-stories.md**</summary>
-
-@@ lines 1-1 @@
-
-```
-# User Stories & Epics
-
-Stories are grouped by epic. Format: `As a <role>, I want <capability>, so that <benefit>.` Each includes acceptance criteria.
-
-## Epic 1: Media Registration
-
-### US-1.1 — Register a new media item
-As a user, I want to register a new physical media item with a label, type, and capacity, so that I can track it in my catalog.
-**Acceptance Criteria:**
-- User can create a media record with: name/label, media type (CD, DVD, Blu-ray, USB drive, external HDD/SSD, SD card, other), capacity, notes, tags, and physical location.
-- Media type list is extensible via settings (custom types).
-- Newly created media appears immediately in the media list view.
-
-### US-1.2 — Auto-detect inserted/connected media
-As a user, I want DiscDock to detect when I insert a disc or plug in a drive, so that I can quickly register or select it without manually finding the mount path.
-**Acceptance Criteria:**
-- App listens for mount/unmount events on Linux (via udisks2 D-Bus or polling `lsblk`/`/proc/mounts` fallback).
-- Detected device shows: mount path, filesystem label, filesystem type, capacity, used/free space.
-- User can link a detected device to an existing media record or create a new one from it.
-
-### US-1.3 — Assign physical storage location
-As a user, I want to record where a physical item is stored (box/shelf/drawer), so that I can find it later.
-**Acceptance Criteria:**
-- Location is a free-form hierarchical field (e.g., "Garage > Box 3 > Shelf B") or selectable from previously used locations.
-- Location is searchable/filterable in the media list.
-
-## Epic 2: Scanning & Cataloging
-
-### US-2.1 — Scan a mounted media item
-As a user, I want to scan a connected media item's file system, so that all its files and folders are recorded in the catalog.
-**Acceptance Criteria:**
-- User selects a mounted media record and clicks "Scan".
-- Scan recursively walks the directory tree, recording path, name, size, type/extension, created/modified timestamps.
-- Progress bar shows files scanned, current path, and elapsed time.
-- Scan is cancellable mid-way; partial results are kept (marked as incomplete scan).
-- Symlinks are detected and not followed by default (configurable).
-
-### US-2.2 — Content hashing for integrity/dedupe
-As a user, I want to optionally compute checksums of files during a scan, so that I can detect duplicates and verify integrity later.
-**Acceptance Criteria:**
-- Hashing mode selectable per scan: None, Quick (partial/head hash), Full (SHA-256 whole file).
-- Hash stored per file record.
-- Hashing performance shown in progress UI (throughput, ETA).
-
-### US-2.3 — Re-scan / verify existing media
-As a user, I want to re-scan media I already catalogued, so that I can verify it still matches the recorded catalog (detect bit rot or missing files).
-**Acceptance Criteria:**
-- Re-scan compares new results to prior catalog: added, removed, modified, unchanged file counts.
-- User can view a diff report after re-scan.
-- "Last verified" timestamp updates on successful re-scan.
-
-### US-2.4 — Background/queued scanning
-As a user, I want to queue multiple scans, so that I can catalog several media items in sequence without babysitting each one.
-**Acceptance Criteria:**
-- Scan jobs show in a queue/history panel with status (queued, running, completed, cancelled, failed).
-- Only one scan runs at a time by default (configurable concurrency).
-
-## Epic 3: Search & Browse
-
-### US-3.1 — Global search across all catalogued media
-As a user, I want to search for a filename or keyword across my entire catalog, so that I can find which media item contains it without connecting anything.
-**Acceptance Criteria:**
-- Search box available from the top toolbar/global nav at all times.
-- Results show file name, path, containing media item, size, and modified date.
-- Search supports partial match and is reasonably fast on catalogs with 100k+ file rows.
-
-### US-3.2 — Filter search results
-As a user, I want to filter results by media type, file type/extension, size range, date range, and tags, so that I can narrow down large result sets.
-**Acceptance Criteria:**
-- Filter panel available alongside search results.
-- Filters combine with AND logic; active filters are visibly listed and removable.
-
-### US-3.3 — Browse a media item's folder tree
-As a user, I want to browse the catalogued folder structure of a specific media item like a file explorer, so that I can review its contents.
-**Acceptance Criteria:**
-- Tree view expand/collapse of folders; file list pane for selected folder.
-- Works fully offline (data from catalog, not live filesystem) with a badge if media currently connected vs. archived-only.
-
-## Epic 4: Duplicate & Redundancy Detection
-
-### US-4.1 — Duplicate file report
-As a user, I want to see files that exist identically (by hash) on multiple media items, so that I know what's redundantly backed up and what's a single point of failure.
-**Acceptance Criteria:**
-- Report groups files by hash where hash exists and count > 1.
-- Report shows each occurrence's media item and path.
-- Files without a computed hash are excluded with a note to enable hashing.
-
-## Epic 5: Tagging & Organization
-
-### US-5.1 — Tag media items and files
-As a user, I want to apply custom tags to media items (and optionally individual files), so that I can organize my catalog by project, year, or category.
-**Acceptance Criteria:**
-- Tags are freeform, autocompleted from existing tags, multiple per item.
-- Tags filterable in search and media list.
-
-### US-5.2 — Collections
-As a user, I want to group multiple media items into a named collection, so that I can manage related items together (e.g., "2020 Backups").
-**Acceptance Criteria:**
-- Collections are user-created, many-to-many with media items.
-- Collection detail view lists member media and aggregate stats (total size, file count).
-
-## Epic 6: Media Health & Lifecycle
-
-### US-6.1 — Track verification status
-As a user, I want to see which media items haven't been verified in a long time, so that I can proactively check aging discs/drives before they fail.
-**Acceptance Criteria:**
-- Dashboard widget lists media not verified in > N months (configurable threshold).
-- Media detail page shows last scanned/verified date and history log.
-
-### US-6.2 — Record read errors / damage notes
-As a user, I want to log read errors encountered when scanning, so that I have a record of degrading media.
-**Acceptance Criteria:**
-- Scan engine records unreadable files/paths with error type.
-- Media detail shows an error count and list of problem paths.
-
-## Epic 7: Data Portability
-
-### US-7.1 — Export catalog
-As a user, I want to export my catalog (all or filtered) to JSON/CSV, so that I can back it up or use it elsewhere.
-**Acceptance Criteria:**
-- Export scope selectable: entire catalog, single media item, or current filtered search results.
-- Export runs as a background job with a completion notification and file save dialog.
-
-### US-7.2 — Backup/restore the app database
-As a user, I want to back up and restore my entire DiscDock database, so that I don't lose my catalog if my computer is reset.
-**Acceptance Criteria:**
-- "Backup Now" produces a single portable file (e.g., SQLite copy or compressed archive).
-- "Restore from Backup" replaces/merges the current database with confirmation prompts and a pre-restore safety backup.
-
-## Epic 8: Application Shell & Settings
-
-### US-8.1 — Dashboard/home view
-As a user, I want a home dashboard showing summary stats (total media, total files, total size, recent scans, aging media alerts), so that I get an overview at a glance.
-
-### US-8.2 — Settings management
-As a user, I want to configure scan defaults (hashing mode, exclude patterns, follow symlinks), mount directory watch paths, theme (light/dark), and notification preferences, so that the app behaves the way I want.
-
-### US-8.3 — Media type & custom field management
-As a user, I want to manage the list of media types and any custom metadata fields, so that the catalog fits my specific collection needs.
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **03-functional-requirements.md**</summary>
-
-@@ lines 1-1 @@
-
-```
-# Functional Requirements
-
-Numbered `FR-x.y` for traceability to user stories and test cases.
-
-## FR-1: Media Registration & Detection
-
-- **FR-1.1** The system shall allow manual creation of a media record with fields: name/label, media type, capacity (optional/auto-filled), physical location, notes, tags, color/icon (optional), created date.
-- **FR-1.2** The system shall detect connected/mounted removable storage devices on Linux via `udisks2` D-Bus signals where available, with polling of `/proc/mounts` / `lsblk -J` as a fallback.
-- **FR-1.3** The system shall present detected devices with: device path (e.g., `/dev/sdb1`), mount point, filesystem label, filesystem type, total/used/free capacity.
-- **FR-1.4** The system shall allow linking a detected device to a new or existing media record.
-- **FR-1.5** The system shall support at minimum media types: CD, DVD, Blu-ray, USB Flash Drive, External HDD, External SSD, SD Card/MicroSD, Network Share (read-only catalog use case), Other (custom).
-- **FR-1.6** The system shall allow users to define custom media types.
-- **FR-1.7** The system shall support optical media specifically: when a CD/DVD is inserted, read volume label via mount metadata; if no filesystem (raw audio CD), allow manual track listing entry or graceful "unsupported filesystem" messaging.
-
-## FR-2: Scanning Engine
-
-- **FR-2.1** The system shall recursively enumerate all files and directories under a selected root path (the mount point or a user-chosen subfolder).
-- **FR-2.2** For each file, the system shall record: full relative path, file name, extension, size in bytes, created timestamp, modified timestamp, and (optionally) content hash.
-- **FR-2.3** For each directory, the system shall record path and aggregate stats (file count, total size) computed post-scan.
-- **FR-2.4** The system shall support exclude patterns (glob-based, e.g., `**/.Trash-*`, `**/System Volume Information`) configurable globally and per-scan.
-- **FR-2.5** The system shall not follow symbolic links by default; this shall be a configurable option with loop protection when enabled.
-- **FR-2.6** The system shall support three hashing modes: `none`, `quick` (first + last 64KB + size composite hash), `full` (streaming SHA-256 of entire file).
-- **FR-2.7** The system shall report scan progress (files processed, bytes processed, current path, elapsed/estimated time) to the UI at least every 250ms.
-- **FR-2.8** The system shall allow cancelling an in-progress scan; partial results already committed shall remain, and the scan record shall be flagged `incomplete`.
-- **FR-2.9** The system shall record and surface I/O errors per file/path (permission denied, read error, I/O error) without aborting the overall scan.
-- **FR-2.10** The system shall support only one active scan at a time by default, with additional scans queued (FIFO); a setting shall allow N concurrent scans.
-- **FR-2.11** On re-scan of previously catalogued media, the system shall diff the new file listing against the prior catalog snapshot and classify entries as Added, Removed, Modified (size/mtime/hash changed), or Unchanged.
-- **FR-2.12** The system shall update the media record's `last_scanned_at` and, if hashing was performed without integrity errors, `last_verified_at`.
-
-## FR-3: Search & Browse
-
-- **FR-3.1** The system shall provide a global search accessible from any screen, querying file name/path across the entire catalog.
-- **FR-3.2** Search shall support partial/substring matching and be case-insensitive by default.
-- **FR-3.3** Search results shall be filterable by: media type, specific media item(s), tag(s), file extension/category (e.g., image, video, document, audio, archive), size range, modified date range, and scan/verification status.
-- **FR-3.4** The system shall provide a folder-tree browser per media item reflecting the catalogued structure, independent of whether the media is currently connected.
-- **FR-3.5** If the media item is currently connected/mounted, the system shall offer a shortcut to open the live file/folder in the OS file manager.
-- **FR-3.6** Search performance target: results returned in under 500ms for catalogs up to 500,000 file records on reference hardware (see NFRs).
-
-## FR-4: Duplicate Detection
-
-- **FR-4.1** The system shall provide a report grouping files with identical content hashes across the catalog where the group size is ≥ 2.
-- **FR-4.2** The duplicate report shall display, per group: hash, file size, and list of (media item, path) occurrences.
-- **FR-4.3** The system shall clearly indicate files excluded from duplicate detection because no hash was computed.
-- **FR-4.4** The system shall provide summary stats: total duplicate groups, total reclaimable space if only one copy were kept (informational only — DiscDock does not delete files).
-
-## FR-5: Tags & Collections
-
-- **FR-5.1** The system shall support free-form tags on media items with autocomplete from existing tags.
-- **FR-5.2** The system shall optionally support tags on individual files within a catalog (stretch for v1, required by v1.1).
-- **FR-5.3** The system shall support user-defined Collections, a many-to-many grouping of media items, with name, description, and member list.
-- **FR-5.4** Collection detail view shall show aggregate stats: member count, total size, total file count.
-
-## FR-6: Media Health & Lifecycle
-
-- **FR-6.1** The system shall display a "needs verification" indicator on media not scanned/verified within a configurable threshold (default 12 months).
-- **FR-6.2** The system shall maintain a scan history log per media item (timestamp, hashing mode used, files added/removed/modified counts, error count).
-- **FR-6.3** The system shall track cumulative read-error counts per media item and list affected paths.
-- **FR-6.4** The system shall support marking a media item as Retired/Disposed without deleting its catalog history (soft-archival state).
-
-## FR-7: Data Portability
-
-- **FR-7.1** The system shall export catalog data (full, per-media, or filtered search results) to JSON and CSV formats via a native save dialog.
-- **FR-7.2** The system shall support full database backup to a single portable file and restore from such a file, with a pre-restore automatic safety backup of the current database.
-- **FR-7.3** Export/backup operations shall run as background jobs with progress and completion notification.
-
-## FR-8: Application Shell
-
-- **FR-8.1** The system shall provide a Dashboard/Home view summarizing: total media items, total files catalogued, total catalogued size, recent scan activity, and media needing verification.
-- **FR-8.2** The system shall provide a Settings area covering: scan defaults (hashing mode, excludes, symlink handling, concurrency), device-watch behavior, theme (light/dark/system), notifications, and data management (backup/restore, database location).
-- **FR-8.3** The system shall provide management UI for custom media types and any custom metadata fields.
-- **FR-8.4** The system shall provide desktop notifications for: scan completed, scan failed, media needing verification (on app launch/periodic check), backup/export completed.
-
-## FR-9: Packaging & Platform
-
-- **FR-9.1** The system shall build distributable Linux packages: a `.deb` package installable via `dpkg`/`apt`, and a portable `.AppImage`.
-- **FR-9.2** The system shall store its database and configuration under the XDG-compliant user data directory (e.g., `~/.config/DiscDock` / `~/.local/share/DiscDock`).
-- **FR-9.3** The application shall register a desktop entry (`.desktop` file) with icon, for both packaging formats.
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **04-non-functional-requirements.md**</summary>
-
-@@ lines 1-1 @@
-
-```
-# Non-Functional Requirements
-
-## 1. Performance
-
-- **NFR-1.1** Scanning throughput: capable of enumerating ≥ 2,000 files/second on metadata-only scans (no hashing) on reference hardware (SATA/USB 3.0 speeds).
-- **NFR-1.2** Full-hash scanning throughput bounded primarily by device read speed; UI must remain responsive (no main-thread blocking) regardless of scan size.
-- **NFR-1.3** Global search over a catalog of 500,000 file rows shall return first-page results in < 500ms (indexed SQLite queries).
-- **NFR-1.4** Application cold start (from launch to interactive Dashboard) shall be < 3 seconds on reference hardware with a catalog of up to 100,000 file rows.
-- **NFR-1.5** All filesystem scanning and hashing work shall occur off the Electron main UI thread (Node.js worker threads or a dedicated utility process) to avoid freezing the renderer.
-
-## 2. Reliability & Data Integrity
-
-- **NFR-2.1** The catalog database shall use transactional writes (SQLite with WAL mode) so a crash or power loss mid-scan does not corrupt previously committed data.
-- **NFR-2.2** Schema migrations shall be versioned and applied automatically on startup with a rollback-safe backup taken before migration.
-- **NFR-2.3** No user data (catalog, tags, settings) shall be lost across an application version upgrade.
-- **NFR-2.4** Scan jobs shall be resumable/cancellable without leaving the database in an inconsistent state (partial scans clearly flagged, not silently merged as complete).
-
-## 3. Compatibility
-
-- **NFR-3.1** Supported OS (v1): Linux distributions using glibc, tested against at least one Debian-based (Ubuntu LTS) and one RPM-based or Arch-based distro for AppImage compatibility.
-- **NFR-3.2** `.deb` package shall declare correct dependency metadata and install cleanly via `dpkg -i` / `apt install ./package.deb`.
-- **NFR-3.3** `.AppImage` shall run without installation on distros supporting FUSE (or `--appimage-extract-and-run` fallback documented).
-- **NFR-3.4** Device detection shall degrade gracefully (manual folder picker) on systems lacking `udisks2`.
-
-## 4. Usability & Accessibility
-
-- **NFR-4.1** UI shall support both light and dark themes, following OS preference by default.
-- **NFR-4.2** Core workflows (register media, scan, search) shall be completable without consulting documentation (discoverable UI, inline empty-states with guidance).
-- **NFR-4.3** Keyboard navigation shall be supported for primary flows (search, list navigation, dialogs) and standard focus/ARIA semantics respected in the renderer markup.
-- **NFR-4.4** Long-running operations (scan, export, backup) shall always show progress feedback and be cancellable where safe.
-
-## 5. Security & Privacy
-
-- **NFR-5.1** The application shall not transmit any catalog data or file contents off the local machine (no network calls beyond optional update checks).
-- **NFR-5.2** The Electron renderer shall run with `contextIsolation: true`, `nodeIntegration: false`, and a strict `sandbox: true` where feasible; all privileged operations shall go through a defined `contextBridge` preload API.
-- **NFR-5.3** A Content Security Policy shall be enforced in the renderer restricting script/style sources to the packaged app bundle.
-- **NFR-5.4** The application shall not require root/sudo privileges for normal operation; any privilege-requiring feature (if added later) must use explicit, isolated escalation (e.g., polkit) with clear user consent.
-- **NFR-5.5** File hashing and scanning shall only read file metadata/content the user explicitly points the app at (mounted media or chosen folders); no background scanning of the whole filesystem.
-- See [Security & Privacy](10-security-privacy.md) for full threat model.
-
-## 6. Maintainability
-
-- **NFR-6.1** Codebase shall separate main process, preload, and renderer with clear module boundaries; scanning logic implemented as an isolated, testable service independent of Electron APIs where possible.
-- **NFR-6.2** Automated tests (unit + integration) shall cover: scan diffing logic, hashing modes, search/filter query building, database migrations.
-- **NFR-6.3** Linting/formatting (ESLint + Prettier or equivalent) enforced via CI on all commits/PRs.
-
-## 7. Observability
-
-- **NFR-7.1** The application shall maintain a local rotating log file (main process) capturing errors and key lifecycle events (scan start/stop/errors, migrations) for support/debugging, stored under the app's user data directory.
-- **NFR-7.2** Unhandled exceptions in main or renderer shall be caught, logged, and surfaced to the user via a non-blocking error notification rather than a silent crash where possible.
-
-## 8. Scalability (Local Data Scale)
-
-- **NFR-8.1** Application shall remain usable (not just "not crash") with catalogs up to: 1,000 media items, 2,000,000 total file rows, and a database file size up to several GB.
-- **NFR-8.2** Pagination/virtualized lists shall be used for any UI list that could exceed a few thousand rows (file lists, search results).
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **05-technical-specification.md**</summary>
-
-@@ lines 1-1 @@
-
-````
-# Technical Specification
-
-## 1. Technology Stack
-
-| Layer | Choice | Notes |
-|---|---|---|
-| Application shell | **Electron** (latest stable) | Main + preload + renderer processes |
-| Renderer UI | **React + TypeScript**, Vite bundler | Fast dev/build; component-driven |
-| State management | React context + a lightweight store (e.g., Zustand) | Avoid over-engineering; no Redux needed |
-| Styling | CSS Modules or Tailwind CSS | Team preference; must support light/dark theming |
-| Main process language | **TypeScript** (compiled Node.js) | Shared types with renderer via a `shared/` package |
-| Local database | **SQLite** via `better-sqlite3` | Synchronous, fast, WAL mode enabled |
-| Scanning/hashing workers | Node.js `worker_threads` (or a dedicated Electron **Utility Process**) | Keeps main/renderer responsive |
-| Device detection (Linux) | `udisks2` over D-Bus (`dbus-next` or similar), fallback to `lsblk -J` / `/proc/mounts` parsing | No root required for user-mounted media |
-| Packaging | **electron-builder** | Targets: `deb`, `AppImage` |
-| Testing | Vitest/Jest (unit), Playwright (E2E renderer) | Scan/diff logic unit-tested independent of Electron |
-| Logging | `electron-log` or equivalent rotating file logger | Main-process centric |
-
-## 2. High-Level Architecture
-
-```mermaid
-flowchart LR
-    subgraph Renderer[Renderer Process (React UI)]
-        UI[Views: Dashboard, Media List, Media Detail, Search, Settings]
-    end
-    subgraph Preload[Preload (contextBridge)]
-        API[window.discdock API surface]
-    end
-    subgraph Main[Main Process]
-        IPC[IPC Handlers]
-        Svc[Application Services]
-        DB[(SQLite DB via better-sqlite3)]
-        Dev[Device Detection Service - udisks2/lsblk]
-    end
-    subgraph Worker[Scan Worker Threads / Utility Process]
-        Scanner[Filesystem Walker + Hasher]
-    end
-
-    UI <--> API
-    API <--> IPC
-    IPC --> Svc
-    Svc --> DB
-    Svc --> Dev
-    Svc --> Worker
-    Worker --> DB
-```
-
-**Process boundaries:**
-- **Renderer**: pure presentation, no direct Node/fs access. Communicates only via the preload-exposed API (`window.discdock.*`).
-- **Preload**: thin `contextBridge` layer exposing a typed, minimal API (invoke/on wrappers) — no business logic.
-- **Main process**: owns the SQLite connection, device detection, job orchestration (scan queue), and IPC handler registration.
-- **Worker threads / utility process**: perform the actual recursive directory walk and hashing so scans never block the main process event loop (which also services IPC and DB writes). Workers stream progress messages and batched file records back to the main process, which performs batched DB inserts.
-
-## 3. Module Breakdown (Main Process)
-
-- `db/` — SQLite connection setup, migrations runner, repositories (MediaRepository, FileRepository, TagRepository, ScanRepository, CollectionRepository).
-- `devices/` — device detection service abstracting udisks2/lsblk, emits `device-connected` / `device-disconnected` events.
-- `scanning/` — scan job manager (queue, concurrency control), worker pool, diffing engine (compares new scan results to prior snapshot).
-- `hashing/` — pluggable hash strategies (none/quick/full).
-- `search/` — query builder translating UI filter state into parameterized SQL against indexed columns/FTS table.
-- `export/` — JSON/CSV export and DB backup/restore routines.
-- `ipc/` — one handler module per feature area, registered against typed channel names (see [IPC contract](08-api-internal-spec.md)).
-- `notifications/` — wraps Electron `Notification` API for scan/backup/verification alerts.
-- `logging/` — rotating file logger, unhandled exception hooks.
-
-## 4. Module Breakdown (Renderer)
-
-- `views/` — Dashboard, MediaList, MediaDetail, Search, DuplicateReport, Collections, Settings, Backup.
-- `components/` — shared UI (DataTable/virtualized list, TagInput, ProgressBar, FolderTree, FilterPanel).
-- `store/` — client-side state (current media selection, active filters, scan job status subscriptions).
-- `api/` — typed wrapper around `window.discdock` calls (mirrors preload surface 1:1).
-
-## 5. Scanning Engine Design
-
-1. User triggers a scan on a media record (must have a resolved root path — either the live mount point or a manually chosen folder for archived/disconnected media re-import).
-2. Main process enqueues a `ScanJob` (status `queued`) and, when its turn comes, spawns/dispatches to a worker.
-3. Worker performs an iterative (non-recursive-call-stack) directory walk using a stack/queue to avoid stack overflow on deep trees, applying exclude-glob filtering.
-4. For each file: capture `stat()` metadata; if hashing enabled, stream the file through the configured hash strategy.
-5. Worker batches results (e.g., every 500 rows or 1 second) and posts them to the main process; main process performs a single SQL transaction per batch insert into a staging table.
-6. On completion, the diff engine compares the staging batch set against the prior snapshot (by path) to classify Added/Removed/Modified/Unchanged, then commits the staging data as the new authoritative snapshot in one transaction, updates `media.last_scanned_at` (and `last_verified_at` if hashing succeeded with no errors).
-7. Progress events (`scan:progress`) are forwarded to the renderer via IPC throughout; a final `scan:completed` (or `scan:failed` / `scan:cancelled`) event is emitted.
-8. Cancellation: renderer sends `scan:cancel(jobId)`; worker checks a cancellation flag between files and exits cleanly; already-inserted staging rows are discarded (job marked `cancelled`, prior snapshot untouched).
-
-## 6. Device Detection Design (Linux)
-
-- Primary: subscribe to `udisks2` D-Bus signals (`InterfacesAdded`/`InterfacesRemoved` on `org.freedesktop.UDisks2`) to detect block device/filesystem mount changes in real time.
-- Fallback: poll `/proc/mounts` (or run `lsblk -J -o NAME,LABEL,FSTYPE,MOUNTPOINT,SIZE,RM`) every few seconds if D-Bus is unavailable (e.g., minimal/sandboxed environments), diffing against the previous poll to synthesize connect/disconnect events.
-- Detected devices are matched to existing media records via a stored device fingerprint (filesystem UUID where available, else label + size heuristic) so the same USB drive is recognized across sessions.
-
-## 7. Search Implementation
-
-- SQLite FTS5 virtual table indexing file `name` and `path` for fast substring/prefix search, joined back to the main `files` table for metadata/filter columns.
-- Structured filters (media type, size range, date range, tags) compiled into a parameterized `WHERE` clause combined with the FTS `MATCH` query.
-- Pagination via `LIMIT`/`OFFSET` with a stable sort key; renderer uses a virtualized list to render only visible rows.
-
-## 8. Error Handling Strategy
-
-- All IPC handlers wrap calls in try/catch, returning a discriminated `{ ok: true, data } | { ok: false, error }` result shape (no thrown exceptions crossing the IPC boundary).
-- Scan/worker errors are captured per-file (I/O errors don't abort the whole job) and job-level (uncaught worker crash marks the job `failed` with a logged stack trace).
-- Renderer surfaces recoverable errors via toast/notification components; fatal/unexpected errors are logged and shown via a generic error boundary.
-
-## 9. Build & Dev Workflow
-
-- Vite dev server for renderer HMR; Electron main/preload compiled via `tsc`/`esbuild` watch.
-- `electron-builder` config (see [Packaging & Deployment](09-packaging-deployment.md)) drives `.deb` and `.AppImage` output from a single build pipeline.
-- CI: lint → unit tests → build renderer + main → package (deb/AppImage) → smoke test artifact.
-
-````
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **06-data-model.md**</summary>
-
-@@ lines 1-1 @@
-
-````
-# Data Model
-
-## 1. Entity-Relationship Diagram
-
-```mermaid
-erDiagram
-    MEDIA_ITEM ||--o{ SCAN_JOB : "has"
-    MEDIA_ITEM ||--o{ FILE_RECORD : "contains"
-    MEDIA_ITEM }o--o{ TAG : "tagged with"
-    MEDIA_ITEM }o--o{ COLLECTION : "belongs to"
-    SCAN_JOB ||--o{ FILE_RECORD : "produced/updated"
-    SCAN_JOB ||--o{ SCAN_ERROR : "logs"
-    FILE_RECORD }o--o{ TAG : "tagged with"
-    MEDIA_ITEM ||--o{ MEDIA_LOCATION_HISTORY : "moved"
-
-    MEDIA_ITEM {
-        int id PK
-        string label
-        string media_type
-        string device_fingerprint
-        int capacity_bytes
-        string physical_location
-        string notes
-        string status
-        datetime created_at
-        datetime last_scanned_at
-        datetime last_verified_at
-    }
-
-    FILE_RECORD {
-        int id PK
-        int media_item_id FK
-        int parent_folder_id FK
-        string path
-        string name
-        string extension
-        string kind
-        int size_bytes
-        datetime created_at_src
-        datetime modified_at_src
-        string hash_algo
-        string hash_value
-        boolean is_directory
-        int last_seen_scan_id FK
-    }
-
-    SCAN_JOB {
-        int id PK
-        int media_item_id FK
-        string status
-        string hash_mode
-        datetime started_at
-        datetime completed_at
-        int files_added
-        int files_removed
-        int files_modified
-        int files_unchanged
-        int error_count
-    }
-
-    SCAN_ERROR {
-        int id PK
-        int scan_job_id FK
-        string path
-        string error_type
-        string message
-    }
-
-    TAG {
-        int id PK
-        string name
-    }
-
-    COLLECTION {
-        int id PK
-        string name
-        string description
-    }
-
-    MEDIA_LOCATION_HISTORY {
-        int id PK
-        int media_item_id FK
-        string location
-        datetime changed_at
-    }
-```
-
-## 2. Table Definitions
-
-### `media_item`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | INTEGER PK | |
-| `label` | TEXT | User-facing name |
-| `media_type` | TEXT | CD, DVD, Blu-ray, USB, External HDD, External SSD, SD Card, Network Share, Other/custom |
-| `device_fingerprint` | TEXT NULL | Filesystem UUID or composite label+size heuristic used to re-identify device on reconnect |
-| `capacity_bytes` | INTEGER NULL | |
-| `physical_location` | TEXT NULL | Free-form hierarchical string |
-| `notes` | TEXT NULL | |
-| `status` | TEXT | `active`, `retired`, `lost` |
-| `created_at` | DATETIME | |
-| `last_scanned_at` | DATETIME NULL | |
-| `last_verified_at` | DATETIME NULL | Only updated when a hashing scan completes with no errors |
-
-Indexes: `device_fingerprint`, `media_type`, `status`.
-
-### `file_record`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | INTEGER PK | |
-| `media_item_id` | FK → media_item.id | |
-| `parent_folder_id` | FK → file_record.id NULL | Self-referential for folder tree |
-| `path` | TEXT | Relative path from media root |
-| `name` | TEXT | |
-| `extension` | TEXT NULL | |
-| `kind` | TEXT | Derived category: image, video, audio, document, archive, executable, other |
-| `size_bytes` | INTEGER | 0 for directories |
-| `created_at_src` | DATETIME NULL | Source filesystem timestamp |
-| `modified_at_src` | DATETIME NULL | Source filesystem timestamp |
-| `hash_algo` | TEXT NULL | `none`, `quick`, `sha256` |
-| `hash_value` | TEXT NULL | |
-| `is_directory` | BOOLEAN | |
-| `last_seen_scan_id` | FK → scan_job.id | Used for diffing / staleness detection |
-
-Indexes: `media_item_id`, `hash_value` (for duplicate detection), `extension`, plus an FTS5 virtual table `file_record_fts(name, path)` mirrored via triggers for full-text search.
-
-### `scan_job`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | INTEGER PK | |
-| `media_item_id` | FK | |
-| `status` | TEXT | `queued`, `running`, `completed`, `cancelled`, `failed`, `incomplete` |
-| `hash_mode` | TEXT | `none`, `quick`, `full` |
-| `started_at` / `completed_at` | DATETIME | |
-| `files_added` / `files_removed` / `files_modified` / `files_unchanged` | INTEGER | Diff summary vs. prior snapshot |
-| `error_count` | INTEGER | |
-
-### `scan_error`
-Per-file error captured during a scan (`path`, `error_type` e.g. `permission_denied`/`io_error`/`unreadable_sector`, `message`).
-
-### `tag`, `media_item_tag`, `file_record_tag`
-Standard tag + join tables for many-to-many tagging of media items and (v1.1+) individual files.
-
-### `collection`, `collection_media_item`
-Collections as a named many-to-many grouping over media items.
-
-### `media_location_history`
-Append-only log of physical location changes for audit purposes.
-
-## 3. Notes on Design Choices
-
-- **No file contents stored** — only metadata and optional hash, keeping the DB small relative to catalogued media size.
-- **Soft diffing via `last_seen_scan_id`** — allows detecting "removed" files (present in DB but not refreshed by the latest scan) without deleting history immediately; a grace period/config can decide when to prune vs. archive.
-- **FTS5 for search** — chosen over LIKE-only queries for performance at scale (NFR-1.3).
-- **SQLite chosen over a client-server DB** — single-file, zero-config, ideal for a local desktop tool; supports full DB file backup/restore trivially (FR-7.2).
-
-````
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **07-ui-ux-specification.md**</summary>
-
-@@ lines 1-1 @@
-
-```
-# UI/UX Specification
-
-## 1. Application Shell
-
-- **Layout:** Fixed left sidebar navigation + top toolbar + main content area, standard desktop app pattern.
-- **Left Sidebar (collapsible):** Dashboard, Media Library, Search, Duplicates, Collections, Backup/Export, Settings.
-- **Top Toolbar:** Global search input (always accessible), "Add Media" quick action, active scan job indicator (spinner + count badge linking to Scan Queue), theme toggle.
-- **Theming:** Light and Dark themes, following OS preference by default, override in Settings.
-
-## 2. Screens
-
-### 2.1 Dashboard (Home)
-- Summary cards: Total Media Items, Total Files Catalogued, Total Catalogued Size, Media Needing Verification.
-- "Recent Scans" list (last 5) with status and quick link to scan report.
-- "Attention Needed" panel: media not verified within threshold, media with unresolved read errors.
-- "Quick Add Media" button and "Detected Devices" panel showing currently connected/mounted devices not yet linked to a media record.
-
-### 2.2 Media Library (List View)
-- Table/grid of all media items: label, type icon, physical location, size, file count, last scanned, verification status badge.
-- Filter/sort by type, location, tag, status (active/retired), verification age.
-- Row actions: Scan, View Detail, Edit, Retire, Delete (with confirmation).
-- Bulk actions: tag multiple, add to collection, export selection.
-
-### 2.3 Media Detail
-- Header: label, type, location, tags, status, edit button.
-- Tabs:
-  - **Overview** — capacity/used stats, last scanned/verified dates, scan history table.
-  - **Browse** — folder tree (left) + file list (right) reflecting the catalogued snapshot; badge indicates if currently connected (live) or archived-only.
-  - **Scan History** — list of past scan jobs with diff summaries (added/removed/modified/error counts); click to expand full diff.
-  - **Errors** — list of recorded read errors (path, type, message) across all scans.
-- Primary actions: "Scan Now" (disabled with tooltip if not connected/no root path set), "Locate Root Folder" (manual path picker for archived media re-import or non-standard mounts).
-
-### 2.4 Scan Progress (Modal/Panel)
-- Non-blocking panel (can navigate away): progress bar, files processed / bytes processed, current path, elapsed/ETA, Cancel button.
-- On completion: summary toast + link to scan report; on error: error summary with retry option.
-
-### 2.5 Search
-- Persistent search bar (also present in top toolbar — this view is the full-results experience).
-- Left filter panel: media type, media item picker, tags, file kind (image/video/audio/document/archive/other), size range slider, date range picker.
-- Results table (virtualized): file name, path, media item (link to detail), size, modified date, tags.
-- Row action: "Show in Media Detail" (jumps to Browse tab at that path); if media connected, "Open in File Manager".
-
-### 2.6 Duplicate Report
-- Grouped list: each group shows file size, hash (truncated, expandable), and occurrence list (media item + path).
-- Filter by minimum group size, media type, file kind.
-- Summary header: total duplicate groups, total files involved, total reclaimable space (informational).
-
-### 2.7 Collections
-- Grid/list of collections with member count and aggregate size.
-- Collection detail: description, member media items (add/remove), aggregate stats.
-
-### 2.8 Backup / Export
-- **Export** section: scope selector (All / Single Media / Current Search Filter), format (JSON/CSV), destination picker, "Export" button, progress + history of past exports.
-- **Database Backup** section: "Backup Now" (choose destination), "Restore from Backup" (choose file, confirmation dialog explaining a safety backup will be taken first), list of recent backups with timestamps.
-
-### 2.9 Settings
-- **Scanning Defaults:** hashing mode (none/quick/full), exclude patterns editor, follow-symlinks toggle, scan concurrency.
-- **Devices:** watch behavior (auto-detect on/off), configured additional mount root paths to watch.
-- **Appearance:** theme (light/dark/system).
-- **Notifications:** toggles for scan completed/failed, verification reminders, backup/export completed.
-- **Media Types & Custom Fields:** manage the list of media types; manage custom metadata fields available on media records.
-- **Data Management:** database file location (read-only display), link to Backup/Export screen, "Reset Application Data" (destructive, requires typed confirmation).
-
-## 3. Key Interaction Patterns
-
-- **Empty states** everywhere (no media yet, no search results, no duplicates found) include a short explanation and a primary call-to-action button.
-- **Destructive actions** (delete media, restore backup, reset app data) always require an explicit confirmation dialog; irreversible ones require typing a confirmation phrase.
-- **Long operations** (scan, export, backup, restore) never block the UI thread; users can navigate elsewhere and are notified on completion via in-app toast + OS notification (if enabled).
-- **Connected vs. archived indicator**: any media-related view shows a clear badge — "Connected" (green) vs. "Archived / Not Connected" (grey) — since Browse/Search reflect the catalog snapshot regardless of live connection state.
-
-## 4. Accessibility
-
-- All interactive elements keyboard-reachable in logical tab order.
-- Color is never the sole indicator of state (status badges include text/icon, not just color).
-- Minimum contrast ratios per WCAG AA for both themes.
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **08-api-internal-spec.md**</summary>
-
-@@ lines 1-1 @@
-
-```
-# Internal API / IPC Contract
-
-The renderer never accesses Node.js/Electron APIs directly. All communication goes through a preload-exposed `window.discdock` object backed by `contextBridge`, which wraps `ipcRenderer.invoke` (request/response) and `ipcRenderer.on` (event subscriptions). All `invoke` calls resolve to a discriminated result: `{ ok: true, data: T } | { ok: false, error: { code: string; message: string } }`.
-
-## 1. Media
-
-| Channel | Direction | Payload → | Returns |
-|---|---|---|---|
-| `media:list` | invoke | `{ filter?, sort?, page? }` | `MediaItem[]` with pagination meta |
-| `media:get` | invoke | `{ id }` | `MediaItem` (with tags, latest scan summary) |
-| `media:create` | invoke | `MediaItemInput` | `MediaItem` |
-| `media:update` | invoke | `{ id, patch: Partial<MediaItemInput> }` | `MediaItem` |
-| `media:delete` | invoke | `{ id }` | `{ deleted: true }` |
-| `media:retire` | invoke | `{ id }` | `MediaItem` |
-| `media:linkDevice` | invoke | `{ mediaId, devicePath }` | `MediaItem` |
-
-## 2. Devices
-
-| Channel | Direction | Payload / Notes |
-|---|---|---|
-| `devices:list` | invoke | Returns currently detected mounted removable devices |
-| `devices:connected` | event (main→renderer) | Fired when a new device is mounted: `{ devicePath, label, fsType, mountPoint, sizeBytes }` |
-| `devices:disconnected` | event | Fired on unmount: `{ devicePath }` |
-
-## 3. Scanning
-
-| Channel | Direction | Payload → | Returns / Notes |
-|---|---|---|---|
-| `scan:start` | invoke | `{ mediaId, rootPath, hashMode, excludePatterns?, followSymlinks? }` | `{ jobId }` (queues if another scan running) |
-| `scan:cancel` | invoke | `{ jobId }` | `{ cancelled: true }` |
-| `scan:progress` | event | — | `{ jobId, filesProcessed, bytesProcessed, currentPath, elapsedMs }` |
-| `scan:completed` | event | — | `{ jobId, summary: ScanSummary }` |
-| `scan:failed` | event | — | `{ jobId, error }` |
-| `scan:history` | invoke | `{ mediaId }` | `ScanJob[]` |
-| `scan:diff` | invoke | `{ jobId }` | Added/Removed/Modified/Unchanged file lists |
-
-## 4. Files / Browse
-
-| Channel | Direction | Payload → | Returns |
-|---|---|---|---|
-| `files:tree` | invoke | `{ mediaId, parentPath? }` | Folder children (lazy-loaded tree nodes) |
-| `files:list` | invoke | `{ mediaId, folderPath }` | Files within a folder |
-| `files:openInFileManager` | invoke | `{ mediaId, path }` | `{ opened: true }` (only if media currently connected) |
-
-## 5. Search
-
-| Channel | Direction | Payload → | Returns |
-|---|---|---|---|
-| `search:query` | invoke | `{ text, filters: SearchFilters, page }` | `FileSearchResult[]` + total count |
-
-## 6. Duplicates
-
-| Channel | Direction | Payload → | Returns |
-|---|---|---|---|
-| `duplicates:report` | invoke | `{ minGroupSize?, mediaTypeFilter? }` | Grouped duplicate results + summary |
-
-## 7. Tags & Collections
-
-| Channel | Direction | Payload → | Returns |
-|---|---|---|---|
-| `tags:list` | invoke | — | `Tag[]` |
-| `tags:apply` | invoke | `{ targetType: 'media'\|'file', targetId, tagNames: string[] }` | updated tag list |
-| `collections:list` / `create` / `update` / `delete` | invoke | standard CRUD | `Collection[]` / `Collection` |
-| `collections:addMember` / `removeMember` | invoke | `{ collectionId, mediaId }` | `Collection` |
-
-## 8. Export / Backup
-
-| Channel | Direction | Payload → | Returns |
-|---|---|---|---|
-| `export:run` | invoke | `{ scope, format, destinationPath }` | `{ jobId }` |
-| `export:progress` / `export:completed` | event | — | progress/result |
-| `backup:run` | invoke | `{ destinationPath }` | `{ jobId }` |
-| `backup:restore` | invoke | `{ sourcePath }` | `{ ok: true }` (after safety backup + confirmation already handled in renderer) |
-
-## 9. Settings
-
-| Channel | Direction | Payload → | Returns |
-|---|---|---|---|
-| `settings:get` | invoke | — | `AppSettings` |
-| `settings:update` | invoke | `Partial<AppSettings>` | `AppSettings` |
-| `mediaTypes:list` / `create` / `delete` | invoke | standard CRUD | `MediaType[]` |
-
-## 10. Notifications & App
-
-| Channel | Direction | Notes |
-|---|---|---|
-| `app:getVersion` | invoke | Returns app version for display in Settings/About |
-| `notifications:show` | main-internal only | Not exposed to renderer directly; main process triggers OS notifications based on settings |
-
-## 11. Security Notes
-
-- Every `invoke` handler validates its input payload shape (e.g., via a schema validator) before touching the database or filesystem; malformed requests return `ok: false` with a validation error code rather than throwing.
-- Path-accepting channels (`files:openInFileManager`, manual root path selection) validate the resolved path stays within the expected media root / OS-provided picker result — never accept arbitrary renderer-supplied absolute paths without validation, to avoid path traversal from a compromised renderer.
-- No channel exposes raw Node.js `child_process`, `fs`, or shell execution primitives to the renderer; all such operations are fully implemented in the main process and only their results are returned.
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **09-packaging-deployment.md**</summary>
-
-@@ lines 1-1 @@
-
-````
-# Packaging & Deployment
-
-## 1. Build Tooling
-
-- **electron-builder** as the single packaging tool, configured to produce both target formats from one build.
-- Targets (Linux): `deb`, `AppImage`.
-
-## 2. Example `electron-builder` Configuration (`electron-builder.yml`)
-
-```yaml
-appId: com.discdock.app
-productName: DiscDock
-directories:
-  output: release
-files:
-  - dist/**
-  - package.json
-linux:
-  category: Utility
-  icon: build/icons/icon.png
-  target:
-    - target: deb
-      arch: [x64]
-    - target: AppImage
-      arch: [x64]
-  desktop:
-    Name: DiscDock
-    Comment: Catalog and search your external media collection
-    Categories: Utility;FileTools;
-deb:
-  depends:
-    - libnotify4
-    - libnss3
-    - libxss1
-    - libgtk-3-0
-  packageCategory: utils
-appImage:
-  license: LICENSE
-```
-
-Adjust `deb.depends` to match the actual Electron version's bundled Chromium runtime dependencies at implementation time.
-
-## 3. Application Data Locations (Linux, XDG)
-
-| Purpose | Path |
-|---|---|
-| SQLite database | `~/.local/share/DiscDock/discdock.sqlite3` |
-| Configuration/settings | `~/.config/DiscDock/settings.json` |
-| Logs | `~/.local/share/DiscDock/logs/` |
-| Automatic pre-restore/pre-migration safety backups | `~/.local/share/DiscDock/backups/` |
-
-These follow the `XDG_DATA_HOME` / `XDG_CONFIG_HOME` conventions (falling back to the defaults above when unset), consistent with Electron's default `app.getPath()` behavior on Linux.
-
-## 4. Release Pipeline (CI)
-
-1. Checkout + install dependencies (`npm ci`).
-2. Lint (`eslint`) and type-check (`tsc --noEmit`).
-3. Run unit/integration test suite.
-4. Build renderer (Vite) and compile main/preload (TypeScript).
-5. Run `electron-builder` to produce `.deb` and `.AppImage` artifacts.
-6. Smoke test: install `.deb` in a clean container image (`dpkg -i` + launch headless check); run `.AppImage` with `--appimage-extract-and-run` and verify it starts and quits cleanly.
-7. Publish artifacts (GitHub Releases or internal artifact store) tagged with version.
-
-## 5. Versioning
-
-- Semantic versioning (`MAJOR.MINOR.PATCH`).
-- Database schema version tracked independently in a `schema_migrations` table; app checks and applies pending migrations on startup before the UI becomes interactive, showing a brief "Preparing database..." splash if migrations are needed.
-
-## 6. Update Strategy (v1)
-
-- No auto-update service in v1 (avoids added complexity/attack surface for a local-data tool). Users are notified in-app if a newer release is detected via a lightweight, optional "check for updates" call to a static release-metadata endpoint (opt-in, respecting NFR-5.1 no-background-network-calls-by-default principle). This can be upgraded to `electron-updater` in a later phase if desired.
-
-## 7. Distribution QA Checklist
-
-- [ ] `.deb` installs cleanly on a current Ubuntu LTS image without missing dependency errors.
-- [ ] `.deb` registers a working desktop menu entry and icon.
-- [ ] `.AppImage` runs on at least one non-Debian-based distro (e.g., Fedora) with FUSE available.
-- [ ] `.AppImage` documented fallback (`--appimage-extract-and-run`) verified on a distro without FUSE.
-- [ ] Application data directories created correctly on first run for both package types.
-- [ ] Uninstalling the `.deb` does not delete user data directories (data persists per XDG norms unless the user explicitly resets).
-
-````
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
 <summary>Edit: **10-security-privacy.md**</summary>
 
 @@ lines 1-1 @@
@@ -5232,72 +4216,6 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **tsconfig.json**</summary>
-
-@@ lines 1-1 @@
-
-```
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "useDefineForClassFields": true,
-    "lib": ["ES2022", "DOM"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
-    "paths": {
-      "@shared/*": ["shared/*"]
-    }
-  },
-  "include": ["src", "shared"]
-}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **tsconfig.json**</summary>
-
-@@ lines 1-1 @@
-
-```
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "outDir": "../dist-electron",
-    "rootDir": ".",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "baseUrl": ".",
-    "paths": {
-      "@shared/*": ["../shared/*"]
-    }
-  },
-  "include": ["**/*.ts", "../shared/**/*.ts"]
-}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
@@ -6239,53 +5157,6 @@ The following files were successfully edited:
 _**Agent (copilot/auto)**_
 
 <tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **windowControls.ts**</summary>
-
-@@ lines 1-1 @@
-
-```
-import { BrowserWindow, ipcMain } from 'electron'
-import type { IpcResult, WindowState } from '../../shared/types'
-
-// Window-control channels only ever act on the given BrowserWindow instance —
-// no renderer-supplied window handle is ever accepted.
-export function registerWindowControlIpc(win: BrowserWindow): void {
-  ipcMain.handle('window:minimize', (): IpcResult<null> => {
-    win.minimize()
-    return { ok: true, data: null }
-  })
-
-  ipcMain.handle('window:maximize', (): IpcResult<null> => {
-    if (win.isMaximized()) {
-      win.unmaximize()
-    } else {
-      win.maximize()
-    }
-    return { ok: true, data: null }
-  })
-
-  ipcMain.handle('window:close', (): IpcResult<null> => {
-    win.close()
-    return { ok: true, data: null }
-  })
-
-  ipcMain.handle('window:isMaximized', (): IpcResult<WindowState> => {
-    return { ok: true, data: { maximized: win.isMaximized() } }
-  })
-
-  const sendState = (): void => {
-    win.webContents.send('window:stateChanged', { maximized: win.isMaximized() } satisfies WindowState)
-  }
-  win.on('maximize', sendState)
-  win.on('unmaximize', sendState)
-}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
 <summary>Edit: **dashboard.ts**</summary>
 
 @@ lines 1-1 @@
@@ -7127,284 +5998,6 @@ The following files were successfully edited:
 _**Agent (copilot/auto)**_
 
 <tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **main.ts**</summary>
-
-@@ lines 1-1 @@
-
-```
-import { app, BrowserWindow, ipcMain } from 'electron'
-import { createMainWindow } from './window/createWindow'
-import { registerWindowControlIpc } from './ipc/windowControls'
-import { registerDashboardIpc } from './ipc/dashboard'
-import { getDb, closeDb } from './db'
-import type { IpcResult } from '../shared/types'
-
-let mainWindow: BrowserWindow | null = null
-
-function registerAppIpc(): void {
-  ipcMain.handle('app:getVersion', (): IpcResult<string> => {
-    return { ok: true, data: app.getVersion() }
-  })
-}
-
-app.whenReady().then(() => {
-  getDb() // initialize database + run migrations before the window is shown
-
-  mainWindow = createMainWindow()
-  registerWindowControlIpc(mainWindow)
-  registerDashboardIpc()
-  registerAppIpc()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      mainWindow = createMainWindow()
-      registerWindowControlIpc(mainWindow)
-    }
-  })
-})
-
-app.on('window-all-closed', () => {
-  closeDb()
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **discdock-api.d.ts**</summary>
-
-@@ lines 1-1 @@
-
-```
-import type { DiscDockApi } from '../electron/preload'
-
-declare global {
-  interface Window {
-    discdock: DiscDockApi
-  }
-}
-
-export {}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **main.tsx**</summary>
-
-@@ lines 1-1 @@
-
-```
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App'
-import './styles/global.css'
-
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-)
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **TitleBar.tsx**</summary>
-
-@@ lines 1-1 @@
-
-```
-import { useEffect, useState } from 'react'
-
-interface WindowState {
-  maximized: boolean
-}
-
-// Custom title bar replacing the OS-native one, since the BrowserWindow is created with frame: false.
-export default function TitleBar(): JSX.Element {
-  const [maximized, setMaximized] = useState(false)
-
-  useEffect(() => {
-    void window.discdock.window.isMaximized().then((result) => {
-      if (result.ok) setMaximized(result.data.maximized)
-    })
-    return window.discdock.window.onStateChanged((state: WindowState) => setMaximized(state.maximized))
-  }, [])
-
-  return (
-    <header className="title-bar">
-      <div className="title-bar__drag-region">
-        <span className="title-bar__icon" aria-hidden="true">
-          💿
-        </span>
-        <span className="title-bar__title">DiscDock</span>
-      </div>
-      <div className="title-bar__controls">
-        <button
-          type="button"
-          className="title-bar__button"
-          aria-label="Minimize"
-          onClick={() => void window.discdock.window.minimize()}
-        >
-          &#x2212;
-        </button>
-        <button
-          type="button"
-          className="title-bar__button"
-          aria-label={maximized ? 'Restore' : 'Maximize'}
-          onClick={() => void window.discdock.window.maximize()}
-        >
-          {maximized ? '❐' : '☐'}
-        </button>
-        <button
-          type="button"
-          className="title-bar__button title-bar__button--close"
-          aria-label="Close"
-          onClick={() => void window.discdock.window.close()}
-        >
-          &#x2715;
-        </button>
-      </div>
-    </header>
-  )
-}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **TitleBar.css**</summary>
-
-@@ lines 1-1 @@
-
-```
-.title-bar {
-  -webkit-app-region: drag;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 36px;
-  background: var(--color-titlebar-bg);
-  color: var(--color-titlebar-fg);
-  user-select: none;
-  flex-shrink: 0;
-}
-
-.title-bar__drag-region {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-left: 10px;
-  height: 100%;
-  flex: 1;
-}
-
-.title-bar__icon {
-  font-size: 14px;
-}
-
-.title-bar__title {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.title-bar__controls {
-  display: flex;
-  height: 100%;
-  -webkit-app-region: no-drag;
-}
-
-.title-bar__button {
-  width: 46px;
-  height: 100%;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.title-bar__button:hover {
-  background: var(--color-titlebar-hover);
-}
-
-.title-bar__button--close:hover {
-  background: #e81123;
-  color: #fff;
-}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **Sidebar.tsx**</summary>
-
-@@ lines 1-1 @@
-
-```
-export interface NavItem {
-  key: string
-  label: string
-}
-
-export const NAV_ITEMS: NavItem[] = [
-  { key: 'dashboard', label: 'Dashboard' },
-  { key: 'media-library', label: 'Media Library' },
-  { key: 'search', label: 'Search' },
-  { key: 'duplicates', label: 'Duplicates' },
-  { key: 'collections', label: 'Collections' },
-  { key: 'backup-export', label: 'Backup / Export' },
-  { key: 'settings', label: 'Settings' }
-]
-
-interface SidebarProps {
-  active: string
-  onSelect: (key: string) => void
-}
-
-export default function Sidebar({ active, onSelect }: SidebarProps): JSX.Element {
-  return (
-    <nav className="sidebar">
-      <ul className="sidebar__list">
-        {NAV_ITEMS.map((item) => (
-          <li key={item.key}>
-            <button
-              type="button"
-              className={`sidebar__item${item.key === active ? ' sidebar__item--active' : ''}`}
-              onClick={() => onSelect(item.key)}
-            >
-              {item.label}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  )
-}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
 <summary>Edit: **Sidebar.css**</summary>
 
 @@ lines 1-1 @@
@@ -8204,24 +6797,6 @@ bundler",
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **tsconfig.json**</summary>
-
-@@ lines 5-12 @@
-
-```
-bundler",
-    "outDir": "../dist-electron",
-    "rootDir": ".",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
@@ -8664,10 +7239,6 @@ Viewed image `discdock-screenshot.png`
 
 _**Agent (copilot/auto)**_
 
-The app renders correctly: 
-
-It's idle with no error output — the app launched successfully and is running (a window should be visible on screen). Let's take a screenshot to visually confirm the frameless UI looks right. 
-
 The app renders correctly: frameless window, custom title bar with DiscDock label and min/restore/close buttons, left sidebar nav, and the Dashboard view pulling live (zeroed) stats from SQLite via IPC. Let's close it now. 
 
 _**Agent (copilot/auto)**_
@@ -8987,15 +7558,6 @@ v0.1.0 foundation is implemented, tested, and pushed. Summary:
 **Built & verified:**
 - Frameless `BrowserWindow` (`frame: false`) with a custom title bar (drag region, min/maximize/restore/close buttons wired via IPC) — matches the earlier UI/UX spec update.
 - Left sidebar nav (Dashboard, Media Library, Search, Duplicates, Collections, Backup/Export, Settings) with placeholder views for unbuilt sections.
-- SQLite database initialized on startup (`~/.config`/`~/.local/share` via `app.getPath('userData')`) with migrations for the core schema (`media_item`, `file_record`, `scan_job`, `scan_error`, `tag`, `collection`, FTS5 search 
-
-v0.1.0 foundation is implemented, tested, and pushed. Summary:
-
-**Stack scaffolded:** Electron + React/TS + Vite renderer, TypeScript-compiled main/preload, `better-sqlite3` (rebuilt for Electron's ABI), `electron-builder` targeting `deb`/`AppImage`.
-
-**Built & verified:**
-- Frameless `BrowserWindow` (`frame: false`) with a custom title bar (drag region, min/maximize/restore/close buttons wired via IPC) — matches the earlier UI/UX spec update.
-- Left sidebar nav (Dashboard, Media Library, Search, Duplicates, Collections, Backup/Export, Settings) with placeholder views for unbuilt sections.
 - SQLite database initialized on startup (`~/.config`/`~/.local/share` via `app.getPath('userData')`) with migrations for the core schema (`media_item`, `file_record`, `scan_job`, `scan_error`, `tag`, `collection`, FTS5 search table) per the data model doc.
 - Dashboard view pulling live summary stats over a secured IPC channel (contextBridge, no direct Node access in renderer).
 - Verified with a real build + launch (screenshot confirmed correct frameless rendering).
@@ -9023,12 +7585,6 @@ continue with what is the next logical step
 _**Agent (copilot/auto)**_
 
 <think><details><summary>Thought Process</summary>
-Now the DB repository for media items: 
-
-Now the IPC handlers with input validation:  
-
-Now wire it into `main.ts` and expose it in `preload.ts`:  
-
 This screenshot reveals a critical issue unrelated to the code: **the root filesystem hit 0 bytes free**, which caused VS Code to fail saving `preload.ts`, `main.ts`, and `media.ts`, and earlier silently corrupted `MediaLibrary.tsx` (written as 0 bytes). Disk space has since recovered somewhat (31G free / 93% used), but this needs your attention.
 </details></think>
 
@@ -9222,6 +7778,534 @@ export interface MediaItemInput {
   notes
 ```
 </details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the DB repository for media items: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `mediaRepository.ts`
+
+**Input:**
+
+- content:
+
+```
+import { getDb } from './index'
+import type { MediaItem, MediaItemInput } from '../../shared/types'
+
+interface MediaItemRow {
+  id: number
+  label: string
+  media_type: string
+  device_fingerprint: string | null
+  capacity_bytes: number | null
+  physical_location: string | null
+  notes: string | null
+  status: string
+  created_at: string
+  last_scanned_at: string | null
+  last_verified_at: string | null
+}
+
+function toMediaItem(row: MediaItemRow): MediaItem {
+  return {
+    id: row.id,
+    label: row.label,
+    mediaType: row.media_type as MediaItem['mediaType'],
+    deviceFingerprint: row.device_fingerprint,
+    capacityBytes: row.capacity_bytes,
+    physicalLocation: row.physical_location,
+    notes: row.notes,
+    status: row.status as MediaItem['status'],
+    createdAt: row.created_at,
+    lastScannedAt: row.last_scanned_at,
+    lastVerifiedAt: row.last_verified_at
+  }
+}
+
+export function listMediaItems(): MediaItem[] {
+  const rows = getDb()
+    .prepare('SELECT * FROM media_item ORDER BY created_at DESC')
+    .all() as MediaItemRow[]
+  return rows.map(toMediaItem)
+}
+
+export function getMediaItem(id: number): MediaItem | null {
+  const row = getDb().prepare('SELECT * FROM media_item WHERE id = ?').get(id) as
+    | MediaItemRow
+    | undefined
+  return row ? toMediaItem(row) : null
+}
+
+export function createMediaItem(input: MediaItemInput): MediaItem {
+  const result = getDb()
+    .prepare(
+      `INSERT INTO media_item (label, media_type, capacity_bytes, physical_location, notes)
+       VALUES (@label, @mediaType, @capacityBytes, @physicalLocation, @notes)`
+    )
+    .run({
+      label: input.label,
+      mediaType: input.mediaType,
+      capacityBytes: input.capacityBytes,
+      physicalLocation: input.physicalLocation,
+      notes: input.notes
+    })
+
+  const created = getMediaItem(Number(result.lastInsertRowid))
+  if (!created) throw new Error('Failed to load newly created media item')
+  return created
+}
+
+export function updateMediaItem(id: number, patch: Partial<MediaItemInput>): MediaItem {
+  const existing = getMediaItem(id)
+  if (!existing) throw new Error(`Media item ${id} not found`)
+
+  const merged: MediaItemInput = {
+    label: patch.label ?? existing.label,
+    mediaType: patch.mediaType ?? existing.mediaType,
+    capacityBytes: patch.capacityBytes !== undefined ? patch.capacityBytes : existing.capacityBytes,
+    physicalLocation:
+      patch.physicalLocation !== undefined ? patch.physicalLocation : existing.physicalLocation,
+    notes: patch.notes !== undefined ? patch.notes : existing.notes
+  }
+
+  getDb()
+    .prepare(
+      `UPDATE media_item
+       SET label = @label, media_type = @mediaType, capacity_bytes = @capacityBytes,
+           physical_location = @physicalLocation, notes = @notes
+       WHERE id = @id`
+    )
+    .run({ id, ...merged })
+
+  const updated = getMediaItem(id)
+  if (!updated) throw new Error('Failed to load updated media item')
+  return updated
+}
+
+export function retireMediaItem(id: number): MediaItem {
+  getDb().prepare("UPDATE media_item SET status = 'retired' WHERE id = ?").run(id)
+  const updated = getMediaItem(id)
+  if (!updated) throw new Error('Failed to load retired media item')
+  return updated
+}
+
+export function deleteMediaItem(id: number): void {
+  getDb().prepare('DELETE FROM media_item WHERE id = ?').run(id)
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/db/mediaRepository.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/db/mediaRepository.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **mediaRepository.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { getDb } from './index'
+import type { MediaItem, MediaItemInput } from '../../shared/types'
+
+interface MediaItemRow {
+  id: number
+  label: string
+  media_type: string
+  device_fingerprint: string | null
+  capacity_bytes: number | null
+  physical_location: string | null
+  notes: string | null
+  status: string
+  created_at: string
+  last_scanned_at: string | null
+  last_verified_at: string | null
+}
+
+function toMediaItem(row: MediaItemRow): MediaItem {
+  return {
+    id: row.id,
+    label: row.label,
+    mediaType: row.media_type as MediaItem['mediaType'],
+    deviceFingerprint: row.device_fingerprint,
+    capacityBytes: row.capacity_bytes,
+    physicalLocation: row.physical_location,
+    notes: row.notes,
+    status: row.status as MediaItem['status'],
+    createdAt: row.created_at,
+    lastScannedAt: row.last_scanned_at,
+    lastVerifiedAt: row.last_verified_at
+  }
+}
+
+export function listMediaItems(): MediaItem[] {
+  const rows = getDb()
+    .prepare('SELECT * FROM media_item ORDER BY created_at DESC')
+    .all() as MediaItemRow[]
+  return rows.map(toMediaItem)
+}
+
+export function getMediaItem(id: number): MediaItem | null {
+  const row = getDb().prepare('SELECT * FROM media_item WHERE id = ?').get(id) as
+    | MediaItemRow
+    | undefined
+  return row ? toMediaItem(row) : null
+}
+
+export function createMediaItem(input: MediaItemInput): MediaItem {
+  const result = getDb()
+    .prepare(
+      `INSERT INTO media_item (label, media_type, capacity_bytes, physical_location, notes)
+       VALUES (@label, @mediaType, @capacityBytes, @physicalLocation, @notes)`
+    )
+    .run({
+      label: input.label,
+      mediaType: input.mediaType,
+      capacityBytes: input.capacityBytes,
+      physicalLocation: input.physicalLocation,
+      notes: input.notes
+    })
+
+  const created = getMediaItem(Number(result.lastInsertRowid))
+  if (!created) throw new Error('Failed to load newly created media item')
+  return created
+}
+
+export function updateMediaItem(id: number, patch: Partial<MediaItemInput>): MediaItem {
+  const existing = getMediaItem(id)
+  if (!existing) throw new Error(`Media item ${id} not found`)
+
+  const merged: MediaItemInput = {
+    label: patch.label ?? existing.label,
+    mediaType: patch.mediaType ?? existing.mediaType,
+    capacityBytes: patch.capacityBytes !== undefined ? patch.capacityBytes : existing.capacityBytes,
+    physicalLocation:
+      patch.physicalLocation !== undefined ? patch.physicalLocation : existing.physicalLocation,
+    notes: patch.notes !== undefined ? patch.notes : existing.notes
+  }
+
+  getDb()
+    .prepare(
+      `UPDATE media_item
+       SET label = @label, media_type = @mediaType, capacity_bytes = @capacityBytes,
+           physical_location = @physicalLocation, notes = @notes
+       WHERE id = @id`
+    )
+    .run({ id, ...merged })
+
+  const updated = getMediaItem(id)
+  if (!updated) throw new Error('Failed to load updated media item')
+  return updated
+}
+
+export function retireMediaItem(id: number): MediaItem {
+  getDb().prepare("UPDATE media_item SET status = 'retired' WHERE id = ?").run(id)
+  const updated = getMediaItem(id)
+  if (!updated) throw new Error('Failed to load retired media item')
+  return updated
+}
+
+export function deleteMediaItem(id: number): void {
+  getDb().prepare('DELETE FROM media_item WHERE id = ?').run(id)
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the IPC handlers with input validation:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `media.ts`
+
+**Input:**
+
+- content:
+
+```
+import { ipcMain } from 'electron'
+import {
+  createMediaItem,
+  deleteMediaItem,
+  getMediaItem,
+  listMediaItems,
+  retireMediaItem,
+  updateMediaItem
+} from '../db/mediaRepository'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { IpcResult, MediaItem, MediaItemInput } from '../../shared/types'
+
+const VALID_MEDIA_TYPES = new Set(MEDIA_TYPES.map((t) => t.value))
+
+function validateMediaItemInput(input: unknown): MediaItemInput {
+  if (typeof input !== 'object' || input === null) {
+    throw new Error('Invalid media item payload')
+  }
+  const candidate = input as Record<string, unknown>
+
+  const label = typeof candidate.label === 'string' ? candidate.label.trim() : ''
+  if (!label) throw new Error('Label is required')
+
+  const mediaType = candidate.mediaType
+  if (typeof mediaType !== 'string' || !VALID_MEDIA_TYPES.has(mediaType as MediaItemInput['mediaType'])) {
+    throw new Error('A valid media type is required')
+  }
+
+  const capacityBytes =
+    typeof candidate.capacityBytes === 'number' && Number.isFinite(candidate.capacityBytes)
+      ? candidate.capacityBytes
+      : null
+
+  const physicalLocation =
+    typeof candidate.physicalLocation === 'string' && candidate.physicalLocation.trim()
+      ? candidate.physicalLocation.trim()
+      : null
+
+  const notes =
+    typeof candidate.notes === 'string' && candidate.notes.trim() ? candidate.notes.trim() : null
+
+  return { label, mediaType: mediaType as MediaItemInput['mediaType'], capacityBytes, physicalLocation, notes }
+}
+
+function toErrorResult(err: unknown): IpcResult<never> {
+  const message = err instanceof Error ? err.message : 'Unknown error'
+  return { ok: false, error: { code: 'media_error', message } }
+}
+
+export function registerMediaIpc(): void {
+  ipcMain.handle('media:list', (): IpcResult<MediaItem[]> => {
+    try {
+      return { ok: true, data: listMediaItems() }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:get', (_event, payload: unknown): IpcResult<MediaItem> => {
+    try {
+      const id = (payload as { id?: unknown })?.id
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      const item = getMediaItem(id)
+      if (!item) throw new Error(`Media item ${id} not found`)
+      return { ok: true, data: item }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:create', (_event, payload: unknown): IpcResult<MediaItem> => {
+    try {
+      const input = validateMediaItemInput(payload)
+      return { ok: true, data: createMediaItem(input) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:update', (_event, payload: unknown): IpcResult<MediaItem> => {
+    try {
+      const { id, patch } = (payload ?? {}) as { id?: unknown; patch?: unknown }
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      const partial =
+        patch && typeof patch === 'object' ? (patch as Partial<MediaItemInput>) : {}
+      return { ok: true, data: updateMediaItem(id, partial) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:retire', (_event, payload: unknown): IpcResult<MediaItem> => {
+    try {
+      const id = (payload as { id?: unknown })?.id
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      return { ok: true, data: retireMediaItem(id) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:delete', (_event, payload: unknown): IpcResult<{ deleted: true }> => {
+    try {
+      const id = (payload as { id?: unknown })?.id
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      deleteMediaItem(id)
+      return { ok: true, data: { deleted: true } }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/media.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/media.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **media.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import {
+  createMediaItem,
+  deleteMediaItem,
+  getMediaItem,
+  listMediaItems,
+  retireMediaItem,
+  updateMediaItem
+} from '../db/mediaRepository'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { IpcResult, MediaItem, MediaItemInput } from '../../shared/types'
+
+const VALID_MEDIA_TYPES = new Set(MEDIA_TYPES.map((t) => t.value))
+
+function validateMediaItemInput(input: unknown): MediaItemInput {
+  if (typeof input !== 'object' || input === null) {
+    throw new Error('Invalid media item payload')
+  }
+  const candidate = input as Record<string, unknown>
+
+  const label = typeof candidate.label === 'string' ? candidate.label.trim() : ''
+  if (!label) throw new Error('Label is required')
+
+  const mediaType = candidate.mediaType
+  if (typeof mediaType !== 'string' || !VALID_MEDIA_TYPES.has(mediaType as MediaItemInput['mediaType'])) {
+    throw new Error('A valid media type is required')
+  }
+
+  const capacityBytes =
+    typeof candidate.capacityBytes === 'number' && Number.isFinite(candidate.capacityBytes)
+      ? candidate.capacityBytes
+      : null
+
+  const physicalLocation =
+    typeof candidate.physicalLocation === 'string' && candidate.physicalLocation.trim()
+      ? candidate.physicalLocation.trim()
+      : null
+
+  const notes =
+    typeof candidate.notes === 'string' && candidate.notes.trim() ? candidate.notes.trim() : null
+
+  return { label, mediaType: mediaType as MediaItemInput['mediaType'], capacityBytes, physicalLocation, notes }
+}
+
+function toErrorResult(err: unknown): IpcResult<never> {
+  const message = err instanceof Error ? err.message : 'Unknown error'
+  return { ok: false, error: { code: 'media_error', message } }
+}
+
+export function registerMediaIpc(): void {
+  ipcMain.handle('media:list', (): IpcResult<MediaItem[]> => {
+    try {
+      return { ok: true, data: listMediaItems() }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:get', (_event, payload: unknown): IpcResult<MediaItem> => {
+    try {
+      const id = (payload as { id?: unknown })?.id
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      const item = getMediaItem(id)
+      if (!item) throw new Error(`Media item ${id} not found`)
+      return { ok: true, data: item }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:create', (_event, payload: unknown): IpcResult<MediaItem> => {
+    try {
+      const input = validateMediaItemInput(payload)
+      return { ok: true, data: createMediaItem(input) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:update', (_event, payload: unknown): IpcResult<MediaItem> => {
+    try {
+      const { id, patch } = (payload ?? {}) as { id?: unknown; patch?: unknown }
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      const partial =
+        patch && typeof patch === 'object' ? (patch as Partial<MediaItemInput>) : {}
+      return { ok: true, data: updateMediaItem(id, partial) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:retire', (_event, payload: unknown): IpcResult<MediaItem> => {
+    try {
+      const id = (payload as { id?: unknown })?.id
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      return { ok: true, data: retireMediaItem(id) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:delete', (_event, payload: unknown): IpcResult<{ deleted: true }> => {
+    try {
+      const id = (payload as { id?: unknown })?.id
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      deleteMediaItem(id)
+      return { ok: true, data: { deleted: true } }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now wire it into 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 4 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+`main.ts` and expose it in `preload.ts`:  
 
 _**Agent (copilot/auto)**_
 
@@ -9783,307 +8867,6 @@ Created `MediaLibrary.css`
 ```
 The following files were successfully edited:
 /home/kel/dev/DiscDock/src/views/MediaLibrary.css
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **MediaLibrary.css**</summary>
-
-@@ lines 1-1 @@
-
-```
-.media-library__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.button {
-  padding: 6px 14px;
-  border-radius: 6px;
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: 13px;
-}
-
-.button--primary {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: #fff;
-}
-
-.button--small {
-  padding: 4px 10px;
-  font-size: 12px;
-}
-
-.button--danger {
-  border-color: #e81123;
-  color: #e81123;
-}
-
-.media-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 420px;
-  margin: 16px 0;
-  padding: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-}
-
-.media-form label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
-}
-
-.media-form input,
-.media-form select,
-.media-form textarea {
-  padding: 6px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 13px;
-}
-
-.media-form__actions {
-  display: flex;
-  gap: 8px;
-}
-
-.media-form__error {
-  color: #e81123;
-  font-size: 13px;
-}
-
-.empty-state {
-  margin-top: 24px;
-  opacity: 0.7;
-}
-
-.media-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
-  font-size: 13px;
-}
-
-.media-table th,
-.media-table td {
-  text-align: left;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.media-table__actions {
-  display: flex;
-  gap: 6px;
-}
-
-.status-badge {
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
-  text-transform: capitalize;
-  background: var(--color-sidebar-hover);
-}
-
-.status-badge--retired {
-  opacity: 0.6;
-}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-Now wire `App.tsx` to route to the real `MediaLibrary` view: 
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **MediaLibrary.tsx**</summary>
-
-@@ lines 1-1 @@
-
-```
-import { useEffect, useState } from 'react'
-import { MEDIA_TYPES } from '../../shared/types'
-import type { MediaItem, MediaItemInput, MediaType } from '../../shared/types'
-import './MediaLibrary.css'
-
-const EMPTY_FORM: MediaItemInput = {
-  label: '',
-  mediaType: 'other',
-  capacityBytes: null,
-  physicalLocation: null,
-  notes: null
-}
-
-function mediaTypeLabel(mediaType: MediaType): string {
-  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
-}
-
-export default function MediaLibrary(): JSX.Element {
-  const [items, setItems] = useState<MediaItem[]>([])
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
-  const [error, setError] = useState<string | null>(null)
-
-  const loadItems = (): void => {
-    void window.discdock.media.list().then((result) => {
-      if (result.ok) setItems(result.data)
-    })
-  }
-
-  useEffect(loadItems, [])
-
-  const handleSubmit = (event: React.FormEvent): void => {
-    event.preventDefault()
-    setError(null)
-    void window.discdock.media.create(form).then((result) => {
-      if (result.ok) {
-        setForm(EMPTY_FORM)
-        setShowForm(false)
-        loadItems()
-      } else {
-        setError(result.error.message)
-      }
-    })
-  }
-
-  const handleRetire = (id: number): void => {
-    void window.discdock.media.retire(id).then((result) => {
-      if (result.ok) loadItems()
-    })
-  }
-
-  const handleDelete = (id: number): void => {
-    if (!window.confirm('Delete this media item and its catalog? This cannot be undone.')) return
-    void window.discdock.media.delete(id).then((result) => {
-      if (result.ok) loadItems()
-    })
-  }
-
-  return (
-    <div className="media-library">
-      <div className="media-library__header">
-        <h1>Media Library</h1>
-        <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
-          Add Media
-        </button>
-      </div>
-
-      {showForm && (
-        <form className="media-form" onSubmit={handleSubmit}>
-          {error && <div className="media-form__error">{error}</div>}
-          <label>
-            Label
-            <input
-              type="text"
-              value={form.label}
-              onChange={(e) => setForm({ ...form, label: e.target.value })}
-              required
-            />
-          </label>
-          <label>
-            Media Type
-            <select
-              value={form.mediaType}
-              onChange={(e) => setForm({ ...form, mediaType: e.target.value as MediaType })}
-            >
-              {MEDIA_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Physical Location
-            <input
-              type="text"
-              value={form.physicalLocation ?? ''}
-              onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
-              placeholder="e.g. Garage > Box 3 > Shelf B"
-            />
-          </label>
-          <label>
-            Notes
-            <textarea
-              value={form.notes ?? ''}
-              onChange={(e) => setForm({ ...form, notes: e.target.value || null })}
-            />
-          </label>
-          <div className="media-form__actions">
-            <button type="submit" className="button button--primary">
-              Save
-            </button>
-            <button type="button" className="button" onClick={() => setShowForm(false)}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      )}
-
-      {items.length === 0 ? (
-        <div className="empty-state">
-          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
-        </div>
-      ) : (
-        <table className="media-table">
-          <thead>
-            <tr>
-              <th>Label</th>
-              <th>Type</th>
-              <th>Location</th>
-              <th>Status</th>
-              <th>Last Scanned</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td>{item.label}</td>
-                <td>{mediaTypeLabel(item.mediaType)}</td>
-                <td>{item.physicalLocation ?? '—'}</td>
-                <td>
-                  <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
-                </td>
-                <td>{item.lastScannedAt ?? 'Never'}</td>
-                <td className="media-table__actions">
-                  {item.status === 'active' && (
-                    <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
-                      Retire
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="button button--small button--danger"
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  )
-}
-
 ```
 </details></tool-use>
 
@@ -11112,139 +9895,10 @@ wc -c /home/kel/dev/DiscDock/src/views/MediaLibrary.tsx
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="write" data-tool-name="create_file"><details>
-<summary>Tool use: **create_file**</summary>
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
 
 Starting: *Build Media Library UI with list view and modal* (3/4)
-
-**Input:**
-
-- content:
-
-```
-import { ipcMain } from 'electron'
-import {
-  createMediaItem,
-  deleteMediaItem,
-  getMediaItem,
-  listMediaItems,
-  retireMediaItem,
-  updateMediaItem
-} from '../db/mediaRepository'
-import { MEDIA_TYPES } from '../../shared/types'
-import type { IpcResult, MediaItem, MediaItemInput } from '../../shared/types'
-
-const VALID_MEDIA_TYPES = new Set(MEDIA_TYPES.map((t) => t.value))
-
-function validateMediaItemInput(input: unknown): MediaItemInput {
-  if (typeof input !== 'object' || input === null) {
-    throw new Error('Invalid media item payload')
-  }
-  const candidate = input as Record<string, unknown>
-
-  const label = typeof candidate.label === 'string' ? candidate.label.trim() : ''
-  if (!label) throw new Error('Label is required')
-
-  const mediaType = candidate.mediaType
-  if (typeof mediaType !== 'string' || !VALID_MEDIA_TYPES.has(mediaType as MediaItemInput['mediaType'])) {
-    throw new Error('A valid media type is required')
-  }
-
-  const capacityBytes =
-    typeof candidate.capacityBytes === 'number' && Number.isFinite(candidate.capacityBytes)
-      ? candidate.capacityBytes
-      : null
-
-  const physicalLocation =
-    typeof candidate.physicalLocation === 'string' && candidate.physicalLocation.trim()
-      ? candidate.physicalLocation.trim()
-      : null
-
-  const notes =
-    typeof candidate.notes === 'string' && candidate.notes.trim() ? candidate.notes.trim() : null
-
-  return { label, mediaType: mediaType as MediaItemInput['mediaType'], capacityBytes, physicalLocation, notes }
-}
-
-function toErrorResult(err: unknown): IpcResult<never> {
-  const message = err instanceof Error ? err.message : 'Unknown error'
-  return { ok: false, error: { code: 'media_error', message } }
-}
-
-export function registerMediaIpc(): void {
-  ipcMain.handle('media:list', (): IpcResult<MediaItem[]> => {
-    try {
-      return { ok: true, data: listMediaItems() }
-    } catch (err) {
-      return toErrorResult(err)
-    }
-  })
-
-  ipcMain.handle('media:get', (_event, payload: unknown): IpcResult<MediaItem> => {
-    try {
-      const id = (payload as { id?: unknown })?.id
-      if (typeof id !== 'number') throw new Error('A numeric id is required')
-      const item = getMediaItem(id)
-      if (!item) throw new Error(`Media item ${id} not found`)
-      return { ok: true, data: item }
-    } catch (err) {
-      return toErrorResult(err)
-    }
-  })
-
-  ipcMain.handle('media:create', (_event, payload: unknown): IpcResult<MediaItem> => {
-    try {
-      const input = validateMediaItemInput(payload)
-      return { ok: true, data: createMediaItem(input) }
-    } catch (err) {
-      return toErrorResult(err)
-    }
-  })
-
-  ipcMain.handle('media:update', (_event, payload: unknown): IpcResult<MediaItem> => {
-    try {
-      const { id, patch } = (payload ?? {}) as { id?: unknown; patch?: unknown }
-      if (typeof id !== 'number') throw new Error('A numeric id is required')
-      const partial =
-        patch && typeof patch === 'object' ? (patch as Partial<MediaItemInput>) : {}
-      return { ok: true, data: updateMediaItem(id, partial) }
-    } catch (err) {
-      return toErrorResult(err)
-    }
-  })
-
-  ipcMain.handle('media:retire', (_event, payload: unknown): IpcResult<MediaItem> => {
-    try {
-      const id = (payload as { id?: unknown })?.id
-      if (typeof id !== 'number') throw new Error('A numeric id is required')
-      return { ok: true, data: retireMediaItem(id) }
-    } catch (err) {
-      return toErrorResult(err)
-    }
-  })
-
-  ipcMain.handle('media:delete', (_event, payload: unknown): IpcResult<{ deleted: true }> => {
-    try {
-      const id = (payload as { id?: unknown })?.id
-      if (typeof id !== 'number') throw new Error('A numeric id is required')
-      deleteMediaItem(id)
-      return { ok: true, data: { deleted: true } }
-    } catch (err) {
-      return toErrorResult(err)
-    }
-  })
-}
-
-```
-
-- filePath: `/home/kel/dev/DiscDock/electron/ipc/media.ts`
-
-**Result:**
-
-```
-The following files were successfully edited:
-/home/kel/dev/DiscDock/electron/ipc/media.ts
-```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -11481,10 +10135,6 @@ Viewed image `discdock-dashboard.png`
 
 - filePath: `/tmp/discdock-dashboard.png`
 </details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-Launched with no errors. Let's click the "Media Library" nav item and screenshot to confirm. 
 
 _**Agent (copilot/auto)**_
 
@@ -12169,6 +10819,18 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` df -h / | tail -1`
+
+Recheck disk space before continuing implementation
+
+```bash
+df -h / | tail -1
+```
+
+**Result:**
+
+```
+/dev/nvme1n1p2  457G  432G  2.5G 100% /
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -12177,6 +10839,36 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` du -sh /tmp /home/kel/.cache /home/kel/dev 2>/dev/null; echo "---"; du -h --...`
+
+Quickly identify what is consuming disk space, since root filesystem is now at 100% used with only 2.5G free
+
+```bash
+du -sh /tmp /home/kel/.cache /home/kel/dev 2>/dev/null; echo "---"; du -h --max-depth=1 /home/kel 2>/dev/null | sort -rh | head -15
+```
+
+**Result:**
+
+```
+324M    /tmp
+19G     /home/kel/.cache
+8.8G    /home/kel/dev
+---
+181G    /home/kel
+30G     /home/kel/winboat
+22G     /home/kel/Games
+21G     /home/kel/.steam
+18G     /home/kel/.cache
+15G     /home/kel/.local
+11G     /home/kel/.var
+9.4G    /home/kel/.thunderbird
+8.5G    /home/kel/.config
+7.4G    /home/kel/dev
+7.2G    /home/kel/.Genymobile
+4.5G    /home/kel/.vscode
+3.9G    /home/kel/GoogleDrive
+3.6G    /home/kel/Faugus
+3.3G    /home/kel/.npm
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -12478,8 +11170,6 @@ export async function listConnectedDevices(): Promise<DetectedDevice[]> {
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
-
-Now 
 
 Now the watcher that polls and diffs to emit connect/disconnect events:  
 
@@ -13462,38 +12152,6 @@ Read `global.css`, lines 85 to 89
   font-size: 13px;
   opacity: 0.7;
 }
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **global.css**</summary>
-
-@@ lines 89-89 @@
-
-```
-
-.dashboard__empty-devices {
-  margin-top: 12px;
-  opacity: 0.7;
-  font-size: 13px;
-}
-
-.device-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-  font-size: 13px;
-}
-
-.device-table th,
-.device-table td {
-  text-align: left;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--color-border);
-}
-
 ```
 </details></tool-use>
 
@@ -15644,132 +14302,6 @@ Starting: *Develop file-kind classifier for scanned files* (3/5)
 
 _**Agent (copilot/auto)**_
 
-IPC handler to use the synchronous `startScan` correctly, and add the folder-picker dialog 
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **scan.ts**</summary>
-
-@@ lines 1-1 @@
-
-```
-import { ipcMain } from 'electron'
-import { cancelScan, startScan } from '../scanning/scanManager'
-import { listScanJobsForMedia } from '../db/scanRepository'
-import type { HashMode, IpcResult, ScanJob } from '../../shared/types'
-
-export function registerScanIpc(): void {
-  ipcMain.handle('scan:start', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
-    const { mediaId, rootPath, hashMode } = (payload ?? {}) as {
-      mediaId?: unknown
-      rootPath?: unknown
-      hashMode?: unknown
-    }
-
-    if (typeof mediaId !== 'number') {
-      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
-    }
-    if (typeof rootPath !== 'string' || !rootPath.trim()) {
-      return { ok: false, error: { code: 'invalid_input', message: 'A rootPath is required' } }
-    }
-    const validModes: HashMode[] = ['none', 'quick', 'full']
-    const mode = validModes.includes(hashMode as HashMode) ? (hashMode as HashMode) : 'none'
-
-    // Fire-and-forget: progress/completion are streamed via scan:progress/scan:completed/scan:failed events.
-    const jobIdPromise = startScan(mediaId, rootPath, mode)
-    void jobIdPromise
-
-    return { ok: true, data: { jobId: -1 } }
-  })
-
-  ipcMain.handle('scan:cancel', (_event, payload: unknown): IpcResult<{ cancelled: boolean }> => {
-    const jobId = (payload as { jobId?: unknown })?.jobId
-    if (typeof jobId !== 'number') {
-      return { ok: false, error: { code: 'invalid_input', message: 'A numeric jobId is required' } }
-    }
-    return { ok: true, data: { cancelled: cancelScan(jobId) } }
-  })
-
-  ipcMain.handle('scan:history', (_event, payload: unknown): IpcResult<ScanJob[]> => {
-    const mediaId = (payload as { mediaId?: unknown })?.mediaId
-    if (typeof mediaId !== 'number') {
-      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
-    }
-    return { ok: true, data: listScanJobsForMedia(mediaId) }
-  })
-}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **scanManager.ts**</summary>
-
-@@ lines 31-78 @@
-
-```
-/** Creates the scan_job row synchronously and runs the walk in the background; returns the job id immediately. */
-export function startScan(mediaItemId: number, rootPath: string, hashMode: HashMode): number {
-  const job = createScanJob(mediaItemId, hashMode)
-  void runScan(job.id, mediaItemId, rootPath, hashMode)
-  return job.id
-}
-
-async function runScan(jobId: number, mediaItemId: number, rootPath: string, hashMode: HashMode): Promise<void> {
-  const state: ActiveJob = { cancelled: false }
-  activeJobs.set(jobId, state)
-
-  let filesAdded = 0
-  let filesModified = 0
-  let filesUnchanged = 0
-  let errorCount = 0
-
-  try {
-    await walkAndScan(rootPath, hashMode, {
-      onFile: (file) => {
-        const outcome = upsertFileRecord(mediaItemId, jobId, file)
-        if (outcome === 'added') filesAdded += 1
-        else if (outcome === 'modified') filesModified += 1
-        else filesUnchanged += 1
-      },
-      onProgress: (filesProcessed, bytesProcessed, currentPath) => {
-        const progress: ScanProgress = { jobId, filesProcessed, bytesProcessed, currentPath }
-        win?.webContents.send('scan:progress', progress)
-      },
-      onError: (relativePath, errorType, message) => {
-        errorCount += 1
-        recordScanError(jobId, relativePath, errorType, message)
-      },
-      isCancelled: () => state.cancelled
-    })
-
-    const filesRemoved = pruneUnseenFiles(mediaItemId, jobId)
-    const status = state.cancelled ? 'cancelled' : 'completed'
-    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
-    finalizeScanJob(jobId, status, counts)
-    markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0 && !state.cancelled)
-
-    if (status === 'completed') {
-      win?.webContents.send('scan:completed', { jobId, summary: counts })
-    } else {
-      win?.webContents.send('scan:cancelled', { jobId })
-    }
-  } catch (err) {
-    finalizeScanJob(jobId, 'failed', { filesAdded, filesRemoved: 0, filesModified, filesUnchanged, errorCount })
-    win?.webContents.send('scan:failed', { jobId, error: (err as Error).message })
-  } finally {
-    activeJobs.delete(jobId)
-  }
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-Now update the 
-
 IPC handler to use the synchronous `startScan` correctly, and add the folder-picker dialog IPC:  
 
 _**Agent (copilot/auto)**_
@@ -16224,173 +14756,6 @@ Read `MediaLibrary.tsx`, lines 30 to 168
               type="text"
               value={form.physicalLocation ?? 
 … (output truncated)
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **MediaLibrary.tsx**</summary>
-
-@@ lines 137-161 @@
-
-```
-{
-              const scan = scansByMedia[item.id]
-              return (
-                <tr key={item.id}>
-                  <td>{item.label}</td>
-                  <td>{mediaTypeLabel(item.mediaType)}</td>
-                  <td>{item.physicalLocation ?? '—'}</td>
-                  <td>
-                    <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
-                  </td>
-                  <td>
-                    {scan ? (
-                      <span className="scan-progress">
-                        Scanning… {scan.filesProcessed} files
-                      </span>
-                    ) : (
-                      item.lastScannedAt ?? 'Never'
-                    )}
-                  </td>
-                  <td className="media-table__actions">
-                    {scan ? (
-                      <button type="button" className="button button--small" onClick={() => handleCancelScan(item.id)}>
-                        Cancel
-                      </button>
-                    ) : (
-                      <button type="button" className="button button--small" onClick={() => handleScan(item.id)}>
-                        Scan
-                      </button>
-                    )}
-                    {item.status === 'active' && !scan && (
-                      <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
-                        Retire
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      className="button button--small button--danger"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              )
-            }
-```
-
-@@ lines 57-57 @@
-
-```
-
-
-  const handleScan = (mediaId: number): void => {
-    void window.discdock.dialogs.pickFolder().then((pickResult) => {
-      if (!pickResult.ok || !pickResult.data.path) return
-      void window.discdock.scan.start(mediaId, pickResult.data.path, 'none').then((startResult) => {
-        if (startResult.ok) {
-          const jobId = startResult.data.jobId
-          setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
-          setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
-        }
-      })
-    })
-  }
-
-  const handleCancelScan = (mediaId: number): void => {
-    const scan = scansByMedia[mediaId]
-    if (scan) void window.discdock.scan.cancel(scan.jobId)
-  }
-```
-
-@@ lines 3-30 @@
-
-```
-, ScanProgress } from '../../shared/types'
-import './MediaLibrary.css'
-
-const EMPTY_FORM: MediaItemInput = {
-  label: '',
-  mediaType: 'other',
-  capacityBytes: null,
-  physicalLocation: null,
-  notes: null
-}
-
-function mediaTypeLabel(mediaType: MediaType): string {
-  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
-}
-
-interface ActiveScan {
-  jobId: number
-  filesProcessed: number
-  currentPath: string
-}
-
-export default function MediaLibrary(): JSX.Element {
-  const [items, setItems] = useState<MediaItem[]>([])
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
-  const [error, setError] = useState<string | null>(null)
-  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
-  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
-
-  const loadItems = (): void => {
-    void window.discdock.media.list().then((result) => {
-      if (result.ok) setItems(result.data)
-    })
-  }
-
-  useEffect(loadItems, [])
-
-  useEffect(() => {
-    const unsubProgress = window.discdock.scan.onProgress((progress: ScanProgress) => {
-      setJobToMedia((current) => {
-        const mediaId = current[progress.jobId]
-        if (mediaId === undefined) return current
-        setScansByMedia((prevScans) => ({
-          ...prevScans,
-          [mediaId]: {
-            jobId: progress.jobId,
-            filesProcessed: progress.filesProcessed,
-            currentPath: progress.currentPath
-          }
-        }))
-        return current
-      })
-    })
-
-    const finishScan = (jobId: number): void => {
-      setJobToMedia((current) => {
-        const mediaId = current[jobId]
-        if (mediaId !== undefined) {
-          setScansByMedia((prevScans) => {
-            const next = { ...prevScans }
-            delete next[mediaId]
-            return next
-          })
-        }
-        const next = { ...current }
-        delete next[jobId]
-        return next
-      })
-      loadItems()
-    }
-
-    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
-    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
-    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
-
-    return () => {
-      unsubProgress()
-      unsubCompleted()
-      unsubFailed()
-      unsubCancelled()
-    }
-  }
 ```
 </details></tool-use>
 
@@ -17108,9 +15473,7 @@ Committed and pushed (disk healthy at 48G free).
 - `fileKind.ts` — extension → kind classifier (image/video/audio/document/archive/other)
 - `scanRepository.ts` — `scan_job`/`scan_error` CRUD + `file_record` upsert with added/modified/unchanged diffing, and pruning of files no longer seen (removed-file detection)
 - `scanManager.ts` — job orchestration, cancellation, progress/completed/failed/cancelled events
-- `scan.ts` +  — 
-
- — `scan:start/cancel/history`, `dialog:pickFolder` IPC, exposed via `preload.ts`
+- `scan.ts` +  — `scan:start/cancel/history`, `dialog:pickFolder` IPC, exposed via `preload.ts`
 - Media Library now has an inline **Scan** action (folder picker → live per-row progress → Cancel) and updates `last_scanned_at`/`last_verified_at` on completion
 
 **Verified:** clean build, and I directly exercised the compiled walk engine against a real temp directory tree (confirmed correct recursion, SHA-256 hashing, kind classification, byte/file counts). GUI folder-picker interaction itself can't be scripted, but the underlying logic is proven correct.
@@ -17355,52 +15718,6 @@ export interface ScanStartInput {
   rootPath: string
   hashMode: HashMode
 }
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **types.ts**</summary>
-
-@@ lines 111-111 @@
-
-```
-
-export const FILE_KINDS = ['image', 'video', 'audio', 'document', 'archive', 'other'] as const
-export type FileKind = (typeof FILE_KINDS)[number]
-
-export interface SearchFilters {
-  mediaItemId?: number
-  mediaType?: MediaType
-  kind?: FileKind
-  minSizeBytes?: number
-  maxSizeBytes?: number
-}
-
-export interface SearchQueryInput {
-  text: string
-  filters: SearchFilters
-  page: number
-  pageSize: number
-}
-
-export interface FileSearchResult {
-  id: number
-  mediaItemId: number
-  mediaLabel: string
-  path: string
-  name: string
-  sizeBytes: number
-  modifiedAtSrc: string | null
-  kind: string
-}
-
-export interface SearchResultPage {
-  results: FileSearchResult[]
-  total: number
-}
-
 ```
 </details></tool-use>
 
@@ -17822,73 +16139,6 @@ Now update `preload.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **search.ts**</summary>
-
-@@ lines 1-1 @@
-
-```
-import { ipcMain } from 'electron'
-import { searchFiles } from '../db/searchRepository'
-import type { IpcResult, SearchFilters, SearchResultPage } from '../../shared/types'
-
-const DEFAULT_PAGE_SIZE = 100
-
-export function registerSearchIpc(): void {
-  ipcMain.handle('search:query', (_event, payload: unknown): IpcResult<SearchResultPage> => {
-    const { text, filters, page } = (payload ?? {}) as {
-      text?: unknown
-      filters?: unknown
-      page?: unknown
-    }
-
-    const queryText = typeof text === 'string' ? text : ''
-    const queryFilters = (filters && typeof filters === 'object' ? filters : {}) as SearchFilters
-    const pageNumber = typeof page === 'number' && page >= 0 ? page : 0
-
-    try {
-      return { ok: true, data: searchFiles(queryText, queryFilters, pageNumber, DEFAULT_PAGE_SIZE) }
-    } catch (err) {
-      return { ok: false, error: { code: 'search_error', message: (err as Error).message } }
-    }
-  })
-}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **main.ts**</summary>
-
-@@ lines 9-9 @@
-
-```
-registerSearchIpc } from './ipc/search'
-import { 
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **main.ts**</summary>
-
-@@ lines 33-33 @@
-
-```
-registerSearchIpc()
-  
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-Now update `preload.ts`:   
-
-_**Agent (copilot/auto)**_
-
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
@@ -17915,30 +16165,6 @@ import type {
   ScanProgress,
   WindowState
 } from '../shared/types'
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **preload.ts**</summary>
-
-@@ lines 89-89 @@
-
-```
-,
-  search: {
-    query: (text: string, filters: SearchFilters, page: number): Promise<IpcResult<SearchResultPage>> =>
-      ipcRenderer.invoke('search:query', { text, filters, page })
-  }
-```
-
-@@ lines 11-11 @@
-
-```
-SearchFilters,
-  SearchResultPage,
-  
 ```
 </details></tool-use>
 
@@ -18326,141 +16552,6 @@ Created `Search.css`
 ```
 The following files were successfully edited:
 /home/kel/dev/DiscDock/src/views/Search.css
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **Search.tsx**</summary>
-
-@@ lines 1-1 @@
-
-```
-import { useEffect, useState } from 'react'
-import { FILE_KINDS, MEDIA_TYPES } from '../../shared/types'
-import type { FileSearchResult, MediaType, FileKind, SearchFilters } from '../../shared/types'
-import './Search.css'
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
-  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
-}
-
-export default function Search(): JSX.Element {
-  const [text, setText] = useState('')
-  const [mediaType, setMediaType] = useState<MediaType | ''>('')
-  const [kind, setKind] = useState<FileKind | ''>('')
-  const [results, setResults] = useState<FileSearchResult[]>([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(0)
-  const [loading, setLoading] = useState(false)
-
-  const runSearch = (pageToLoad: number): void => {
-    const filters: SearchFilters = {}
-    if (mediaType) filters.mediaType = mediaType
-    if (kind) filters.kind = kind
-
-    setLoading(true)
-    void window.discdock.search.query(text, filters, pageToLoad).then((result) => {
-      setLoading(false)
-      if (result.ok) {
-        setResults(result.data.results)
-        setTotal(result.data.total)
-        setPage(pageToLoad)
-      }
-    })
-  }
-
-  useEffect(() => {
-    runSearch(0)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  const handleSubmit = (event: React.FormEvent): void => {
-    event.preventDefault()
-    runSearch(0)
-  }
-
-  const pageSize = 100
-  const hasMore = (page + 1) * pageSize < total
-
-  return (
-    <div className="search-view">
-      <h1>Search</h1>
-      <form className="search-form" onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Search by file name or path…"
-          className="search-form__input"
-        />
-        <select value={mediaType} onChange={(e) => setMediaType(e.target.value as MediaType | '')}>
-          <option value="">All media types</option>
-          {MEDIA_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-        <select value={kind} onChange={(e) => setKind(e.target.value as FileKind | '')}>
-          <option value="">All file kinds</option>
-          {FILE_KINDS.map((k) => (
-            <option key={k} value={k}>
-              {k}
-            </option>
-          ))}
-        </select>
-        <button type="submit" className="button button--primary">
-          Search
-        </button>
-      </form>
-
-      {loading ? (
-        <p className="search-view__status">Searching…</p>
-      ) : results.length === 0 ? (
-        <p className="search-view__status">No matching files found.</p>
-      ) : (
-        <>
-          <p className="search-view__status">
-            {total} result{total === 1 ? '' : 's'}
-          </p>
-          <table className="search-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Path</th>
-                <th>Media</th>
-                <th>Kind</th>
-                <th>Size</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((result) => (
-                <tr key={result.id}>
-                  <td>{result.name}</td>
-                  <td>{result.path}</td>
-                  <td>{result.mediaLabel}</td>
-                  <td>{result.kind}</td>
-                  <td>{formatBytes(result.sizeBytes)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {hasMore && (
-            <button type="button" className="button" onClick={() => runSearch(page + 1)}>
-              Load more
-            </button>
-          )}
-        </>
-      )}
-    </div>
-  )
-}
-
 ```
 </details></tool-use>
 
@@ -19318,8 +17409,6 @@ This note is not a signal to end the turn — pick one of the actions below and 
 
 _**Agent (copilot/auto)**_
 
-No errors 
-
 No errors on launch. Let's close it and commit — I'm confident in the feature given the direct DB-level verification.   
 
 _**Agent (copilot/auto)**_
@@ -20063,26 +18152,6 @@ import { registerScanIpc } from './ipc/scan'
 import { registerDialogIpc } from './ipc/dialogs'
 import { registerSearchIpc } from './ipc/search'
 import { initScanManager } from './scanning/scanManager'
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **main.ts**</summary>
-
-@@ lines 34-34 @@
-
-```
-registerDuplicatesIpc()
-  
-```
-
-@@ lines 10-10 @@
-
-```
-registerDuplicatesIpc } from './ipc/duplicates'
-import { 
 ```
 </details></tool-use>
 
@@ -22124,277 +20193,6 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **MediaDetail.tsx**</summary>
-
-@@ lines 1-1 @@
-
-```
-import { useEffect, useState } from 'react'
-import { MEDIA_TYPES } from '../../shared/types'
-import type { FileEntry, MediaItem, ScanJob } from '../../shared/types'
-import './MediaDetail.css'
-
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
-  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
-}
-
-interface MediaDetailProps {
-  mediaId: number
-  onBack: () => void
-}
-
-type Tab = 'overview' | 'browse' | 'history'
-
-export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.Element {
-  const [item, setItem] = useState<MediaItem | null>(null)
-  const [tab, setTab] = useState<Tab>('overview')
-  const [folderPath, setFolderPath] = useState('')
-  const [entries, setEntries] = useState<FileEntry[]>([])
-  const [history, setHistory] = useState<ScanJob[]>([])
-
-  useEffect(() => {
-    void window.discdock.media.get(mediaId).then((result) => {
-      if (result.ok) setItem(result.data)
-    })
-  }, [mediaId])
-
-  useEffect(() => {
-    if (tab !== 'browse') return
-    void window.discdock.files.list(mediaId, folderPath).then((result) => {
-      if (result.ok) setEntries(result.data)
-    })
-  }, [mediaId, folderPath, tab])
-
-  useEffect(() => {
-    if (tab !== 'history') return
-    void window.discdock.scan.history(mediaId).then((result) => {
-      if (result.ok) setHistory(result.data)
-    })
-  }, [mediaId, tab])
-
-  if (!item) return <div className="media-detail">Loading…</div>
-
-  const mediaTypeLabel = MEDIA_TYPES.find((t) => t.value === item.mediaType)?.label ?? item.mediaType
-  const breadcrumbs = folderPath ? folderPath.split('/') : []
-
-  return (
-    <div className="media-detail">
-      <button type="button" className="button button--small media-detail__back" onClick={onBack}>
-        ← Back to Media Library
-      </button>
-
-      <div className="media-detail__header">
-        <h1>{item.label}</h1>
-        <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
-      </div>
-      <p className="media-detail__subtitle">
-        {mediaTypeLabel} {item.physicalLocation ? `· ${item.physicalLocation}` : ''}
-      </p>
-
-      <div className="media-detail__tabs">
-        <button type="button" className={tab === 'overview' ? 'tab tab--active' : 'tab'} onClick={() => setTab('overview')}>
-          Overview
-        </button>
-        <button type="button" className={tab === 'browse' ? 'tab tab--active' : 'tab'} onClick={() => setTab('browse')}>
-          Browse
-        </button>
-        <button type="button" className={tab === 'history' ? 'tab tab--active' : 'tab'} onClick={() => setTab('history')}>
-          Scan History
-        </button>
-      </div>
-
-      {tab === 'overview' && (
-        <div className="media-detail__overview">
-          <p>Capacity: {item.capacityBytes ? formatBytes(item.capacityBytes) : 'Unknown'}</p>
-          <p>Last scanned: {item.lastScannedAt ?? 'Never'}</p>
-          <p>Last verified: {item.lastVerifiedAt ?? 'Never'}</p>
-          <p>Notes: {item.notes ?? '—'}</p>
-        </div>
-      )}
-
-      {tab === 'browse' && (
-        <div className="media-detail__browse">
-          <div className="breadcrumbs">
-            <button type="button" onClick={() => setFolderPath('')}>
-              Root
-            </button>
-            {breadcrumbs.map((segment, index) => {
-              const pathAtIndex = breadcrumbs.slice(0, index + 1).join('/')
-              return (
-                <span key={pathAtIndex}>
-                  {' / '}
-                  <button type="button" onClick={() => setFolderPath(pathAtIndex)}>
-                    {segment}
-                  </button>
-                </span>
-              )
-            })}
-          </div>
-
-          {entries.length === 0 ? (
-            <p className="media-detail__status">This folder is empty (or hasn't been scanned yet).</p>
-          ) : (
-            <table className="media-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Kind</th>
-                  <th>Size</th>
-                  <th>Modified</th>
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry) => (
-                  <tr key={entry.path}>
-                    <td>
-                      {entry.isDirectory ? (
-                        <button type="button" className="link-button" onClick={() => setFolderPath(entry.path)}>
-                          📁 {entry.name}
-                        </button>
-                      ) : (
-                        entry.name
-                      )}
-                    </td>
-                    <td>{entry.isDirectory ? 'folder' : entry.kind}</td>
-                    <td>{entry.isDirectory ? '—' : formatBytes(entry.sizeBytes)}</td>
-                    <td>{entry.modifiedAtSrc ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-
-      {tab === 'history' && (
-        <div className="media-detail__history">
-          {history.length === 0 ? (
-            <p className="media-detail__status">No scans yet.</p>
-          ) : (
-            <table className="media-table">
-              <thead>
-                <tr>
-                  <th>Started</th>
-                  <th>Status</th>
-                  <th>Hash Mode</th>
-                  <th>Added</th>
-                  <th>Modified</th>
-                  <th>Removed</th>
-                  <th>Errors</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((job) => (
-                  <tr key={job.id}>
-                    <td>{job.startedAt}</td>
-                    <td>{job.status}</td>
-                    <td>{job.hashMode}</td>
-                    <td>{job.filesAdded}</td>
-                    <td>{job.filesModified}</td>
-                    <td>{job.filesRemoved}</td>
-                    <td>{job.errorCount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **MediaDetail.css**</summary>
-
-@@ lines 1-1 @@
-
-```
-.media-detail__back {
-  margin-bottom: 12px;
-}
-
-.media-detail__header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.media-detail__subtitle {
-  opacity: 0.7;
-  font-size: 13px;
-  margin-top: 0;
-}
-
-.media-detail__tabs {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--color-border);
-  margin: 16px 0;
-}
-
-.tab {
-  padding: 8px 14px;
-  border: none;
-  background: transparent;
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: 13px;
-  border-bottom: 2px solid transparent;
-}
-
-.tab--active {
-  border-bottom-color: var(--color-accent);
-  font-weight: 600;
-}
-
-.media-detail__overview p {
-  font-size: 13px;
-}
-
-.breadcrumbs {
-  margin-bottom: 12px;
-  font-size: 13px;
-}
-
-.breadcrumbs button {
-  background: none;
-  border: none;
-  color: var(--color-accent);
-  cursor: pointer;
-  font-size: 13px;
-  padding: 0;
-}
-
-.link-button {
-  background: none;
-  border: none;
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: 13px;
-  padding: 0;
-  text-align: left;
-}
-
-.media-detail__status {
-  opacity: 0.7;
-  font-size: 13px;
-}
-
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
 Now wire it into `App.tsx`, and add a way to open Media Detail from the Media Library list (clicking a label):     
 
 _**Agent (copilot/auto)**_
@@ -22695,28 +20493,6 @@ Note: The tool simplified the command to ` wc -c electron/db/fileRepository.ts e
  5235 electron/preload.ts
  3719 shared/types.ts
 30437 total
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **MediaLibrary.tsx**</summary>
-
-@@ lines 213-213 @@
-
-```
-
-                    <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
-                      {item.label}
-                    </button>
-                  
-```
-
-@@ lines 24-24 @@
-
-```
-{ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }
 ```
 </details></tool-use>
 
@@ -24159,83 +21935,6 @@ export function registerScanIpc(): void {
 _**Agent (copilot/auto)**_
 
 <tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **scanManager.ts**</summary>
-
-@@ lines 41-79 @@
-
-```
-  const settings = getSettings()
-
-  let filesAdded = 0
-  let filesModified = 0
-  let filesUnchanged = 0
-  let errorCount = 0
-
-  try {
-    await walkAndScan(
-      rootPath,
-      { hashMode, excludePatterns: settings.excludePatterns, followSymlinks: settings.followSymlinks },
-      {
-        onFile: (file) => {
-          const outcome = upsertFileRecord(mediaItemId, jobId, file)
-          if (outcome === 'added') filesAdded += 1
-          else if (outcome === 'modified') filesModified += 1
-          else filesUnchanged += 1
-        },
-        onProgress: (filesProcessed, bytesProcessed, currentPath) => {
-          const progress: ScanProgress = { jobId, filesProcessed, bytesProcessed, currentPath }
-          win?.webContents.send('scan:progress', progress)
-        },
-        onError: (relativePath, errorType, message) => {
-          errorCount += 1
-          recordScanError(jobId, relativePath, errorType, message)
-        },
-        isCancelled: () => state.cancelled
-      }
-    )
-
-    const filesRemoved = pruneUnseenFiles(mediaItemId, jobId)
-    const status = state.cancelled ? 'cancelled' : 'completed'
-    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
-    finalizeScanJob(jobId, status, counts)
-    markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0 && !state.cancelled)
-
-    if (status === 'completed') {
-      win?.webContents.send('scan:completed', { jobId, summary: counts })
-      if (settings.notifications.scanCompleted) {
-        new Notification({ title: 'DiscDock', body: `Scan completed: ${filesAdded} added, ${filesModified} modified, ${filesRemoved} removed` }).show()
-      }
-    } else {
-      win?.webContents.send('scan:cancelled', { jobId })
-    }
-  } catch (err) {
-    finalizeScanJob(jobId, 'failed', { filesAdded, filesRemoved: 0, filesModified, filesUnchanged, errorCount })
-    win?.webContents.send('scan:failed', { jobId, error: (err as Error).message })
-    if (settings.notifications.scanFailed) {
-      new Notification({ title: 'DiscDock', body: 'Scan failed — see logs for details' }).show()
-    }
-```
-
-@@ lines 1-10 @@
-
-```
-, Notification } from 'electron'
-import { walkAndScan } from './scanEngine'
-import {
-  createScanJob,
-  finalizeScanJob,
-  markMediaScanned,
-  pruneUnseenFiles,
-  recordScanError,
-  upsertFileRecord
-} from '../db/scanRepository'
-import { getSettings } from '../settings/settingsStore
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
 <summary>Edit: **scan.ts**</summary>
 
 @@ lines 21-21 @@
@@ -25332,8 +23031,6 @@ Files found (should exclude .Trash-1000): [".Trash-1000","keep.txt",".Trash-1000
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
-
-Found a real bug: my  doesn't handle `**/` matching zero leading path segments (so `**/.Trash-*` fails to match a top-level `.Trash-1000`). Fixing it:  
 
 Found a real bug: my  doesn't handle `**/` matching zero leading path segments (so `**/.Trash-*` fails to match a top-level `.Trash-1000`). Fixing it:  
 
@@ -26953,17 +24650,9 @@ _**Agent (copilot/auto)**_
 Committed and pushed (57G free, healthy). The recurring `npm run dev` exit-1 is the already-diagnosed port conflict — port is currently free, nothing new to fix.
 
 **Implemented: Database Backup/Restore (FR-7.2)**
-- `backupService.ts` — `backupNow()` uses `better-sqlite3`'s native `.backup()` API (safe for a live WAL-mode DB); `restoreFromBackup()` takes an automatic **safety backup of the current DB before 
-
- — `backupNow()` uses `better-sqlite3`'s native `.backup()` API (safe for a live WAL-mode DB); `restoreFromBackup()` takes an automatic **safety backup of the current DB before overwriting**, then swaps in the restore file and reopens the connection (re-running idempotent migrations)
+- `backupService.ts` — `backupNow()` uses `better-sqlite3`'s native `.backup()` API (safe for a live WAL-mode DB); `restoreFromBackup()` takes an automatic **safety backup of the current DB before overwriting**, then swaps in the restore file and reopens the connection (re-running idempotent migrations)
 - `backup.ts` + extended `dialogs.ts` (/) + `preload.ts`
 - `BackupExport.tsx` — "Backup Now" / "Restore from Backup" with a confirmation dialog explaining the safety-backup behavior, wired into sidebar nav
-
-**Rigorously verified** (this is the highest-stakes feature, given the security/data-loss doc's requirements): ran a full backup → mutate → restore cycle against a real Electron-backed SQLite database — seeded a row, backed it up, added a second row, restored, and confirmed the mutation was correctly reverted while a valid pre-restore safety backup was created. Cleaned up all test artifacts.
-
-This completes the full MVP scope from the roadmap: Dashboard, Media Registration, Device Detection, Scanning, Search, Duplicates, Media Detail, Settings, and Backup/Restore are all implemented and wired together, with `.deb`/`.AppImage` packaging configured. Remaining items are Phase 
-
- — "Backup Now" / "Restore from Backup" with a confirmation dialog explaining the safety-backup behavior, wired into sidebar nav
 
 **Rigorously verified** (this is the highest-stakes feature, given the security/data-loss doc's requirements): ran a full backup → mutate → restore cycle against a real Electron-backed SQLite database — seeded a row, backed it up, added a second row, restored, and confirmed the mutation was correctly reverted while a valid pre-restore safety backup was created. Cleaned up all test artifacts.
 
@@ -27223,30 +24912,6 @@ ERROR: Your input to the tool was invalid (must be array)
 Please check your input and try again.
 ```
 </details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **deviceDetection.ts**</summary>
-
-@@ lines 54-61 @@
-
-```
-(d.type === 'part' || d.type === 'rom'))
-      .map((d) => ({
-        devicePath: `/dev/${d.name}`,
-        label: d.label ?? null,
-        fsType: d.fstype ?? null,
-        mountPoint: d.mountpoint as string,
-        sizeBytes: toBytes(d.size),
-        uuid: d.uuid ?? null,
-        isOptical: d.type === 'rom'
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-Now add  to the 
 
 _**Agent (copilot/auto)**_
 
@@ -28534,37 +26199,6 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **Dashboard.tsx**</summary>
-
-@@ lines 62-62 @@
-
-```
-
-          if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
-            setScanning((prev) => new Set(prev).add(device.devicePath))
-            void window.discdock.scan.start(result.data.id, device.mountPoint).then(() => {
-              setScanning((prev) => {
-                const next = new Set(prev)
-                next.delete(device.devicePath)
-                return next
-              })
-              refreshSummary()
-            })
-          }
-
-```
-
-@@ lines 21-21 @@
-
-```
-
-  const [scanning, setScanning] = useState<Set<string>>(new Set())
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
@@ -29262,9 +26896,7 @@ Created 2 todos
 
 _**Agent (copilot/auto)**_
 
-Now update the render logic to use  instead of the removed  set, and show a distinct badge for "needs 
-
- set, and show a distinct badge for "needs verification"-style unscanned matches:   
+Now update the render logic to use  instead of the removed  set, and show a distinct badge for "needs verification"-style unscanned matches:   
 
 _**Agent (copilot/auto)**_
 
@@ -29435,10 +27067,6 @@ _**Agent (copilot/auto)**_
 
 Running ` lsblk -o NAME,LABEL,FSTYPE,MOUNTPOINT,TYPE 2>&1 | grep -A2 sr0 || echo "no s...`
 </details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-I notice the Dashboard shows "No removable media currently connected" — let me check if the disc was actually ejected, and also flag something important I just noticed in the screenshot. 
 
 _**Agent (copilot/auto)**_
 
@@ -32452,52 +30080,6 @@ filteredI
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **MediaLibrary.tsx**</summary>
-
-@@ lines 212-212 @@
-
-```
-
-
-  const startEditingLocation = (item: MediaItem): void => {
-    setEditingLocationId(item.id)
-    setEditingLocationValue(item.physicalLocation ?? '')
-  }
-
-  const saveEditingLocation = (id: number): void => {
-    const value = editingLocationValue.trim() || null
-    setEditingLocationId(null)
-    void window.discdock.media.update(id, { physicalLocation: value }).then((result) => {
-      if (result.ok) loadItems()
-    })
-  }
-```
-
-@@ lines 71-71 @@
-
-```
-
-  const [containerFilter, setContainerFilter] = useState<string>('')
-  const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
-  const [editingLocationValue, setEditingLocationValue] = useState('')
-
-  const knownLocations = Array.from(
-    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
-  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
-
-  const filteredItems = containerFilter ? items.filter((item) => item.physicalLocation === containerFilter) : items
-```
-
-@@ lines 66-66 @@
-
-```
-filteredI
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
 Now add the datalist to the Add Media form's Physical Location input, and add the Container filter dropdown + inline-editable location cells:   
 
 _**Agent (copilot/auto)**_
@@ -32832,38 +30414,6 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **MediaLibrary.tsx**</summary>
-
-@@ lines 375-375 @@
-
-```
-
-                    {editingLocationId === item.id ? (
-                      <input
-                        type="text"
-                        autoFocus
-                        list="location-suggestions"
-                        className="media-table__location-input"
-                        value={editingLocationValue}
-                        onChange={(e) => setEditingLocationValue(e.target.value)}
-                        onBlur={() => saveEditingLocation(item.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') saveEditingLocation(item.id)
-                          if (e.key === 'Escape') setEditingLocationId(null)
-                        }}
-                      />
-                    ) : (
-                      <button type="button" className="link-button" onClick={() => startEditingLocation(item)}>
-                        {item.physicalLocation ?? 'Set container…'}
-                      </button>
-                    )}
-                  
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
 Now add CSS for `.container-filter` and `.media-table__location-input`:   
 
 _**Agent (copilot/auto)**_
@@ -32921,48 +30471,6 @@ Read `MediaLibrary.css`, lines 84 to 98
 }
 
 .media-table__actions {
-```
-</details></tool-use>
-
-_**Agent (copilot/auto)**_
-
-<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
-<summary>Edit: **MediaLibrary.css**</summary>
-
-@@ lines 98-98 @@
-
-```
-location-input {
-  padding: 3px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--color-accent);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 13px;
-  width: 100%;
-}
-
-.container-filter {
-  margin: 12px 0;
-}
-
-.container-filter label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.container-filter select {
-  padding: 6px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-size: 13px;
-}
-
-.media-table__
 ```
 </details></tool-use>
 
@@ -33754,14 +31262,92 @@ A couple changes to the Media Library page. I shold be able to multiselect list 
 
 _**Agent (copilot/auto)**_
 
+<think><details><summary>Thought Process</summary>
+Confirmed correct — all the new handlers only reference `loadItems`/`beginScanWithPath`/etc. inside async callbacks (executed later, after the full component body has already run), not directly in initializer expressions. That's the safe pattern, unlike the earlier bug where `sortedItems`'s initializer directly read `filteredItems` before it existed. Let's do a launch smoke test and commit.
+</details></think>
+
+_**Agent (copilot/auto)**_
+
 Let's add multi-select with checkboxes, Shift/Ctrl-click range/toggle, and a batch action bar (Location, Retire, Delete).  
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 1 to 100
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'label', label: 'Label' },
+  { key: 'mediaType', label: 'Type' },
+  { key: 'physicalLocation', label: 'Location' },
+  { key: 'status', label: 'Status' },
+  { key: 'lastScannedAt', label: 'Last Scanned' }
+]
+
+function sortValue(item: MediaItem, key: SortKey): string {
+  switch (key) {
+    case 'mediaType':
+      return mediaTypeLabel(item.mediaType)
+    case 'physicalLocation':
+      return item.physicalLocation ?? ''
+    case 'lastScannedAt':
+      return item.lastScannedAt ?? ''
+    default:
+      return item[key] ?? ''
+  }
+}
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [sortKey, setSortKey] = useState<SortKey>('label')
+  const [sortAsc, setSortAsc] = useState(true)
+
+  const handleSort = (key: SortKey): void => {
+    if (key === sortKey) {
+      setSortAsc((prev) => !prev)
+    } else 
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -33849,18 +31435,99 @@ Now let's update the table header (Select All checkbox column) and rows (per-row
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `knownLocations.length > 0 &&` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `knownLocations.length > 0 &&`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "knownLocations.length > 0 &&"
+
+src/views/MediaLibrary.tsx
+399:          {knownLocations.length > 0 && (
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 393 to 460
+
+**Input:**
+
+- endLine: `460`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `393`
+
+**Result:**
+
+```
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
+        </div>
+      ) : (
+        <>
+          {knownLocations.length > 0 && (
+            <div className="container-filter">
+              <label>
+                Container
+                <select value={containerFilter} onChange={(e) => setContainerFilter(e.target.value)}>
+                  <option value="">All containers</option>
+                  {knownLocations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          <table className="media-table">
+          <thead>
+            <tr>
+              {COLUMNS.map((col) => (
+                <th key={col.key}>
+                  <button type="button" className="media-table__sort-header" onClick={() => handleSort(col.key)}>
+                    {col.label}
+                    {sortKey === col.key ? (sortAsc ? ' ▲' : ' ▼') : ''}
+                  </button>
+                </th>
+              ))}
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedItems.map((item) => {
+              const scan = scansByMedia[item.id]
+              return (
+                <tr key={item.id}>
+                  <td>
+                    <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
+                      {item.label}
+                    </button>
+                  </td>
+                  <td>{mediaTypeLabel(item.mediaType)}</td>
+                  <td>
+                    {editingLocationId === item.id ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        list="location-suggestions"
+                        className="media-table__location-input"
+             
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -33931,10 +31598,58 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 414 to 450
+
+**Input:**
+
+- endLine: `450`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `414`
+
+**Result:**
+
+```
+
+          {selectedIds.size > 0 && (
+            <div className="batch-actions">
+              <span className="batch-actions__count">{selectedIds.size} selected</span>
+              <input
+                type="text"
+                list="location-suggestions"
+                placeholder="Set container…"
+                value={batchLocationValue}
+                onChange={(e) => setBatchLocationValue(e.target.value)}
+              />
+              <button type="button" className="button button--small" onClick={handleBatchSetLocation}>
+                Apply Container
+              </button>
+              <button type="button" className="button button--small" onClick={handleBatchRetire}>
+                Retire Selected
+              </button>
+              <button type="button" className="button button--small button--danger" onClick={handleBatchDelete}>
+                Delete Selected
+              </button>
+              <button type="button" className="button button--small" onClick={clearSelection}>
+                Clear Selection
+              </button>
+            </div>
+          )}
+
+          <table className="media-table">
+          <thead>
+            <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size > 0 && selectedIds.size === sortedItems.length}
+                  onChange={handleSelectAll}
+                  aria-label="Select all"
+                />
+              </th>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -33943,10 +31658,38 @@ Looks correct. Now let's check for errors, verify integrity, and build.
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `MediaLibrary.tsx`, 2 problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx"]`
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import './MediaLibrary.css'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+This code at line 18
+```
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+```
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+````
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -33963,18 +31706,54 @@ Known non-blocking IDE quirk. Now let's add the CSS for the batch action bar and
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `.container-filter select` (`**/src/views/MediaLibrary.css`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.css`
+- isRegexp: `false`
+- query: `.container-filter select`
+
+**Result:**
+
+```
+Found 1 match in 1 file for ".container-filter select"
+
+src/views/MediaLibrary.css
+119:.container-filter select {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.css`, lines 119 to 128
+
+**Input:**
+
+- endLine: `128`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.css`
+- startLine: `119`
+
+**Result:**
+
+```
+.container-filter select {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.media-table__actions {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34028,6 +31807,21 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css`
+
+Verify edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css` (terminal ID=dc1aa274-f94d-4c76-82ad-e3bc465ffaba). This is the output of running that command instead:
+19241 src/views/MediaLibrary.tsx
+ 2733 src/views/MediaLibrary.css
+21974 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34036,6 +31830,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with the multi-select batch actions feature
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=6525ecc2-7bfe-4a93-a949-787b57217aa5). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 35 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BmenKgg0.css    8.91 kB │ gzip:  1.98 kB
+dist/assets/index-CHDvHXB-.js   221.78 kB │ gzip: 67.84 kB
+
+✓ built in 176ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34044,18 +31875,148 @@ Given the last incident, let me be more careful this time — reviewing the enti
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 47 to 220
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `47`
+
+**Result:**
+
+```
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [sortKey, setSortKey] = useState<SortKey>('label')
+  const [sortAsc, setSortAsc] = useState(true)
+
+  const handleSort = (key: SortKey): void => {
+    if (key === sortKey) {
+      setSortAsc((prev) => !prev)
+    } else {
+      setSortKey(key)
+      setSortAsc(true)
+    }
+  }
+
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
+  const [containerFilter, setContainerFilter] = useState<string>('')
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
+  const [editingLocationValue, setEditingLocationValue] = useState('')
+
+  const knownLocations = Array.from(
+    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
+  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+
+  const filteredItems = containerFilter ? items.filter((item) => item.physicalLocation === containerFilter) : items
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
+
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null)
+  const [batchLocationValue, setBatchLocationValue] = useState('')
+
+  const handleRowCheckboxClick = (
+    event: React.MouseEvent<HTMLInputElement>,
+  
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 220 to 300
+
+**Input:**
+
+- endLine: `300`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `220`
+
+**Result:**
+
+```
+      if (result.ok) {
+        setForm(EMPTY_FORM)
+        setShowForm(false)
+        loadItems()
+
+        const mediaId = result.data.id
+        if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
+          if (deviceMountPoint) {
+            beginScanWithPath(mediaId, deviceMountPoint)
+          } else {
+            handleScan(mediaId)
+          }
+        }
+        setDeviceMountPoint(null)
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleUseDevice = (device: DetectedDevice): void => {
+    setForm({
+      label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
+      mediaType: device.isOptical ? 'dvd' : 'external_hdd',
+      capacityBytes: device.sizeBytes,
+      physicalLocation: null,
+      notes: null,
+      deviceFingerprint: device.uuid ?? device.devicePath
+    })
+    setDeviceMountPoint(device.mountPoint)
+  }
+
+  const handleRetire = (id: number): void => {
+    void window.discdock.media.retire(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const handleDelete = (id: number): void => {
+    if (!window.confirm('Delete this media item and its catalog? This cannot be undone.')) return
+    void window.discdock.media.delete(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const beginScanWithPath = (mediaId: number, rootPath: string): void => {
+    void window.discdock.scan.start(mediaId, rootPath).then((startResult) => {
+      if (startResult.ok) {
+        const jobId = startResult.data.jobId
+        setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+        setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
+      }
+    })
+  }
+
+  const handleScan = (mediaId: number): void => {
+    void window.discdock.dialogs.pickFolder().then((pickResult) => {
+      if (!pickResult.ok || !pickResult.data.path) return
+      beginScanWithPath(mediaId, pickResult.data.path)
+    })
+  }
+
+  const handleCancel
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34068,6 +32029,52 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app for a final smoke test
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=0198ed7a-29a6-45f5-ad46-c932f1270c44
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="0198ed7a-29a6-45f5-ad46-c932f1270c44" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="0198ed7a-29a6-45f5-ad46-c932f1270c44" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -34080,4 +32087,365 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **kill_terminal**</summary>
 
 Killed terminal
+
+**Input:**
+
+- id: `0198ed7a-29a6-45f5-ad46-c932f1270c44`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 0198ed7a-29a6-45f5-ad46-c932f1270c44. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the multi-select batch actions feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=9fc1d0e2-237d-4dc8-90c1-6837a4e554f6). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  386G   48G  89% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  src/views/MediaLibrary.css
+M  src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+48G free, healthy.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Add multi-select \(checkboxes, Shift\+Click range\) and batch Lo...`
+
+Commit and push the multi-select batch actions feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Add multi-select (checkboxes, Shift+Click range) and batch Location/Retire/Delete actions to Media Library" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Add multi-select (checkboxes, Shift+Click range) and batch Location/Retire/Delete actions to Media Library" 2>&1 | tail -20 && git push 2>&1` (terminal ID=637e9ee4-e762-497f-a499-c12abc5a9615). This is the output of running that command instead:
+[main 33f5b38] Add multi-select (checkboxes, Shift+Click range) and batch Locati
+on/Retire/Delete actions to Media Library
+ 4 files changed, 825 insertions(+), 13 deletions(-)
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 6.29 KiB | 460.00 KiB/s, done.
+Total 10 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   5500750..33f5b38  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (48G free, healthy).
+
+**Implemented: Multi-select + batch actions in Media Library**
+- New checkbox column with a header "Select All/None" checkbox
+- Row checkbox click: plain click toggles that row; **Shift+Click** selects the contiguous range from the last-clicked row to the current one (standard file-manager convention)
+- Selected rows are visually highlighted
+- Batch action bar appears whenever ≥1 row is selected, with:
+  - **Set Container** — text input with the same autocomplete suggestions as the single-item editor, applies to all selected items
+  - **Retire Selected**
+  - **Delete Selected** (confirmation dialog, irreversible warning)
+  - **Clear Selection**
+- All batch operations reuse the existing per-item // IPC via  (no new backend endpoints needed given the scale involved), then reload the list and clear selection
+
+Given the last incident, I did a deliberate top-to-bottom review of the component's declaration order this time (not just the new code) to rule out any temporal-dead-zone issues before calling it done — confirmed all new handlers only reference //etc. inside callbacks that execute after the full render pass, not directly in initializer expressions like the previous bug. Build is clean and the app launches without errors.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Add multi-select functionality with checkboxes* (1/3)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 19:51:48Z)**_
+
+One the Media Library page, if a media is present the list should indicate that visually by changing the background color of the list item. This should happen for all media registered and present.
+Also, let's add an Eject button to the list items so the user does not have to acces it from the Dashboard.
+
+---
+
+_**Agent (copilot/auto)**_
+
+Let's add device-presence detection (reusing the same fingerprint-matching pattern from Dashboard) with a visual row indicator, plus an Eject action directly in Media Library rows.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 1 to 50
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's find the  state declaration and add a `findDeviceForItem` helper plus eject state right after it:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `const [devices, setDevices]` (`**/src/views/MediaLibrary.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 66 to 140
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 82-82 @@
+
+```
+
+  const findDeviceForItem = (item: MediaItem): DetectedDevice | undefined =>
+    devices.find((d) => item.deviceFingerprint && (d.uuid ?? d.devicePath) === item.deviceFingerprint)
+
+  const [ejectingIds, setEjectingIds] = useState<Set<number>>(new Set())
+  const [ejectMessage, setEjectMessage] = useState<string | null>(null)
+
+  const handleEject = (item: MediaItem, device: DetectedDevice): void => {
+    setEjectingIds((prev) => new Set(prev).add(item.id))
+    setEjectMessage(null)
+    void window.discdock.devices.eject(device.devicePath, device.isOptical).then((result) => {
+      setEjectingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        return next
+      })
+      setEjectMessage(result.ok ? `${item.label}: ${result.data.message}` : `Eject failed: ${result.error.message}`)
+    })
+  }
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's update the render to add the row background indicator and the Eject button:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `selectedIds.has(item.id) ? 'media-table__row--selected'` (`**/src/views/MediaLibrary.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 478 to 560
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 556-556 @@
+
+```
+  {presentDevice && (
+                      <button
+                        type="button"
+                        className="button button--small"
+                        disabled={ejectingIds.has(item.id)}
+                        onClick={() => handleEject(item, presentDevice)}
+                      >
+                        {ejectingIds.has(item.id)
+                          ? 'Ejecting…'
+                          : presentDevice.isOptical
+                            ? 'Eject'
+                            : 'Safely Remove'}
+                      </button>
+                    )}
+                  
+```
+
+@@ lines 484-485 @@
+
+```
+const presentDevice = findDeviceForItem(item)
+              const rowClasses = [
+                selectedIds.has(item.id) ? 'media-table__row--selected' : '',
+                presentDevice ? 'media-table__row--present' : ''
+              ]
+                .filter(Boolean)
+                .join(' ')
+              return (
+                <tr key={item.id} className={rowClasses
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's add the eject message display above the table, and the CSS for the "present" row highlight:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `selectedIds.size > 0 && (` (`**/src/views/MediaLibrary.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 430 to 436
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 434-434 @@
+
+```
+ejectMessage && <p className="media-library__eject-message">{ejectMessage}</p>}
+
+          {
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the CSS:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `.media-table__row--selected` (`**/src/views/MediaLibrary.css`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.css`, lines 150 to 158
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.css**</summary>
+
+@@ lines 157-157 @@
+
+```
+row--present {
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+.media-table__row--present.media-table__row--selected {
+  background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
+.media-library__eject-message {
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--color-accent);
+}
+
+.media-table__
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's check for errors, verify integrity, and build.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `MediaLibrary.tsx`, 2 problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Same known non-blocking IDE quirk. Verify content and build:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's do a live launch smoke test.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
 </details></tool-use>

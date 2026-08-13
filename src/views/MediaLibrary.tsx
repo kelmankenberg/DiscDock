@@ -80,6 +80,25 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     return sortAsc ? result : -result
   })
 
+  const findDeviceForItem = (item: MediaItem): DetectedDevice | undefined =>
+    devices.find((d) => item.deviceFingerprint && (d.uuid ?? d.devicePath) === item.deviceFingerprint)
+
+  const [ejectingIds, setEjectingIds] = useState<Set<number>>(new Set())
+  const [ejectMessage, setEjectMessage] = useState<string | null>(null)
+
+  const handleEject = (item: MediaItem, device: DetectedDevice): void => {
+    setEjectingIds((prev) => new Set(prev).add(item.id))
+    setEjectMessage(null)
+    void window.discdock.devices.eject(device.devicePath, device.isOptical).then((result) => {
+      setEjectingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        return next
+      })
+      setEjectMessage(result.ok ? `${item.label}: ${result.data.message}` : `Eject failed: ${result.error.message}`)
+    })
+  }
+
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null)
   const [batchLocationValue, setBatchLocationValue] = useState('')
@@ -412,6 +431,8 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
             </div>
           )}
 
+          {ejectMessage && <p className="media-library__eject-message">{ejectMessage}</p>}
+
           {selectedIds.size > 0 && (
             <div className="batch-actions">
               <span className="batch-actions__count">{selectedIds.size} selected</span>
@@ -462,8 +483,15 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
           <tbody>
             {sortedItems.map((item, index) => {
               const scan = scansByMedia[item.id]
+              const presentDevice = findDeviceForItem(item)
+              const rowClasses = [
+                selectedIds.has(item.id) ? 'media-table__row--selected' : '',
+                presentDevice ? 'media-table__row--present' : ''
+              ]
+                .filter(Boolean)
+                .join(' ')
               return (
-                <tr key={item.id} className={selectedIds.has(item.id) ? 'media-table__row--selected' : ''}>
+                <tr key={item.id} className={rowClasses}>
                   <td>
                     <input
                       type="checkbox"
@@ -534,6 +562,20 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                     >
                       Delete
                     </button>
+                    {presentDevice && (
+                      <button
+                        type="button"
+                        className="button button--small"
+                        disabled={ejectingIds.has(item.id)}
+                        onClick={() => handleEject(item, presentDevice)}
+                      >
+                        {ejectingIds.has(item.id)
+                          ? 'Ejecting…'
+                          : presentDevice.isOptical
+                            ? 'Eject'
+                            : 'Safely Remove'}
+                      </button>
+                    )}
                   </td>
                 </tr>
               )

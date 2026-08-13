@@ -154,6 +154,20 @@
   background: var(--color-sidebar-hover);
 }
 
+.media-table__row--present {
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+.media-table__row--present.media-table__row--selected {
+  background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
+.media-library__eject-message {
+  margin: 8px 0;
+  font-size: 13px;
+  color: var(--color-accent);
+}
+
 .media-table__actions {
   display: flex;
   gap: 6px;
