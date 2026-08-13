@@ -14172,22 +14172,130 @@ continue with what is the next logical step
 
 _**Agent (copilot/auto)**_
 
+<think><details><summary>Thought Process</summary>
+These are pre-existing IDE-only quirks (same non-blocking pattern seen earlier — Vite build doesn't type-check `src/`). Let's verify with a real build:
+</details></think>
+
+_**Agent (copilot/auto)**_
+
 Next up: the **scanning engine** (Epic 2) — the core cataloging feature. I'll implement it as an async, yielding walk in the main process (not a full worker-thread yet — noting that simplification), with progress/cancel IPC, DB diffing, and a "Scan" action wired into the Media Library.  
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 1 to 70
+
+**Input:**
+
+- endLine: `70`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+// Shared type contracts between main, preload, and renderer processes.
+
+export interface IpcOk<T> {
+  ok: true
+  data: T
+}
+
+export interface IpcErr {
+  ok: false
+  error: { code: string; message: string }
+}
+
+export type IpcResult<T> = IpcOk<T> | IpcErr
+
+export interface WindowState {
+  maximized: boolean
+}
+
+export type MediaType =
+  | 'cd'
+  | 'dvd'
+  | 'bluray'
+  | 'usb_drive'
+  | 'external_hdd'
+  | 'external_ssd'
+  | 'sd_card'
+  | 'network_share'
+  | 'other'
+
+export const MEDIA_TYPES: { value: MediaType; label: string }[] = [
+  { value: 'cd', label: 'CD' },
+  { value: 'dvd', label: 'DVD' },
+  { value: 'bluray', label: 'Blu-ray' },
+  { value: 'usb_drive', label: 'USB Flash Drive' },
+  { value: 'external_hdd', label: 'External HDD' },
+  { value: 'external_ssd', label: 'External SSD' },
+  { value: 'sd_card', label: 'SD Card' },
+  { value: 'network_share', label: 'Network Share' },
+  { value: 'other', label: 'Other' }
+]
+
+export interface MediaItem {
+  id: number
+  label: string
+  mediaType: MediaType
+  deviceFingerprint: string | null
+  capacityBytes: number | null
+  physicalLocation: string | null
+  notes: string | null
+  status: 'active' | 'retired' | 'lost'
+  createdAt: string
+  lastScannedAt: string | null
+  lastVerifiedAt: string | null
+}
+
+export interface MediaItemInput {
+  label: string
+  mediaType: MediaType
+  capacityBytes: number | null
+  physicalLocation: string | null
+  notes: string | null
+  deviceFingerprint?: string | null
+}
+
+export interface DetectedDevice {
+  devicePath: string
+  label: string | null
+  fsType: string | null
+  mountPoint: string
+  sizeBytes: number | null
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 70 to 80
+
+**Input:**
+
+- endLine: `80`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `70`
+
+**Result:**
+
+```
+  sizeBytes: number | null
+  uuid: string | null
+}
+
+export interface DashboardSummary {
+  totalMediaItems: number
+  totalFiles: number
+  totalSizeBytes: number
+  mediaNeedingVerification: number
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -14251,10 +14359,195 @@ Now the scan repository (DB layer for scan_job, scan_error, file_record diffing)
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `scanRepository.ts`
+
+**Input:**
+
+- content:
+
+```
+import { getDb } from './index'
+import type { HashMode, ScanJob, ScanStatus } from '../../shared/types'
+
+interface ScanJobRow {
+  id: number
+  media_item_id: number
+  status: string
+  hash_mode: string
+  started_at: string
+  completed_at: string | null
+  files_added: number
+  files_removed: number
+  files_modified: number
+  files_unchanged: number
+  error_count: number
+}
+
+function toScanJob(row: ScanJobRow): ScanJob {
+  return {
+    id: row.id,
+    mediaItemId: row.media_item_id,
+    status: row.status as ScanStatus,
+    hashMode: row.hash_mode as HashMode,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    filesAdded: row.files_added,
+    filesRemoved: row.files_removed,
+    filesModified: row.files_modified,
+    filesUnchanged: row.files_unchanged,
+    errorCount: row.error_count
+  }
+}
+
+export function createScanJob(mediaItemId: number, hashMode: HashMode): ScanJob {
+  const result = getDb()
+    .prepare(
+      `INSERT INTO scan_job (media_item_id, status, hash_mode) VALUES (?, 'running', ?)`
+    )
+    .run(mediaItemId, hashMode)
+  return getScanJob(Number(result.lastInsertRowid))!
+}
+
+export function getScanJob(id: number): ScanJob | null {
+  const row = getDb().prepare('SELECT * FROM scan_job WHERE id = ?').get(id) as
+    | ScanJobRow
+    | undefined
+  return row ? toScanJob(row) : null
+}
+
+export function listScanJobsForMedia(mediaItemId: number): ScanJob[] {
+  const rows = getDb()
+    .prepare('SELECT * FROM scan_job WHERE media_item_id = ? ORDER BY started_at DESC')
+    .all(mediaItemId) as ScanJobRow[]
+  return rows.map(toScanJob)
+}
+
+export function finalizeScanJob(
+  id: number,
+  status: ScanStatus,
+  counts: {
+    filesAdded: number
+    filesRemoved: number
+    filesModified: number
+    filesUnchanged: number
+    errorCount: number
+  }
+): void {
+  getDb()
+    .prepare(
+      `UPDATE scan_job
+       SET status = @status, completed_at = datetime('now'), files_added = @filesAdded,
+           files_removed = @filesRemoved, files_modified = @filesModified,
+           files_unchanged = @filesUnchanged, error_count = @errorCount
+       WHERE id = @id`
+    )
+    .run({ id, status, ...counts })
+}
+
+export function recordScanError(scanJobId: number, path: string, errorType: string, message: string): void {
+  getDb()
+    .prepare('INSERT INTO scan_error (scan_job_id, path, error_type, message) VALUES (?, ?, ?, ?)')
+    .run(scanJobId, path, errorType, message)
+}
+
+export function markMediaScanned(mediaItemId: number, verified: boolean): void {
+  const db = getDb()
+  if (verified) {
+    db.prepare(
+      "UPDATE media_item SET last_scanned_at = datetime('now'), last_verified_at = datetime('now') WHERE id = ?"
+    ).run(mediaItemId)
+  } else {
+    db.prepare("UPDATE media_item SET last_scanned_at = datetime('now') WHERE id = ?").run(mediaItemId)
+  }
+}
+
+export interface WalkedFile {
+  path: string
+  name: string
+  extension: string | null
+  kind: string
+  sizeBytes: number
+  isDirectory: boolean
+  createdAtSrc: string | null
+  modifiedAtSrc: string | null
+  hashAlgo: string | null
+  hashValue: string | null
+}
+
+interface ExistingFileRow {
+  id: number
+  size_bytes: number
+  modified_at_src: string | null
+  hash_value: string | null
+}
+
+/**
+ * Upserts a single walked file/folder against the prior catalog snapshot for this media item,
+ * classifying it as added/modified/unchanged. Removed-file detection happens after the walk
+ * completes (see pruneUnseenFiles) by comparing last_seen_scan_id.
+ */
+export function upsertFileRecord(
+  mediaItemId: number,
+  scanJobId: number,
+  file: WalkedFile
+): 'added' | 'modified' | 'unchanged' {
+  const db = getDb()
+  const existing = db
+    .prepare('SELECT id, size_bytes, modified_at_src, hash_value FROM file_record WHERE media_item_id = ? AND path = ?')
+    .get(mediaItemId, file.path) as ExistingFileRow | undefined
+
+  if (!existing) {
+    db.prepare(
+      `INSERT INTO file_record
+         (media_item_id, path, name, extension, kind, size_bytes, created_at_src, modified_at_src,
+          hash_algo, hash_value, is_directory, last_seen_scan_id)
+       VALUES (@mediaItemId, @path, @name, @extension, @kind, @sizeBytes, @createdAtSrc, @modifiedAtSrc,
+               @hashAlgo, @hashValue, @isDirectory, @scanJobId)`
+    ).run({
+      mediaItemId,
+      scanJobId,
+      ...file,
+      isDirectory: file.isDirectory ? 1 : 0
+    })
+    return 'added'
+  }
+
+  const changed =
+    existing.size_bytes !== file.sizeBytes ||
+    existing.modified_at_src !== file.modifiedAtSrc ||
+    (file.hashValue !== null && existing.hash_value !== file.hashValue)
+
+  db.prepare(
+    `UPDATE file_record
+     SET size_bytes = @sizeBytes, created_at_src = @createdAtSrc, modified_at_src = @modifiedAtSrc,
+         hash_algo = @hashAlgo, hash_value = @hashValue, last_seen_scan_id = @scanJobId
+     WHERE id = @id`
+  ).run({ id: existing.id, scanJobId, ...file })
+
+  return changed ? 'modified' : 'unchanged'
+}
+
+/** Deletes file_record rows for this media item not touched by the given scan job (i.e. removed from disk). */
+export function pruneUnseenFiles(mediaItemId: number, scanJobId: number): number {
+  const result = getDb()
+    .prepare('DELETE FROM file_record WHERE media_item_id = ? AND (last_seen_scan_id IS NULL OR last_seen_scan_id != ?)')
+    .run(mediaItemId, scanJobId)
+  return result.changes
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/db/scanRepository.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/db/scanRepository.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -14443,10 +14736,47 @@ Now the file-kind classifier and the scan engine (async walk + hashing):
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `fileKind.ts`
+
+**Input:**
+
+- content:
+
+```
+import path from 'node:path'
+
+const KIND_BY_EXTENSION: Record<string, string> = {
+  jpg: 'image', jpeg: 'image', png: 'image', gif: 'image', bmp: 'image', webp: 'image', svg: 'image', heic: 'image',
+  mp4: 'video', mkv: 'video', avi: 'video', mov: 'video', wmv: 'video', webm: 'video', m4v: 'video',
+  mp3: 'audio', flac: 'audio', wav: 'audio', aac: 'audio', ogg: 'audio', m4a: 'audio',
+  pdf: 'document', doc: 'document', docx: 'document', txt: 'document', rtf: 'document', odt: 'document',
+  xls: 'document', xlsx: 'document', ppt: 'document', pptx: 'document', csv: 'document',
+  zip: 'archive', rar: 'archive', '7z': 'archive', tar: 'archive', gz: 'archive', iso: 'archive'
+}
+
+export function classifyKind(extension: string | null): string {
+  if (!extension) return 'other'
+  return KIND_BY_EXTENSION[extension.toLowerCase()] ?? 'other'
+}
+
+export function getExtension(fileName: string): string | null {
+  const ext = path.extname(fileName).replace(/^\./, '')
+  return ext ? ext : null
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/scanning/fileKind.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/scanning/fileKind.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -14491,10 +14821,166 @@ Created 3 todos
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `scanEngine.ts`
+
+**Input:**
+
+- content:
+
+```
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import crypto from 'node:crypto'
+import { createReadStream } from 'node:fs'
+import type { HashMode } from '../../shared/types'
+import { classifyKind, getExtension } from './fileKind'
+import type { WalkedFile } from '../db/scanRepository'
+
+const QUICK_HASH_SAMPLE_BYTES = 65536
+const PROGRESS_YIELD_EVERY = 200
+
+export interface ScanCallbacks {
+  onFile: (file: WalkedFile) => void
+  onProgress: (filesProcessed: number, bytesProcessed: number, currentPath: string) => void
+  onError: (relativePath: string, errorType: string, message: string) => void
+  isCancelled: () => boolean
+}
+
+async function hashFile(absolutePath: string, mode: HashMode, size: number): Promise<string | null> {
+  if (mode === 'none') return null
+
+  if (mode === 'quick') {
+    const handle = await fs.open(absolutePath, 'r')
+    try {
+      const buffer = Buffer.alloc(Math.min(QUICK_HASH_SAMPLE_BYTES, size))
+      await handle.read(buffer, 0, buffer.length, 0)
+      const hash = crypto.createHash('sha256')
+      hash.update(buffer)
+      hash.update(String(size))
+      return hash.digest('hex')
+    } finally {
+      await handle.close()
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256')
+    const stream = createReadStream(absolutePath)
+    stream.on('data', (chunk) => hash.update(chunk))
+    stream.on('end', () => resolve(hash.digest('hex')))
+    stream.on('error', reject)
+  })
+}
+
+/**
+ * Iteratively walks rootPath (stack-based, no recursion) so deep trees can't overflow the call stack.
+ * Runs on the main process event loop but yields periodically so IPC/UI stay responsive (v0.1.0
+ * simplification — see roadmap for moving this to a worker_thread/utility process).
+ */
+export async function walkAndScan(
+  rootPath: string,
+  hashMode: HashMode,
+  callbacks: ScanCallbacks
+): Promise<{ filesProcessed: number; bytesProcessed: number }> {
+  const stack: string[] = [rootPath]
+  let filesProcessed = 0
+  let bytesProcessed = 0
+  let sinceYield = 0
+
+  while (stack.length > 0) {
+    if (callbacks.isCancelled()) break
+    const currentDir = stack.pop() as string
+
+    let entries: string[]
+    try {
+      entries = await fs.readdir(currentDir)
+    } catch (err) {
+      callbacks.onError(currentDir, 'read_dir_failed', (err as Error).message)
+      continue
+    }
+
+    for (const entryName of entries) {
+      if (callbacks.isCancelled()) break
+      const absolutePath = path.join(currentDir, entryName)
+      const relativePath = path.relative(rootPath, absolutePath)
+
+      let stat
+      try {
+        stat = await fs.lstat(absolutePath)
+      } catch (err) {
+        callbacks.onError(relativePath, 'stat_failed', (err as Error).message)
+        continue
+      }
+
+      if (stat.isSymbolicLink()) continue // symlinks not followed by default (FR-2.5)
+
+      if (stat.isDirectory()) {
+        stack.push(absolutePath)
+        callbacks.onFile({
+          path: relativePath,
+          name: entryName,
+          extension: null,
+          kind: 'folder',
+          sizeBytes: 0,
+          isDirectory: true,
+          createdAtSrc: stat.birthtime?.toISOString() ?? null,
+          modifiedAtSrc: stat.mtime?.toISOString() ?? null,
+          hashAlgo: null,
+          hashValue: null
+        })
+        continue
+      }
+
+      const extension = getExtension(entryName)
+      let hashValue: string | null = null
+      try {
+        hashValue = await hashFile(absolutePath, hashMode, stat.size)
+      } catch (err) {
+        callbacks.onError(relativePath, 'hash_failed', (err as Error).message)
+      }
+
+      callbacks.onFile({
+        path: relativePath,
+        name: entryName,
+        extension,
+        kind: classifyKind(extension),
+        sizeBytes: stat.size,
+        isDirectory: false,
+        createdAtSrc: stat.birthtime?.toISOString() ?? null,
+        modifiedAtSrc: stat.mtime?.toISOString() ?? null,
+        hashAlgo: hashMode === 'none' ? null : hashMode === 'quick' ? 'quick' : 'sha256',
+        hashValue
+      })
+
+      filesProcessed += 1
+      bytesProcessed += stat.size
+      sinceYield += 1
+
+      if (sinceYield >= PROGRESS_YIELD_EVERY) {
+        sinceYield = 0
+        callbacks.onProgress(filesProcessed, bytesProcessed, relativePath)
+        await new Promise((resolve) => setImmediate(resolve))
+      }
+    }
+  }
+
+  callbacks.onProgress(filesProcessed, bytesProcessed, rootPath)
+  return { filesProcessed, bytesProcessed }
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -14654,18 +15140,209 @@ Now the scan manager (job queue, orchestration, DB writes, event forwarding):
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Create File
+
+**Input:**
+
+- content:
+
+```
+import { BrowserWindow } from 'electron'
+import { walkAndScan } from './scanEngine'
+import {
+  createScanJob,
+  finalizeScanJob,
+  markMediaScanned,
+  pruneUnseenFiles,
+  recordScanError,
+  upsertFileRecord
+} from '../db/scanRepository'
+import type { HashMode, ScanProgress } from '../../shared/types'
+
+interface ActiveJob {
+  cancelled: boolean
+}
+
+const activeJobs = new Map<number, ActiveJob>()
+let win: BrowserWindow | null = null
+
+export function initScanManager(mainWindow: BrowserWindow): void {
+  win = mainWindow
+}
+
+export function cancelScan(jobId: number): boolean {
+  const job = activeJobs.get(jobId)
+  if (!job) return false
+  job.cancelled = true
+  return true
+}
+
+export async function startScan(mediaItemId: number, rootPath: string, hashMode: HashMode): Promise<number> {
+  const job = createScanJob(mediaItemId, hashMode)
+  const state: ActiveJob = { cancelled: false }
+  activeJobs.set(job.id, state)
+
+  let filesAdded = 0
+  let filesModified = 0
+  let filesUnchanged = 0
+  let errorCount = 0
+
+  try {
+    await walkAndScan(rootPath, hashMode, {
+      onFile: (file) => {
+        const outcome = upsertFileRecord(mediaItemId, job.id, file)
+        if (outcome === 'added') filesAdded += 1
+        else if (outcome === 'modified') filesModified += 1
+        else filesUnchanged += 1
+      },
+      onProgress: (filesProcessed, bytesProcessed, currentPath) => {
+        const progress: ScanProgress = { jobId: job.id, filesProcessed, bytesProcessed, currentPath }
+        win?.webContents.send('scan:progress', progress)
+      },
+      onError: (relativePath, errorType, message) => {
+        errorCount += 1
+        recordScanError(job.id, relativePath, errorType, message)
+      },
+      isCancelled: () => state.cancelled
+    })
+
+    const filesRemoved = pruneUnseenFiles(mediaItemId, job.id)
+    const status = state.cancelled ? 'cancelled' : 'completed'
+    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
+    finalizeScanJob(job.id, status, counts)
+    markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0 && !state.cancelled)
+
+    if (status === 'completed') {
+      win?.webContents.send('scan:completed', { jobId: job.id, summary: counts })
+    } else {
+      win?.webContents.send('scan:cancelled', { jobId: job.id })
+    }
+  } catch (err) {
+    finalizeScanJob(job.id, 'failed', { filesAdded, filesRemoved: 0, filesModified, filesUnchanged, errorCount })
+    win?.webContents.send('scan:failed', { jobId: job.id, error: (err as Error).message })
+  } finally {
+    activeJobs.delete(job.id)
+  }
+
+  return job.id
+}
+
+```
+
+
+**Result:**
+
+```
+ERROR: Your input to the tool was invalid (must have required property 'filePath')
+Please check your input and try again.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `scanManager.ts`
+
+**Input:**
+
+- content:
+
+```
+import { BrowserWindow } from 'electron'
+import { walkAndScan } from './scanEngine'
+import {
+  createScanJob,
+  finalizeScanJob,
+  markMediaScanned,
+  pruneUnseenFiles,
+  recordScanError,
+  upsertFileRecord
+} from '../db/scanRepository'
+import type { HashMode, ScanProgress } from '../../shared/types'
+
+interface ActiveJob {
+  cancelled: boolean
+}
+
+const activeJobs = new Map<number, ActiveJob>()
+let win: BrowserWindow | null = null
+
+export function initScanManager(mainWindow: BrowserWindow): void {
+  win = mainWindow
+}
+
+export function cancelScan(jobId: number): boolean {
+  const job = activeJobs.get(jobId)
+  if (!job) return false
+  job.cancelled = true
+  return true
+}
+
+export async function startScan(mediaItemId: number, rootPath: string, hashMode: HashMode): Promise<number> {
+  const job = createScanJob(mediaItemId, hashMode)
+  const state: ActiveJob = { cancelled: false }
+  activeJobs.set(job.id, state)
+
+  let filesAdded = 0
+  let filesModified = 0
+  let filesUnchanged = 0
+  let errorCount = 0
+
+  try {
+    await walkAndScan(rootPath, hashMode, {
+      onFile: (file) => {
+        const outcome = upsertFileRecord(mediaItemId, job.id, file)
+        if (outcome === 'added') filesAdded += 1
+        else if (outcome === 'modified') filesModified += 1
+        else filesUnchanged += 1
+      },
+      onProgress: (filesProcessed, bytesProcessed, currentPath) => {
+        const progress: ScanProgress = { jobId: job.id, filesProcessed, bytesProcessed, currentPath }
+        win?.webContents.send('scan:progress', progress)
+      },
+      onError: (relativePath, errorType, message) => {
+        errorCount += 1
+        recordScanError(job.id, relativePath, errorType, message)
+      },
+      isCancelled: () => state.cancelled
+    })
+
+    const filesRemoved = pruneUnseenFiles(mediaItemId, job.id)
+    const status = state.cancelled ? 'cancelled' : 'completed'
+    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
+    finalizeScanJob(job.id, status, counts)
+    markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0 && !state.cancelled)
+
+    if (status === 'completed') {
+      win?.webContents.send('scan:completed', { jobId: job.id, summary: counts })
+    } else {
+      win?.webContents.send('scan:cancelled', { jobId: job.id })
+    }
+  } catch (err) {
+    finalizeScanJob(job.id, 'failed', { filesAdded, filesRemoved: 0, filesModified, filesUnchanged, errorCount })
+    win?.webContents.send('scan:failed', { jobId: job.id, error: (err as Error).message })
+  } finally {
+    activeJobs.delete(job.id)
+  }
+
+  return job.id
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/scanning/scanManager.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/scanning/scanManager.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -14765,10 +15442,72 @@ Now the IPC layer for scans and a folder-picker dialog:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `scan.ts`
+
+**Input:**
+
+- content:
+
+```
+import { ipcMain } from 'electron'
+import { cancelScan, startScan } from '../scanning/scanManager'
+import { listScanJobsForMedia } from '../db/scanRepository'
+import type { HashMode, IpcResult, ScanJob } from '../../shared/types'
+
+export function registerScanIpc(): void {
+  ipcMain.handle('scan:start', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
+    const { mediaId, rootPath, hashMode } = (payload ?? {}) as {
+      mediaId?: unknown
+      rootPath?: unknown
+      hashMode?: unknown
+    }
+
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    if (typeof rootPath !== 'string' || !rootPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A rootPath is required' } }
+    }
+    const validModes: HashMode[] = ['none', 'quick', 'full']
+    const mode = validModes.includes(hashMode as HashMode) ? (hashMode as HashMode) : 'none'
+
+    // Fire-and-forget: progress/completion are streamed via scan:progress/scan:completed/scan:failed events.
+    const jobIdPromise = startScan(mediaId, rootPath, mode)
+    void jobIdPromise
+
+    return { ok: true, data: { jobId: -1 } }
+  })
+
+  ipcMain.handle('scan:cancel', (_event, payload: unknown): IpcResult<{ cancelled: boolean }> => {
+    const jobId = (payload as { jobId?: unknown })?.jobId
+    if (typeof jobId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric jobId is required' } }
+    }
+    return { ok: true, data: { cancelled: cancelScan(jobId) } }
+  })
+
+  ipcMain.handle('scan:history', (_event, payload: unknown): IpcResult<ScanJob[]> => {
+    const mediaId = (payload as { mediaId?: unknown })?.mediaId
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    return { ok: true, data: listScanJobsForMedia(mediaId) }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/scan.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/scan.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -15048,10 +15787,39 @@ const jobId = startScan(mediaId, rootPath, mode)
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `dialogs.ts`
+
+**Input:**
+
+- content:
+
+```
+import { BrowserWindow, dialog, ipcMain } from 'electron'
+import type { IpcResult } from '../../shared/types'
+
+export function registerDialogIpc(win: BrowserWindow): void {
+  ipcMain.handle('dialog:pickFolder', async (): Promise<IpcResult<{ path: string | null }>> => {
+    const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] })
+    if (result.canceled || result.filePaths.length === 0) {
+      return { ok: true, data: { path: null } }
+    }
+    return { ok: true, data: { path: result.filePaths[0] } }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/dialogs.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/dialogs.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -15084,10 +15852,63 @@ Now wire everything into `main.ts`, and expose the new APIs in `preload.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `main.ts`, lines 1 to 42
+
+**Input:**
+
+- endLine: `42`
+- filePath: `/home/kel/dev/DiscDock/electron/main.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { createMainWindow } from './window/createWindow'
+import { registerWindowControlIpc } from './ipc/windowControls'
+import { registerDashboardIpc } from './ipc/dashboard'
+import { registerMediaIpc } from './ipc/media'
+import { registerDeviceIpc, startDeviceWatcher, stopDeviceWatcher } from './ipc/devices'
+import { getDb, closeDb } from './db'
+import type { IpcResult } from '../shared/types'
+
+let mainWindow: BrowserWindow | null = null
+
+function registerAppIpc(): void {
+  ipcMain.handle('app:getVersion', (): IpcResult<string> => {
+    return { ok: true, data: app.getVersion() }
+  })
+}
+
+app.whenReady().then(() => {
+  getDb() // initialize database + run migrations before the window is shown
+
+  mainWindow = createMainWindow()
+  registerWindowControlIpc(mainWindow)
+  registerDashboardIpc()
+  registerMediaIpc()
+  registerDeviceIpc()
+  registerAppIpc()
+  startDeviceWatcher(mainWindow)
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      mainWindow = createMainWindow()
+      registerWindowControlIpc(mainWindow)
+    }
+  })
+})
+
+app.on('window-all-closed', () => {
+  stopDeviceWatcher()
+  closeDb()
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -15120,18 +15941,94 @@ Now update `preload.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 1 to 50
+
+**Input:**
+
+- endLine: `50`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { contextBridge, ipcRenderer } from 'electron'
+import type {
+  DashboardSummary,
+  DetectedDevice,
+  IpcResult,
+  MediaItem,
+  MediaItemInput,
+  WindowState
+} from '../shared/types'
+
+const api = {
+  window: {
+    minimize: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:minimize'),
+    maximize: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:maximize'),
+    close: (): Promise<IpcResult<null>> => ipcRenderer.invoke('window:close'),
+    isMaximized: (): Promise<IpcResult<WindowState>> => ipcRenderer.invoke('window:isMaximized'),
+    onStateChanged: (callback: (state: WindowState) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, state: WindowState): void => callback(state)
+      ipcRenderer.on('window:stateChanged', listener)
+      return () => ipcRenderer.removeListener('window:stateChanged', listener)
+    }
+  },
+  dashboard: {
+    getSummary: (): Promise<IpcResult<DashboardSummary>> => ipcRenderer.invoke('dashboard:summary')
+  },
+  media: {
+    list: (): Promise<IpcResult<MediaItem[]>> => ipcRenderer.invoke('media:list'),
+    get: (id: number): Promise<IpcResult<MediaItem>> => ipcRenderer.invoke('media:get', { id }),
+    create: (input: MediaItemInput): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:create', input),
+    update: (id: number, patch: Partial<MediaItemInput>): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:update', { id, patch }),
+    retire: (id: number): Promise<IpcResult<MediaItem>> => ipcRenderer.invoke('media:retire', { id }),
+    delete: (id: number): Promise<IpcResult<{ deleted: true }>> =>
+      ipcRenderer.invoke('media:delete', { id })
+  },
+  app: {
+    getVersion: (): Promise<IpcResult<string>> => ipcRenderer.invoke('app:getVersion')
+  },
+  devices: {
+    list: (): Promise<IpcResult<DetectedDevice[]>> => ipcRenderer.invoke('devices:list'),
+    onConnected: (callback: (device: DetectedDevice) => void): (() => void) => {
+      const listener =
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 50 to 60
+
+**Input:**
+
+- endLine: `62`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `50`
+
+**Result:**
+
+```
+        callback(payload.devicePath)
+      ipcRenderer.on('devices:disconnected', listener)
+      return () => ipcRenderer.removeListener('devices:disconnected', listener)
+    }
+  }
+}
+
+contextBridge.exposeInMainWorld('discdock', api)
+
+export type DiscDockApi = typeof api
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -15195,18 +16092,139 @@ Now let's wire the Media Library UI with Scan action + inline progress:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 1 to 30
+
+**Input:**
+
+- endLine: `30`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { MediaItem, MediaItemInput, MediaType } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+export default function MediaLibrary(): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 30 to 168
+
+**Input:**
+
+- endLine: `180`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `30`
+
+**Result:**
+
+```
+  useEffect(loadItems, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    setError(null)
+    void window.discdock.media.create(form).then((result) => {
+      if (result.ok) {
+        setForm(EMPTY_FORM)
+        setShowForm(false)
+        loadItems()
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleRetire = (id: number): void => {
+    void window.discdock.media.retire(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const handleDelete = (id: number): void => {
+    if (!window.confirm('Delete this media item and its catalog? This cannot be undone.')) return
+    void window.discdock.media.delete(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  return (
+    <div className="media-library">
+      <div className="media-library__header">
+        <h1>Media Library</h1>
+        <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
+          Add Media
+        </button>
+      </div>
+
+      {showForm && (
+        <form className="media-form" onSubmit={handleSubmit}>
+          {error && <div className="media-form__error">{error}</div>}
+          <label>
+            Label
+            <input
+              type="text"
+              value={form.label}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Media Type
+            <select
+              value={form.mediaType}
+              onChange={(e) => setForm({ ...form, mediaType: e.target.value as MediaType })}
+            >
+              {MEDIA_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Physical Location
+            <input
+              type="text"
+              value={form.physicalLocation ?? 
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -15545,18 +16563,52 @@ export default function MediaLibrary(): JSX.Element {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.css`, lines 69 to 69
+
+**Input:**
+
+- endLine: `95`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.css`
+- startLine: `85`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":1,"references":[{"anchor":{"$mid":1,"external":"file:///home/kel/dev/DiscDock/src/views/MediaLibrary.css","fsPath":"/home/kel/dev/DiscDock/src/views/MediaLibrary.css","path":"/home/kel/dev/DiscDock/src/views/MediaLibrary.css","scheme":"file"},"options":{"isFromTool":true}}],"text":"","type":2}],"ctor":2,"ctorName":"h9e","props":{"priority":1},"references":[],"type":1}],"ctor":2,"ctorName":"xn","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"SPe","props":{},"references":[],"type":1}}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.css`, lines 55 to 65
+
+**Input:**
+
+- endLine: `65`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.css`
+- startLine: `55`
+
+**Result:**
+
+```
+  font-size: 13px;
+}
+
+.media-table th,
+.media-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.media-table__actions {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -15578,10 +16630,25 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `media-table__actions` (`**/src/views/MediaLibrary.css`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.css`
+- isRegexp: `false`
+- query: `media-table__actions`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "media-table__actions"
+
+src/views/MediaLibrary.css
+65:.media-table__actions {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -15590,10 +16657,73 @@ Good, no duplication. Now let's check for type errors and build:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `MediaLibrary.tsx`, `scanEngine.ts`, `scanManager.ts`, `scanRepository.ts`, `scan.ts`, `dialogs.ts`, `main.ts`, `preload.ts`, 2 problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx",
+  "/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts",
+  "/home/kel/dev/DiscDock/electron/scanning/scanManager.ts",
+  "/home/kel/dev/DiscDock/electron/db/scanRepository.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/scan.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/dialogs.ts",
+  "/home/kel/dev/DiscDock/electron/main.ts",
+  "/home/kel/dev/DiscDock/electron/preload.ts"
+]
+```
+
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import './MediaLibrary.css'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+This code at line 18
+```
+interface ActiveScan {
+```
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/scanning/scanManager.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/db/scanRepository.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/scan.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/dialogs.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/main.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/preload.ts">
+No errors found
+</errors>
+````
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -15614,6 +16744,29 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c electron/scanning/\*.ts electron/db/scanRepository.ts electron/ipc/scan...`
+
+Verify all new/edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/scanning/*.ts electron/db/scanRepository.ts electron/ipc/scan.ts electron/ipc/dialogs.ts src/views/MediaLibrary.tsx electron/main.ts electron/preload.ts shared/types.ts
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/scanning/*.ts electron/db/scanRepository.ts electron/ipc/scan.ts electron/ipc/dialogs.ts src/views/MediaLibrary.tsx electron/main.ts electron/preload.ts shared/types.ts` (terminal ID=b7d5c17e-a0e0-49cc-bcb0-ab535892552f). This is the output of running that command instead:
+  993 electron/scanning/fileKind.ts
+ 4460 electron/scanning/scanEngine.ts
+ 2829 electron/scanning/scanManager.ts
+ 5310 electron/db/scanRepository.ts
+ 1815 electron/ipc/scan.ts
+  539 electron/ipc/dialogs.ts
+ 8434 src/views/MediaLibrary.tsx
+ 1497 electron/main.ts
+ 4626 electron/preload.ts
+ 2423 shared/types.ts
+32926 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -15626,6 +16779,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80`
+
+Clean rebuild of renderer and electron main/preload with the new scanning engine
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -80
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80` (terminal ID=62e2db1d-8eeb-4306-bc68-3ef0fead4df5). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 25 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-xTy3Uv__.css    4.21 kB │ gzip:  1.25 kB
+dist/assets/index-lbkr3fXz.js   201.33 kB │ gzip: 63.21 kB
+
+✓ built in 245ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -15638,4 +16828,1416 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch the app to test the scanning feature end-to-end
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=f81d9433-e23d-4064-955a-7f2b5b598bae
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="f81d9433-e23d-4064-955a-7f2b5b598bae" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="f81d9433-e23d-4064-955a-7f2b5b598bae" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
 </details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's verify the core scan-walk logic directly with a lightweight Node test (no Electron/GUI needed), since we can't script the native folder-picker dialog:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && mkdir -p /tmp/scan-test/sub && echo "hello" > /...`
+
+Directly exercise the compiled scan engine walk logic against a temp directory tree to verify correctness without needing GUI interaction
+
+```bash
+cd /home/kel/dev/DiscDock && mkdir -p /tmp/scan-test/sub && echo "hello" > /tmp/scan-test/a.txt && echo "world12345" > /tmp/scan-test/sub/b.txt && node -e "
+const { walkAndScan } = require('./dist-electron/electron/scanning/scanEngine');
+(async () => {
+  const files = [];
+  const result = await walkAndScan('/tmp/scan-test', 'full', {
+    onFile: (f) => files.push(f),
+    onProgress: () => {},
+    onError: (p, t, m) => console.error('ERROR', p, t, m),
+    isCancelled: () => false
+  });
+  console.log(JSON.stringify({ result, files }, null, 2));
+})();
+"
+
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cd /home/kel/dev/DiscDock && mkdir -p /tmp/scan
+-test/sub && echo "hello" > /tmp/scan-test/a.txt && echo "world12345" > /tmp/sca
+n-test/sub/b.txt && node -e "
+const { walkAndScan } = require('./dist-electron/electron/scanning/scanEngine');
+ 
+(async () => {
+  const files = [];
+  const result = await walkAndScan('/tmp/scan-test', 'full', {
+    onFile: (f) => files.push(f),
+    onProgress: () => {},
+    onError: (p, t, m) => console.error('ERROR', p, t, m),
+    isCancelled: () => false
+  });
+  console.log(JSON.stringify({ result, files }, null, 2));
+})();
+"
+{
+  "result": {
+    "filesProcessed": 2,
+    "bytesProcessed": 17
+  },
+  "files": [
+    {
+      "path": "a.txt",
+      "name": "a.txt",
+      "extension": "txt",
+      "kind": "document",
+      "sizeBytes": 6,
+      "isDirectory": false,
+      "createdAtSrc": "2026-08-13T18:03:57.593Z",
+      "modifiedAtSrc": "2026-08-13T18:03:57.593Z",
+      "hashAlgo": "sha256",
+      "hashValue": "5891b5b522d5df086d0ff0b110fbd9d21bb4fc7163af34d08286a2e846f6
+be03"
+    },
+    {
+      "path": "sub",
+      "name": "sub",
+      "extension": null,
+      "kind": "folder",
+      "sizeBytes": 0,
+      "isDirectory": true,
+      "createdAtSrc": "2026-08-13T18:03:57.592Z",
+      "modifiedAtSrc": "2026-08-13T18:03:57.593Z",
+      "hashAlgo": null,
+      "hashValue": null
+    },
+    {
+      "path": "sub/b.txt",
+      "name": "b.txt",
+      "extension": "txt",
+      "kind": "document",
+      "sizeBytes": 11,
+      "isDirectory": false,
+      "createdAtSrc": "2026-08-13T18:03:57.593Z",
+      "modifiedAtSrc": "2026-08-13T18:03:57.593Z",
+      "hashAlgo": "sha256",
+      "hashValue": "b7be16c7cdff11c617dc38b25fbece0ff7488ca7163ab31d273de629791e
+729e"
+    }
+  ]
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The walk engine correctly recurses, classifies file kinds, computes SHA-256 hashes, and reports byte/file counts. Let's clean up test artifacts and close the app.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `f81d9433-e23d-4064-955a-7f2b5b598bae`
+
+**Result:**
+
+```
+Successfully killed persistent terminal f81d9433-e23d-4064-955a-7f2b5b598bae. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf /tmp/scan-test`
+
+Clean up the temporary test directory
+
+```bash
+rm -rf /tmp/scan-test
+```
+
+**Result:**
+
+```
+
+
+Command produced no output
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's commit and push.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes before committing the scanning engine feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=2b992172-ea6b-4c04-9c54-cbb87e8a6f40). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  386G   48G  89% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+A  electron/db/scanRepository.ts
+A  electron/ipc/dialogs.ts
+A  electron/ipc/scan.ts
+M  electron/main.ts
+M  electron/preload.ts
+A  electron/scanning/fileKind.ts
+A  electron/scanning/scanEngine.ts
+A  electron/scanning/scanManager.ts
+M  shared/types.ts
+M  src/views/MediaLibrary.css
+M  src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+48G free, healthy.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Implement scanning engine: recursive walk, hashing, diffing, ...`
+
+Commit and push the scanning engine feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Implement scanning engine: recursive walk, hashing, diffing, and Media Library scan UI" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Implement scanning engine: recursive walk, hashing, diffing, and Media Library scan UI" 2>&1 | tail -20 && git push 2>&1` (terminal ID=3e9cc49f-eddc-4deb-a6ab-654eb61b7a5a). This is the output of running that command instead:
+[main ae7720e] Implement scanning engine: recursive walk, hashing, diffing, and
+Media Library scan UI
+ 13 files changed, 2184 insertions(+), 30 deletions(-)
+ create mode 100644 electron/db/scanRepository.ts
+ create mode 100644 electron/ipc/dialogs.ts
+ create mode 100644 electron/ipc/scan.ts
+ create mode 100644 electron/scanning/fileKind.ts
+ create mode 100644 electron/scanning/scanEngine.ts
+ create mode 100644 electron/scanning/scanManager.ts
+Enumerating objects: 40, done.
+Counting objects: 100% (40/40), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (23/23), done.
+Writing objects: 100% (24/24), 17.83 KiB | 1.62 MiB/s, done.
+Total 24 (delta 9), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (9/9), completed with 9 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   d9e24ae..ae7720e  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (disk healthy at 48G free).
+
+**Implemented: Scanning Engine (Epic 2)**
+- `scanEngine.ts` — iterative (stack-based, no recursion) directory walk, `none`/`quick`/`full` hashing (SHA-256), symlinks not followed, periodic yielding so IPC stays responsive
+- `fileKind.ts` — extension → kind classifier (image/video/audio/document/archive/other)
+- `scanRepository.ts` — `scan_job`/`scan_error` CRUD + `file_record` upsert with added/modified/unchanged diffing, and pruning of files no longer seen (removed-file detection)
+- `scanManager.ts` — job orchestration, cancellation, progress/completed/failed/cancelled events
+- `scan.ts` +  — 
+
+ — `scan:start/cancel/history`, `dialog:pickFolder` IPC, exposed via `preload.ts`
+- Media Library now has an inline **Scan** action (folder picker → live per-row progress → Cancel) and updates `last_scanned_at`/`last_verified_at` on completion
+
+**Verified:** clean build, and I directly exercised the compiled walk engine against a real temp directory tree (confirmed correct recursion, SHA-256 hashing, kind classification, byte/file counts). GUI folder-picker interaction itself can't be scripted, but the underlying logic is proven correct.
+
+**Known simplification (documented for later):** scanning runs on the main process event loop with periodic yields rather than a true `worker_thread`/utility process — fine for typical catalogs but should move off-main-thread for very large scans (tracked against NFR-1.5 in the roadmap).
+
+**Next logical step:** Search (Epic 3) — global full-text search across catalogued files (FTS5 table already exists in the schema, just needs querying + a Search view), which is the payoff feature once files exist. Let me know if you'd like me to continue.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Implement scanning engine with progress tracking and cancellation support* (3/4)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 18:08:14Z)**_
+
+continue with what is the next logical step
+
+---
+
+_**Agent (copilot/auto)**_
+
+Next: **Search (Epic 3)** — global full-text search using the existing FTS5 schema. First I need to add sync triggers (the FTS5 external-content table has no triggers yet), then the query layer, IPC, and a real Search view.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `index.ts`, lines 1 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search,**/.dart_tool]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `index.ts`, lines 85 to 106
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Adding migration 2 for FTS5 sync triggers:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ts**</summary>
+
+@@ lines 103-103 @@
+
+```
+,
+  {
+    version: 2,
+    sql: `
+      -- Keep the file_record_fts external-content index in sync with file_record writes.
+      CREATE TRIGGER IF NOT EXISTS file_record_ai AFTER INSERT ON file_record BEGIN
+        INSERT INTO file_record_fts(rowid, name, path) VALUES (new.id, new.name, new.path);
+      END;
+      CREATE TRIGGER IF NOT EXISTS file_record_ad AFTER DELETE ON file_record BEGIN
+        INSERT INTO file_record_fts(file_record_fts, rowid, name, path) VALUES('delete', old.id, old.name, old.path);
+      END;
+      CREATE TRIGGER IF NOT EXISTS file_record_au AFTER UPDATE ON file_record BEGIN
+        INSERT INTO file_record_fts(file_record_fts, rowid, name, path) VALUES('delete', old.id, old.name, old.path);
+        INSERT INTO file_record_fts(rowid, name, path) VALUES (new.id, new.name, new.path);
+      END;
+    `
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now add shared types for search, and the search repository:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 85 to 102
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 100 to 111
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 111-111 @@
+
+```
+
+export const FILE_KINDS = ['image', 'video', 'audio', 'document', 'archive', 'other'] as const
+export type FileKind = (typeof FILE_KINDS)[number]
+
+export interface SearchFilters {
+  mediaItemId?: number
+  mediaType?: MediaType
+  kind?: FileKind
+  minSizeBytes?: number
+  maxSizeBytes?: number
+}
+
+export interface SearchQueryInput {
+  text: string
+  filters: SearchFilters
+  page: number
+  pageSize: number
+}
+
+export interface FileSearchResult {
+  id: number
+  mediaItemId: number
+  mediaLabel: string
+  path: string
+  name: string
+  sizeBytes: number
+  modifiedAtSrc: string | null
+  kind: string
+}
+
+export interface SearchResultPage {
+  results: FileSearchResult[]
+  total: number
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 111-111 @@
+
+```
+
+export const FILE_KINDS = ['image', 'video', 'audio', 'document', 'archive', 'other'] as const
+export type FileKind = (typeof FILE_KINDS)[number]
+
+export interface SearchFilters {
+  mediaItemId?: number
+  mediaType?: MediaType
+  kind?: FileKind
+  minSizeBytes?: number
+  maxSizeBytes?: number
+}
+
+export interface SearchQueryInput {
+  text: string
+  filters: SearchFilters
+  page: number
+  pageSize: number
+}
+
+export interface FileSearchResult {
+  id: number
+  mediaItemId: number
+  mediaLabel: string
+  path: string
+  name: string
+  sizeBytes: number
+  modifiedAtSrc: string | null
+  kind: string
+}
+
+export interface SearchResultPage {
+  results: FileSearchResult[]
+  total: number
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the search repository:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `searchRepository.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **searchRepository.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { getDb } from './index'
+import type { FileSearchResult, SearchFilters, SearchResultPage } from '../../shared/types'
+
+interface FileSearchRow {
+  id: number
+  media_item_id: number
+  media_label: string
+  path: string
+  name: string
+  size_bytes: number
+  modified_at_src: string | null
+  kind: string
+}
+
+function toResult(row: FileSearchRow): FileSearchResult {
+  return {
+    id: row.id,
+    mediaItemId: row.media_item_id,
+    mediaLabel: row.media_label,
+    path: row.path,
+    name: row.name,
+    sizeBytes: row.size_bytes,
+    modifiedAtSrc: row.modified_at_src,
+    kind: row.kind
+  }
+}
+
+/** Builds an FTS5 MATCH expression doing a prefix match per term (FR-3.2: partial/substring search). */
+function buildMatchQuery(text: string): string | null {
+  const terms = text
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((term) => term.replace(/["*]/g, ''))
+    .filter(Boolean)
+  if (terms.length === 0) return null
+  return terms.map((term) => `"${term}"*`).join(' AND ')
+}
+
+export function searchFiles(text: string, filters: SearchFilters, page: number, pageSize: number): SearchResultPage {
+  const db = getDb()
+  const matchQuery = buildMatchQuery(text)
+
+  const conditions: string[] = ['fr.is_directory = 0']
+  const params: Record<string, unknown> = {}
+
+  if (filters.mediaItemId !== undefined) {
+    conditions.push('fr.media_item_id = @mediaItemId')
+    params.mediaItemId = filters.mediaItemId
+  }
+  if (filters.mediaType !== undefined) {
+    conditions.push('mi.media_type = @mediaType')
+    params.mediaType = filters.mediaType
+  }
+  if (filters.kind !== undefined) {
+    conditions.push('fr.kind = @kind')
+    params.kind = filters.kind
+  }
+  if (filters.minSizeBytes !== undefined) {
+    conditions.push('fr.size_bytes >= @minSizeBytes')
+    params.minSizeBytes = filters.minSizeBytes
+  }
+  if (filters.maxSizeBytes !== undefined) {
+    conditions.push('fr.size_bytes <= @maxSizeBytes')
+    params.maxSizeBytes = filters.maxSizeBytes
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+  const offset = Math.max(0, page) * pageSize
+
+  const fromClause = matchQuery
+    ? `FROM file_record_fts fts
+       JOIN file_record fr ON fr.id = fts.rowid
+       JOIN media_item mi ON mi.id = fr.media_item_id`
+    : `FROM file_record fr
+       JOIN media_item mi ON mi.id = fr.media_item_id`
+
+  const matchClause = matchQuery ? (conditions.length > 0 ? 'AND fts MATCH @matchQuery' : 'WHERE fts MATCH @matchQuery') : ''
+  if (matchQuery) params.matchQuery = matchQuery
+
+  const baseQuery = `${fromClause} ${whereClause} ${matchClause}`.trim()
+
+  const total = (
+    db.prepare(`SELECT COUNT(*) as count ${baseQuery}`).get(params) as { count: number }
+  ).count
+
+  const results = (
+    db
+      .prepare(
+        `SELECT fr.id, fr.media_item_id, mi.label as media_label, fr.path, fr.name, fr.size_bytes,
+                fr.modified_at_src, fr.kind
+         ${baseQuery}
+         ORDER BY fr.name
+         LIMIT @limit OFFSET @offset`
+      )
+      .all({ ...params, limit: pageSize, offset }) as FileSearchRow[]
+  ).map(toResult)
+
+  return { results, total }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 5 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the IPC handler and preload exposure:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `search.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **search.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { searchFiles } from '../db/searchRepository'
+import type { IpcResult, SearchFilters, SearchResultPage } from '../../shared/types'
+
+const DEFAULT_PAGE_SIZE = 100
+
+export function registerSearchIpc(): void {
+  ipcMain.handle('search:query', (_event, payload: unknown): IpcResult<SearchResultPage> => {
+    const { text, filters, page } = (payload ?? {}) as {
+      text?: unknown
+      filters?: unknown
+      page?: unknown
+    }
+
+    const queryText = typeof text === 'string' ? text : ''
+    const queryFilters = (filters && typeof filters === 'object' ? filters : {}) as SearchFilters
+    const pageNumber = typeof page === 'number' && page >= 0 ? page : 0
+
+    try {
+      return { ok: true, data: searchFiles(queryText, queryFilters, pageNumber, DEFAULT_PAGE_SIZE) }
+    } catch (err) {
+      return { ok: false, error: { code: 'search_error', message: (err as Error).message } }
+    }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 9-9 @@
+
+```
+registerSearchIpc } from './ipc/search'
+import { 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 33-33 @@
+
+```
+registerSearchIpc()
+  
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update `preload.ts`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **search.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { searchFiles } from '../db/searchRepository'
+import type { IpcResult, SearchFilters, SearchResultPage } from '../../shared/types'
+
+const DEFAULT_PAGE_SIZE = 100
+
+export function registerSearchIpc(): void {
+  ipcMain.handle('search:query', (_event, payload: unknown): IpcResult<SearchResultPage> => {
+    const { text, filters, page } = (payload ?? {}) as {
+      text?: unknown
+      filters?: unknown
+      page?: unknown
+    }
+
+    const queryText = typeof text === 'string' ? text : ''
+    const queryFilters = (filters && typeof filters === 'object' ? filters : {}) as SearchFilters
+    const pageNumber = typeof page === 'number' && page >= 0 ? page : 0
+
+    try {
+      return { ok: true, data: searchFiles(queryText, queryFilters, pageNumber, DEFAULT_PAGE_SIZE) }
+    } catch (err) {
+      return { ok: false, error: { code: 'search_error', message: (err as Error).message } }
+    }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 9-9 @@
+
+```
+registerSearchIpc } from './ipc/search'
+import { 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 33-33 @@
+
+```
+registerSearchIpc()
+  
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update `preload.ts`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 1 to 12
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 89-89 @@
+
+```
+,
+  search: {
+    query: (text: string, filters: SearchFilters, page: number): Promise<IpcResult<SearchResultPage>> =>
+      ipcRenderer.invoke('search:query', { text, filters, page })
+  }
+```
+
+@@ lines 11-11 @@
+
+```
+SearchFilters,
+  SearchResultPage,
+  
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 89-89 @@
+
+```
+,
+  search: {
+    query: (text: string, filters: SearchFilters, page: number): Promise<IpcResult<SearchResultPage>> =>
+      ipcRenderer.invoke('search:query', { text, filters, page })
+  }
+```
+
+@@ lines 11-11 @@
+
+```
+SearchFilters,
+  SearchResultPage,
+  
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the Search view in the renderer, and wire it into `App.tsx`:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `Search.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Search.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+import { FILE_KINDS, MEDIA_TYPES } from '../../shared/types'
+import type { FileSearchResult, MediaType, FileKind, SearchFilters } from '../../shared/types'
+import './Search.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+export default function Search(): JSX.Element {
+  const [text, setText] = useState('')
+  const [mediaType, setMediaType] = useState<MediaType | ''>('')
+  const [kind, setKind] = useState<FileKind | ''>('')
+  const [results, setResults] = useState<FileSearchResult[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(false)
+
+  const runSearch = (pageToLoad: number): void => {
+    const filters: SearchFilters = {}
+    if (mediaType) filters.mediaType = mediaType
+    if (kind) filters.kind = kind
+
+    setLoading(true)
+    void window.discdock.search.query(text, filters, pageToLoad).then((result) => {
+      setLoading(false)
+      if (result.ok) {
+        setResults(result.data.results)
+        setTotal(result.data.total)
+        setPage(pageToLoad)
+      }
+    })
+  }
+
+  useEffect(() => {
+    runSearch(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    runSearch(0)
+  }
+
+  const pageSize = 100
+  const hasMore = (page + 1) * pageSize < total
+
+  return (
+    <div className="search-view">
+      <h1>Search</h1>
+      <form className="search-form" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Search by file name or path…"
+          className="search-form__input"
+        />
+        <select value={mediaType} onChange={(e) => setMediaType(e.target.value as MediaType | '')}>
+          <option value="">All media types</option>
+          {MEDIA_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <select value={kind} onChange={(e) => setKind(e.target.value as FileKind | '')}>
+          <option value="">All file kinds</option>
+          {FILE_KINDS.map((k) => (
+            <option key={k} value={k}>
+              {k}
+            </option>
+          ))}
+        </select>
+        <button type="submit" className="button button--primary">
+          Search
+        </button>
+      </form>
+
+      {loading ? (
+        <p className="search-view__status">Searching…</p>
+      ) : results.length === 0 ? (
+        <p className="search-view__status">No matching files found.</p>
+      ) : (
+        <>
+          <p className="search-view__status">
+            {total} result{total === 1 ? '' : 's'}
+          </p>
+          <table className="search-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Path</th>
+                <th>Media</th>
+                <th>Kind</th>
+                <th>Size</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((result) => (
+                <tr key={result.id}>
+                  <td>{result.name}</td>
+                  <td>{result.path}</td>
+                  <td>{result.mediaLabel}</td>
+                  <td>{result.kind}</td>
+                  <td>{formatBytes(result.sizeBytes)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {hasMore && (
+            <button type="button" className="button" onClick={() => runSearch(page + 1)}>
+              Load more
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Implement search query function with FTS MATCH* (2/5)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `Search.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Search.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+import { FILE_KINDS, MEDIA_TYPES } from '../../shared/types'
+import type { FileSearchResult, MediaType, FileKind, SearchFilters } from '../../shared/types'
+import './Search.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+export default function Search(): JSX.Element {
+  const [text, setText] = useState('')
+  const [mediaType, setMediaType] = useState<MediaType | ''>('')
+  const [kind, setKind] = useState<FileKind | ''>('')
+  const [results, setResults] = useState<FileSearchResult[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(false)
+
+  const runSearch = (pageToLoad: number): void => {
+    const filters: SearchFilters = {}
+    if (mediaType) filters.mediaType = mediaType
+    if (kind) filters.kind = kind
+
+    setLoading(true)
+    void window.discdock.search.query(text, filters, pageToLoad).then((result) => {
+      setLoading(false)
+      if (result.ok) {
+        setResults(result.data.results)
+        setTotal(result.data.total)
+        setPage(pageToLoad)
+      }
+    })
+  }
+
+  useEffect(() => {
+    runSearch(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    runSearch(0)
+  }
+
+  const pageSize = 100
+  const hasMore = (page + 1) * pageSize < total
+
+  return (
+    <div className="search-view">
+      <h1>Search</h1>
+      <form className="search-form" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Search by file name or path…"
+          className="search-form__input"
+        />
+        <select value={mediaType} onChange={(e) => setMediaType(e.target.value as MediaType | '')}>
+          <option value="">All media types</option>
+          {MEDIA_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <select value={kind} onChange={(e) => setKind(e.target.value as FileKind | '')}>
+          <option value="">All file kinds</option>
+          {FILE_KINDS.map((k) => (
+            <option key={k} value={k}>
+              {k}
+            </option>
+          ))}
+        </select>
+        <button type="submit" className="button button--primary">
+          Search
+        </button>
+      </form>
+
+      {loading ? (
+        <p className="search-view__status">Searching…</p>
+      ) : results.length === 0 ? (
+        <p className="search-view__status">No matching files found.</p>
+      ) : (
+        <>
+          <p className="search-view__status">
+            {total} result{total === 1 ? '' : 's'}
+          </p>
+          <table className="search-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Path</th>
+                <th>Media</th>
+                <th>Kind</th>
+                <th>Size</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((result) => (
+                <tr key={result.id}>
+                  <td>{result.name}</td>
+                  <td>{result.path}</td>
+                  <td>{result.mediaLabel}</td>
+                  <td>{result.kind}</td>
+                  <td>{formatBytes(result.sizeBytes)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {hasMore && (
+            <button type="button" className="button" onClick={() => runSearch(page + 1)}>
+              Load more
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Search.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.search-form {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.search-form__input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.search-form select {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.search-view__status {
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+.search-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.search-table th,
+.search-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now wire `Search` into `App.tsx`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `App.tsx`, lines 1 to 33
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **App.tsx**</summary>
+
+@@ lines 22-22 @@
+
+```
+case 'search':
+        return <Search />
+      
+```
+
+@@ lines 6-6 @@
+
+```
+Search from './views/Search'
+import 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now check for errors, verify file integrity, and build:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `searchRepository.ts`, `search.ts`, `main.ts`, `preload.ts`, `index.ts`, `App.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/db/searchRepository.ts electron/ipc/search.ts src/views/Searc...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact. Now build and test the DB migration + search logic end-to-end:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` find \~/.config \~/.local/share -iname "discdock\*" 2>/dev/null`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors, migration applied. Let's kill it and verify via a direct DB test.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && node -e "
+const Database = require\('better-sqli...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `test-fts.js`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **test-fts.js**</summary>
+
+@@ lines 1-1 @@
+
+```
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+db.exec("INSERT INTO media_item (label, media_type) VALUES ('Test Disc', 'cd')")
+const mediaId = db.prepare('SELECT id FROM media_item ORDER BY id DESC LIMIT 1').get().id
+
+db.prepare(
+  "INSERT INTO file_record (media_item_id, path, name, extension, kind, size_bytes, is_directory) VALUES (?, 'photos/vacation.jpg', 'vacation.jpg', 'jpg', 'image', 1024, 0)"
+).run(mediaId)
+db.prepare(
+  "INSERT INTO file_record (media_item_id, path, name, extension, kind, size_bytes, is_directory) VALUES (?, 'docs/report.pdf', 'report.pdf', 'pdf', 'document', 2048, 0)"
+).run(mediaId)
+
+const ftsRows = db.prepare('SELECT rowid, name, path FROM file_record_fts').all()
+console.log('FTS rows:', JSON.stringify(ftsRows))
+
+const matches = db
+  .prepare(`SELECT fr.name FROM file_record_fts fts JOIN file_record fr ON fr.id = fts.rowid WHERE fts MATCH '"vaca"*'`)
+  .all()
+console.log('Match results:', JSON.stringify(matches))
+
+db.prepare('DELETE FROM file_record WHERE media_item_id = ?').run(mediaId)
+db.prepare('DELETE FROM media_item WHERE id = ?').run(mediaId)
+console.log('Cleaned up. Remaining FTS rows:', JSON.stringify(db.prepare('SELECT COUNT(*) as c FROM file_record_fts').get()))
+db.close()
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ELECTRON\_RUN\_AS\_NODE=1 npx electron /tmp/test-fts.js 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cp /tmp/test-fts.js /home/kel/dev/DiscDock/test-fts.js && cd /home/kel/dev/D...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-fts2.js << 'EOF'
+const Database = require\(...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Found and fixing a real bug: SQLite FTS5 requires `MATCH` against the literal virtual table name, not an alias. Let me confirm the fix works, then patch `searchRepository.ts`.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-fts3.js << 'EOF'
+const Database = require\(...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Confirmed. Now fixing `searchRepository.ts`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **searchRepository.ts**</summary>
+
+@@ lines 78-78 @@
+
+```
+
+    ? conditions.length > 0
+      ? 'AND file_record_fts MATCH @matchQuery'
+      : 'WHERE file_record_fts MATCH @matchQuery'
+   
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's clean up the test row from the dev DB and do a final full end-to-end test through the real IPC/search path:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/cleanup-test.js << 'EOF'
+const Database = requi...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean. Now rebuild with the fix and do a final full build + errors check:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean. Let's do a final launch/screenshot to confirm the Search view renders in the app:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors 

@@ -108,3 +108,37 @@ export interface ScanStartInput {
   rootPath: string
   hashMode: HashMode
 }
+
+export const FILE_KINDS = ['image', 'video', 'audio', 'document', 'archive', 'other'] as const
+export type FileKind = (typeof FILE_KINDS)[number]
+
+export interface SearchFilters {
+  mediaItemId?: number
+  mediaType?: MediaType
+  kind?: FileKind
+  minSizeBytes?: number
+  maxSizeBytes?: number
+}
+
+export interface SearchQueryInput {
+  text: string
+  filters: SearchFilters
+  page: number
+  pageSize: number
+}
+
+export interface FileSearchResult {
+  id: number
+  mediaItemId: number
+  mediaLabel: string
+  path: string
+  name: string
+  sizeBytes: number
+  modifiedAtSrc: string | null
+  kind: string
+}
+
+export interface SearchResultPage {
+  results: FileSearchResult[]
+  total: number
+}

@@ -100,6 +100,22 @@ const MIGRATIONS: { version: number; sql: string }[] = [
         PRIMARY KEY (collection_id, media_item_id)
       );
     `
+  },
+  {
+    version: 2,
+    sql: `
+      -- Keep the file_record_fts external-content index in sync with file_record writes.
+      CREATE TRIGGER IF NOT EXISTS file_record_ai AFTER INSERT ON file_record BEGIN
+        INSERT INTO file_record_fts(rowid, name, path) VALUES (new.id, new.name, new.path);
+      END;
+      CREATE TRIGGER IF NOT EXISTS file_record_ad AFTER DELETE ON file_record BEGIN
+        INSERT INTO file_record_fts(file_record_fts, rowid, name, path) VALUES('delete', old.id, old.name, old.path);
+      END;
+      CREATE TRIGGER IF NOT EXISTS file_record_au AFTER UPDATE ON file_record BEGIN
+        INSERT INTO file_record_fts(file_record_fts, rowid, name, path) VALUES('delete', old.id, old.name, old.path);
+        INSERT INTO file_record_fts(rowid, name, path) VALUES (new.id, new.name, new.path);
+      END;
+    `
   }
 ]
 

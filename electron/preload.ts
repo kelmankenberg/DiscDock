@@ -8,6 +8,8 @@ import type {
   MediaItemInput,
   ScanJob,
   ScanProgress,
+  SearchFilters,
+  SearchResultPage,
   WindowState
 } from '../shared/types'
 
@@ -86,6 +88,10 @@ const api = {
   },
   dialogs: {
     pickFolder: (): Promise<IpcResult<{ path: string | null }>> => ipcRenderer.invoke('dialog:pickFolder')
+  },
+  search: {
+    query: (text: string, filters: SearchFilters, page: number): Promise<IpcResult<SearchResultPage>> =>
+      ipcRenderer.invoke('search:query', { text, filters, page })
   }
 }
 
