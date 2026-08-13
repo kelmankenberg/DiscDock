@@ -17141,28 +17141,118 @@ Next: **Search (Epic 3)** — global full-text search using the existing FTS5 sc
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `index.ts`, lines 1 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/home/kel/dev/DiscDock/electron/db/index.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import Database from 'better-sqlite3'
+import { app } from 'electron'
+import path from 'node:path'
+import fs from 'node:fs'
+
+let db: Database.Database | null = null
+
+const MIGRATIONS: { version: number; sql: string }[] = [
+  {
+    version: 1,
+    sql: `
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        version INTEGER PRIMARY KEY
+      );
+
+      CREATE TABLE IF NOT EXISTS media_item (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        label TEXT NOT NULL,
+        media_type TEXT NOT NULL,
+        device_fingerprint TEXT,
+        capacity_bytes INTEGER,
+        physical_location TEXT,
+        notes TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        last_scanned_at TEXT,
+        last_verified_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_media_item_type ON media_item(media_type);
+      CREATE INDEX IF NOT EXISTS idx_media_item_status ON media_item(status);
+      CREATE INDEX IF NOT EXISTS idx_media_item_fingerprint ON media_item(device_fingerprint);
+
+      CREATE TABLE IF NOT EXISTS scan_job (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        status TEXT NOT NULL,
+        hash_mode TEXT NOT NULL DEFAULT 'none',
+        started_at TEXT NOT NULL DEFAULT (datetime('now')),
+        completed_at TEXT,
+        files_added INTEGER NOT NULL DEFAULT 0,
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
 If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search,**/.dart_tool]).
 Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- includePattern: `electron/db/index.ts`
+- isRegexp: `false`
+- query: `MIGRATIONS = [`
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `index.ts`, lines 85 to 106
+
+**Input:**
+
+- endLine: `106`
+- filePath: `/home/kel/dev/DiscDock/electron/db/index.ts`
+- startLine: `85`
+
+**Result:**
+
+```
+      CREATE TABLE IF NOT EXISTS media_item_tag (
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        tag_id INTEGER NOT NULL REFERENCES tag(id),
+        PRIMARY KEY (media_item_id, tag_id)
+      );
+
+      CREATE TABLE IF NOT EXISTS collection (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS collection_media_item (
+        collection_id INTEGER NOT NULL REFERENCES collection(id),
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        PRIMARY KEY (collection_id, media_item_id)
+      );
+    `
+  }
+]
+
+function runMigrations(database: Database.Database): void {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -17203,18 +17293,69 @@ Now add shared types for search, and the search repository:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 85 to 102
+
+**Input:**
+
+- endLine: `102`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `85`
+
+**Result:**
+
+```
+export interface ScanJob {
+  id: number
+  mediaItemId: number
+  status: ScanStatus
+  hashMode: HashMode
+  startedAt: string
+  completedAt: string | null
+  filesAdded: number
+  filesRemoved: number
+  filesModified: number
+  filesUnchanged: number
+  errorCount: number
+}
+
+export interface ScanProgress {
+  jobId: number
+  filesProcessed: number
+  bytesProcessed: number
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 100 to 111
+
+**Input:**
+
+- endLine: `115`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `100`
+
+**Result:**
+
+```
+  jobId: number
+  filesProcessed: number
+  bytesProcessed: number
+  currentPath: string
+}
+
+export interface ScanStartInput {
+  mediaId: number
+  rootPath: string
+  hashMode: HashMode
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -17315,10 +17456,127 @@ Now the search repository:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `searchRepository.ts`
+
+**Input:**
+
+- content:
+
+```
+import { getDb } from './index'
+import type { FileSearchResult, SearchFilters, SearchResultPage } from '../../shared/types'
+
+interface FileSearchRow {
+  id: number
+  media_item_id: number
+  media_label: string
+  path: string
+  name: string
+  size_bytes: number
+  modified_at_src: string | null
+  kind: string
+}
+
+function toResult(row: FileSearchRow): FileSearchResult {
+  return {
+    id: row.id,
+    mediaItemId: row.media_item_id,
+    mediaLabel: row.media_label,
+    path: row.path,
+    name: row.name,
+    sizeBytes: row.size_bytes,
+    modifiedAtSrc: row.modified_at_src,
+    kind: row.kind
+  }
+}
+
+/** Builds an FTS5 MATCH expression doing a prefix match per term (FR-3.2: partial/substring search). */
+function buildMatchQuery(text: string): string | null {
+  const terms = text
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((term) => term.replace(/["*]/g, ''))
+    .filter(Boolean)
+  if (terms.length === 0) return null
+  return terms.map((term) => `"${term}"*`).join(' AND ')
+}
+
+export function searchFiles(text: string, filters: SearchFilters, page: number, pageSize: number): SearchResultPage {
+  const db = getDb()
+  const matchQuery = buildMatchQuery(text)
+
+  const conditions: string[] = ['fr.is_directory = 0']
+  const params: Record<string, unknown> = {}
+
+  if (filters.mediaItemId !== undefined) {
+    conditions.push('fr.media_item_id = @mediaItemId')
+    params.mediaItemId = filters.mediaItemId
+  }
+  if (filters.mediaType !== undefined) {
+    conditions.push('mi.media_type = @mediaType')
+    params.mediaType = filters.mediaType
+  }
+  if (filters.kind !== undefined) {
+    conditions.push('fr.kind = @kind')
+    params.kind = filters.kind
+  }
+  if (filters.minSizeBytes !== undefined) {
+    conditions.push('fr.size_bytes >= @minSizeBytes')
+    params.minSizeBytes = filters.minSizeBytes
+  }
+  if (filters.maxSizeBytes !== undefined) {
+    conditions.push('fr.size_bytes <= @maxSizeBytes')
+    params.maxSizeBytes = filters.maxSizeBytes
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
+  const offset = Math.max(0, page) * pageSize
+
+  const fromClause = matchQuery
+    ? `FROM file_record_fts fts
+       JOIN file_record fr ON fr.id = fts.rowid
+       JOIN media_item mi ON mi.id = fr.media_item_id`
+    : `FROM file_record fr
+       JOIN media_item mi ON mi.id = fr.media_item_id`
+
+  const matchClause = matchQuery ? (conditions.length > 0 ? 'AND fts MATCH @matchQuery' : 'WHERE fts MATCH @matchQuery') : ''
+  if (matchQuery) params.matchQuery = matchQuery
+
+  const baseQuery = `${fromClause} ${whereClause} ${matchClause}`.trim()
+
+  const total = (
+    db.prepare(`SELECT COUNT(*) as count ${baseQuery}`).get(params) as { count: number }
+  ).count
+
+  const results = (
+    db
+      .prepare(
+        `SELECT fr.id, fr.media_item_id, mi.label as media_label, fr.path, fr.name, fr.size_bytes,
+                fr.modified_at_src, fr.kind
+         ${baseQuery}
+         ORDER BY fr.name
+         LIMIT @limit OFFSET @offset`
+      )
+      .all({ ...params, limit: pageSize, offset }) as FileSearchRow[]
+  ).map(toResult)
+
+  return { results, total }
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/db/searchRepository.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/db/searchRepository.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -17447,10 +17705,52 @@ Now the IPC handler and preload exposure:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `search.ts`
+
+**Input:**
+
+- content:
+
+```
+import { ipcMain } from 'electron'
+import { searchFiles } from '../db/searchRepository'
+import type { IpcResult, SearchFilters, SearchResultPage } from '../../shared/types'
+
+const DEFAULT_PAGE_SIZE = 100
+
+export function registerSearchIpc(): void {
+  ipcMain.handle('search:query', (_event, payload: unknown): IpcResult<SearchResultPage> => {
+    const { text, filters, page } = (payload ?? {}) as {
+      text?: unknown
+      filters?: unknown
+      page?: unknown
+    }
+
+    const queryText = typeof text === 'string' ? text : ''
+    const queryFilters = (filters && typeof filters === 'object' ? filters : {}) as SearchFilters
+    const pageNumber = typeof page === 'number' && page >= 0 ? page : 0
+
+    try {
+      return { ok: true, data: searchFiles(queryText, queryFilters, pageNumber, DEFAULT_PAGE_SIZE) }
+    } catch (err) {
+      return { ok: false, error: { code: 'search_error', message: (err as Error).message } }
+    }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/search.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/search.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -17589,10 +17889,33 @@ Now update `preload.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 1 to 12
+
+**Input:**
+
+- endLine: `12`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { contextBridge, ipcRenderer } from 'electron'
+import type {
+  DashboardSummary,
+  DetectedDevice,
+  HashMode,
+  IpcResult,
+  MediaItem,
+  MediaItemInput,
+  ScanJob,
+  ScanProgress,
+  WindowState
+} from '../shared/types'
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -17649,10 +17972,150 @@ Now the Search view in the renderer, and wire it into `App.tsx`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `Search.tsx`
+
+**Input:**
+
+- content:
+
+```
+import { useEffect, useState } from 'react'
+import { FILE_KINDS, MEDIA_TYPES } from '../../shared/types'
+import type { FileSearchResult, MediaType, FileKind, SearchFilters } from '../../shared/types'
+import './Search.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+export default function Search(): JSX.Element {
+  const [text, setText] = useState('')
+  const [mediaType, setMediaType] = useState<MediaType | ''>('')
+  const [kind, setKind] = useState<FileKind | ''>('')
+  const [results, setResults] = useState<FileSearchResult[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(false)
+
+  const runSearch = (pageToLoad: number): void => {
+    const filters: SearchFilters = {}
+    if (mediaType) filters.mediaType = mediaType
+    if (kind) filters.kind = kind
+
+    setLoading(true)
+    void window.discdock.search.query(text, filters, pageToLoad).then((result) => {
+      setLoading(false)
+      if (result.ok) {
+        setResults(result.data.results)
+        setTotal(result.data.total)
+        setPage(pageToLoad)
+      }
+    })
+  }
+
+  useEffect(() => {
+    runSearch(0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    runSearch(0)
+  }
+
+  const pageSize = 100
+  const hasMore = (page + 1) * pageSize < total
+
+  return (
+    <div className="search-view">
+      <h1>Search</h1>
+      <form className="search-form" onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Search by file name or path…"
+          className="search-form__input"
+        />
+        <select value={mediaType} onChange={(e) => setMediaType(e.target.value as MediaType | '')}>
+          <option value="">All media types</option>
+          {MEDIA_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <select value={kind} onChange={(e) => setKind(e.target.value as FileKind | '')}>
+          <option value="">All file kinds</option>
+          {FILE_KINDS.map((k) => (
+            <option key={k} value={k}>
+              {k}
+            </option>
+          ))}
+        </select>
+        <button type="submit" className="button button--primary">
+          Search
+        </button>
+      </form>
+
+      {loading ? (
+        <p className="search-view__status">Searching…</p>
+      ) : results.length === 0 ? (
+        <p className="search-view__status">No matching files found.</p>
+      ) : (
+        <>
+          <p className="search-view__status">
+            {total} result{total === 1 ? '' : 's'}
+          </p>
+          <table className="search-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Path</th>
+                <th>Media</th>
+                <th>Kind</th>
+                <th>Size</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((result) => (
+                <tr key={result.id}>
+                  <td>{result.name}</td>
+                  <td>{result.path}</td>
+                  <td>{result.mediaLabel}</td>
+                  <td>{result.kind}</td>
+                  <td>{formatBytes(result.sizeBytes)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {hasMore && (
+            <button type="button" className="button" onClick={() => runSearch(page + 1)}>
+              Load more
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/Search.tsx`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/views/Search.tsx
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -17800,10 +18263,70 @@ Starting: *Implement search query function with FTS MATCH* (2/5)
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `Search.css`
+
+**Input:**
+
+- content:
+
+```
+.search-form {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.search-form__input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.search-form select {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.search-view__status {
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+.search-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.search-table th,
+.search-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/Search.css`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/views/Search.css
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18002,10 +18525,54 @@ Now wire `Search` into `App.tsx`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `App.tsx`, lines 1 to 33
+
+**Input:**
+
+- endLine: `33`
+- filePath: `/home/kel/dev/DiscDock/src/App.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useState } from 'react'
+import TitleBar from './components/TitleBar'
+import Sidebar from './components/Sidebar'
+import Dashboard from './views/Dashboard'
+import MediaLibrary from './views/MediaLibrary'
+import PlaceholderView from './views/PlaceholderView'
+import { NAV_ITEMS } from './components/Sidebar'
+
+const VIEW_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.label])
+)
+
+export default function App(): JSX.Element {
+  const [activeView, setActiveView] = useState('dashboard')
+
+  const renderView = (): JSX.Element => {
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'media-library':
+        return <MediaLibrary />
+      default:
+        return <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
+    }
+  }
+
+  return (
+    <div className="app-shell">
+      <TitleBar />
+      <div className="app-body">
+        <Sidebar active={activeView} onSelect={setActiveView} />
+        <main className="app-content">{renderView()}</main>
+      </div>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18035,10 +18602,49 @@ Now check for errors, verify file integrity, and build:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `searchRepository.ts`, `search.ts`, `main.ts`, `preload.ts`, `index.ts`, `App.tsx`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/electron/db/searchRepository.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/search.ts",
+  "/home/kel/dev/DiscDock/electron/main.ts",
+  "/home/kel/dev/DiscDock/electron/preload.ts",
+  "/home/kel/dev/DiscDock/electron/db/index.ts",
+  "/home/kel/dev/DiscDock/src/App.tsx"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/electron/db/searchRepository.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/search.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/main.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/preload.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/db/index.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/App.tsx">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18047,6 +18653,28 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c electron/db/searchRepository.ts electron/ipc/search.ts src/views/Searc...`
+
+Verify all new/edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/db/searchRepository.ts electron/ipc/search.ts src/views/Search.tsx src/views/Search.css electron/db/index.ts electron/main.ts electron/preload.ts shared/types.ts src/App.tsx
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/db/searchRepository.ts electron/ipc/search.ts src/views/Search.tsx src/views/Search.css electron/db/index.ts electron/main.ts electron/preload.ts shared/types.ts src/App.tsx` (terminal ID=04917491-a0fe-485b-b409-6ead8accebe1). This is the output of running that command instead:
+ 3128 electron/db/searchRepository.ts
+  940 electron/ipc/search.ts
+ 3927 src/views/Search.tsx
+  740 src/views/Search.css
+ 5618 electron/db/index.ts
+ 1568 electron/main.ts
+ 4851 electron/preload.ts
+ 3108 shared/types.ts
+ 1159 src/App.tsx
+25039 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18059,6 +18687,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80`
+
+Clean rebuild with the search feature
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -80
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80` (terminal ID=aa980e28-06ff-46a6-a170-c3832819fb76). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 27 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-Cr8rPYTc.css    4.82 kB │ gzip:  1.31 kB
+dist/assets/index-D8B4D9v6.js   203.89 kB │ gzip: 63.76 kB
+
+✓ built in 174ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18067,6 +18732,21 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` find \~/.config \~/.local/share -iname "discdock\*" 2>/dev/null`
+
+Locate the existing dev SQLite database file created by prior test runs
+
+```bash
+find ~/.config ~/.local/share -iname "discdock*" 2>/dev/null
+```
+
+**Result:**
+
+```
+/home/kel/.config/Code/User/workspaceStorage/1a5718aa18a0d669d757142822af9cdc/Gi
+tHub.copilot-chat/memory-tool/memories/repo/discdock-build.md
+/home/kel/.config/discdock
+/home/kel/.config/discdock/discdock.sqlite3
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18075,6 +18755,52 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch the app briefly to apply migration 2 (FTS sync triggers) to the existing dev database
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=f1419dd4-327c-4ced-882a-f130bcaf8d88
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="f1419dd4-327c-4ced-882a-f130bcaf8d88" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="f1419dd4-327c-4ced-882a-f130bcaf8d88" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18087,6 +18813,17 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **kill_terminal**</summary>
 
 Killed terminal
+
+**Input:**
+
+- id: `f1419dd4-327c-4ced-882a-f130bcaf8d88`
+
+**Result:**
+
+```
+Successfully killed persistent terminal f1419dd4-327c-4ced-882a-f130bcaf8d88. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18096,14 +18833,124 @@ _**Agent (copilot/auto)**_
 
 Running ` cd /home/kel/dev/DiscDock && node -e "
 const Database = require\('better-sqli...`
+
+Directly test that migration 2's FTS triggers keep the search index in sync and that MATCH queries work, then clean up test rows
+
+```bash
+cd /home/kel/dev/DiscDock && node -e "
+const Database = require('better-sqlite3');
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3');
+db.exec(\"INSERT INTO media_item (label, media_type) VALUES ('Test Disc', 'cd')\");
+const mediaId = db.prepare('SELECT id FROM media_item ORDER BY id DESC LIMIT 1').get().id;
+db.prepare(\"INSERT INTO file_record (media_item_id, path, name, extension, kind, size_bytes, is_directory) VALUES (?, 'photos/vacation.jpg', 'vacation.jpg', 'jpg', 'image', 1024, 0)\").run(mediaId);
+db.prepare(\"INSERT INTO file_record (media_item_id, path, name, extension, kind, size_bytes, is_directory) VALUES (?, 'docs/report.pdf', 'report.pdf', 'pdf', 'document', 2048, 0)\").run(mediaId);
+const ftsRows = db.prepare('SELECT rowid, name, path FROM file_record_fts').all();
+console.log('FTS rows:', JSON.stringify(ftsRows));
+const matches = db.prepare(\"SELECT fr.name FROM file_record_fts fts JOIN file_record fr ON fr.id = fts.rowid WHERE fts MATCH '\\\"vaca\\\"*'\").all();
+console.log('Match results:', JSON.stringify(matches));
+// cleanup
+db.prepare('DELETE FROM file_record WHERE media_item_id = ?').run(mediaId);
+db.prepare('DELETE FROM media_item WHERE id = ?').run(mediaId);
+console.log('Cleaned up test data. Remaining FTS rows:', db.prepare('SELECT COUNT(*) as c FROM file_record_fts').get());
+db.close();
+"
+
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cd /home/kel/dev/DiscDock && node -e "
+const Database = require('better-sqlite3');
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3');
+db.exec(\"INSERT INTO media_item (label, media_type) VALUES ('Test Disc', 'cd')\
+");
+const mediaId = db.prepare('SELECT id FROM media_item ORDER BY id DESC LIMIT 1')
+.get().id;
+db.prepare(\"INSERT INTO file_record (media_item_id, path, name, extension, kind
+, size_bytes, is_directory) VALUES (?, 'photos/vacation.jpg', 'vacation.jpg', 'j
+pg', 'image', 1024, 0)\").run(mediaId);
+db.prepare(\"INSERT INTO file_record (media_item_id, path, name, extension, kind
+, size_bytes, is_directory) VALUES (?, 'docs/report.pdf', 'report.pdf', 'pdf', '
+document', 2048, 0)\").run(mediaId);
+const ftsRows = db.prepare('SELECT rowid, name, path FROM file_record_fts').all(
+);
+console.log('FTS rows:', JSON.stringify(ftsRows));
+const matches = db.prepare(\"SELECT fr.name FROM file_record_fts fts JOIN file_r
+ecord fr ON fr.id = fts.rowid WHERE fts MATCH '\\\"vaca\\\"*'\").all();
+console.log('Match results:', JSON.stringify(matches));
+// cleanup
+db.prepare('DELETE FROM file_record WHERE media_item_id = ?').run(mediaId);
+db.prepare('DELETE FROM media_item WHERE id = ?').run(mediaId);
+console.log('Cleaned up test data. Remaining FTS rows:', db.prepare('SELECT COUN
+T(*) as c FROM file_record_fts').get());
+db.close();
+"
+/home/kel/dev/DiscDock/node_modules/bindings/bindings.js:121
+        throw e;
+        ^
+
+Error: The module '/home/kel/dev/DiscDock/node_modules/better-sqlite3/build/Rele
+ase/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 145. This version of Node.js requires
+NODE_MODULE_VERSION 115. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+    at Module._extensions..node (node:internal/modules/cjs/loader:1661:18)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Module._load (node:i
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `test-fts.js`
+
+**Input:**
+
+- content:
+
+```
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+db.exec("INSERT INTO media_item (label, media_type) VALUES ('Test Disc', 'cd')")
+const mediaId = db.prepare('SELECT id FROM media_item ORDER BY id DESC LIMIT 1').get().id
+
+db.prepare(
+  "INSERT INTO file_record (media_item_id, path, name, extension, kind, size_bytes, is_directory) VALUES (?, 'photos/vacation.jpg', 'vacation.jpg', 'jpg', 'image', 1024, 0)"
+).run(mediaId)
+db.prepare(
+  "INSERT INTO file_record (media_item_id, path, name, extension, kind, size_bytes, is_directory) VALUES (?, 'docs/report.pdf', 'report.pdf', 'pdf', 'document', 2048, 0)"
+).run(mediaId)
+
+const ftsRows = db.prepare('SELECT rowid, name, path FROM file_record_fts').all()
+console.log('FTS rows:', JSON.stringify(ftsRows))
+
+const matches = db
+  .prepare(`SELECT fr.name FROM file_record_fts fts JOIN file_record fr ON fr.id = fts.rowid WHERE fts MATCH '"vaca"*'`)
+  .all()
+console.log('Match results:', JSON.stringify(matches))
+
+db.prepare('DELETE FROM file_record WHERE media_item_id = ?').run(mediaId)
+db.prepare('DELETE FROM media_item WHERE id = ?').run(mediaId)
+console.log('Cleaned up. Remaining FTS rows:', JSON.stringify(db.prepare('SELECT COUNT(*) as c FROM file_record_fts').get()))
+db.close()
+
+```
+
+- filePath: `/tmp/test-fts.js`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/tmp/test-fts.js
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18149,6 +18996,41 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` ELECTRON\_RUN\_AS\_NODE=1 npx electron /tmp/test-fts.js 2>&1`
+
+Run the FTS test script using Electron's bundled Node runtime so the native module ABI matches
+
+```bash
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron /tmp/test-fts.js 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` ELECTRON_RUN_AS_NODE=1 npx electron /tmp/test-fts.js 2>&1` (terminal ID=15d86040-386b-44d9-8a5e-052514da605b). This is the output of running that command instead:
+node:internal/modules/cjs/loader:1486
+  throw err;
+  ^
+
+Error: Cannot find module 'better-sqlite3'
+Require stack:
+- /tmp/test-fts.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1483:15)
+    at wrapResolveFilename (node:internal/modules/cjs/loader:1056:27)
+    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1080:10
+)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1101:12)
+    at Module._load (node:internal/modules/cjs/loader:1269:25)
+    at c._load (node:electron/js2c/node_init:2:18060)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:262:19)
+    at Module.require (node:internal/modules/cjs/loader:1583:12)
+    at require (node:internal/modules/helpers:153:16)
+    at Object.<anonymous> (/tmp/test-fts.js:1:18) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [ '/tmp/test-fts.js' ]
+}
+
+Node.js v24.15.0
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18157,6 +19039,40 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` cp /tmp/test-fts.js /home/kel/dev/DiscDock/test-fts.js && cd /home/kel/dev/D...`
+
+Run the FTS test script from within the project directory so node_modules resolves, then clean it up
+
+```bash
+cp /tmp/test-fts.js /home/kel/dev/DiscDock/test-fts.js && cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-fts.js 2>&1; rm -f /home/kel/dev/DiscDock/test-fts.js /tmp/test-fts.js
+```
+
+**Result:**
+
+```
+FTS rows: [{"rowid":1,"name":"vacation.jpg","path":"photos/vacation.jpg"},{"rowi
+d":2,"name":"report.pdf","path":"docs/report.pdf"}]
+
+/home/kel/dev/DiscDock/node_modules/better-sqlite3/lib/methods/wrappers.js:5
+        return this[cppdb].prepare(sql, this, false);
+                           ^
+SqliteError: no such column: fts
+    at Database.prepare (/home/kel/dev/DiscDock/node_modules/better-sqlite3/lib/
+methods/wrappers.js:5:21)
+    at Object.<anonymous> (/home/kel/dev/DiscDock/test-fts.js:18:4)
+    at Module._compile (node:internal/modules/cjs/loader:1838:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1971:10)
+    at Module.load (node:internal/modules/cjs/loader:1560:32)
+    at Module._load (node:internal/modules/cjs/loader:1362:12)
+    at c._load (node:electron/js2c/node_init:2:18060)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:262:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main
+:169:5)
+    at node:internal/main/run_main_module:33:47 {
+  code: 'SQLITE_ERROR'
+}
+
+Node.js v24.15.0
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18166,6 +19082,33 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-fts2.js << 'EOF'
 const Database = require\(...`
+
+Diagnose whether FTS5 MATCH requires the direct table name vs an alias in this SQLite build
+
+```bash
+cat > /home/kel/dev/DiscDock/test-fts2.js << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+try {
+  const r1 = db.prepare(`SELECT rowid, name FROM file_record_fts WHERE file_record_fts MATCH '"vaca"*'`).all()
+  console.log('direct table name MATCH:', JSON.stringify(r1))
+} catch (e) { console.log('direct failed:', e.message) }
+
+try {
+  const r2 = db.prepare(`SELECT fts.rowid, fts.name FROM file_record_fts AS fts WHERE fts MATCH '"vaca"*'`).all()
+  console.log('aliased MATCH (AS fts):', JSON.stringify(r2))
+} catch (e) { console.log('aliased failed:', e.message) }
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-fts2.js 2>&1; rm -f test-fts2.js
+```
+
+**Result:**
+
+```
+direct table name MATCH: [{"rowid":1,"name":"vacation.jpg"}]
+aliased failed: no such column: fts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18179,6 +19122,29 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-fts3.js << 'EOF'
 const Database = require\(...`
+
+Confirm the fixed MATCH syntax (literal table name) works alongside an alias for column selection
+
+```bash
+cat > /home/kel/dev/DiscDock/test-fts3.js << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+const r = db.prepare(`
+  SELECT fr.name, fr.path FROM file_record_fts fts
+  JOIN file_record fr ON fr.id = fts.rowid
+  WHERE file_record_fts MATCH '"vaca"*'
+`).all()
+console.log('fixed query result:', JSON.stringify(r))
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-fts3.js 2>&1; rm -f test-fts3.js
+```
+
+**Result:**
+
+```
+fixed query result: [{"name":"vacation.jpg","path":"photos/vacation.jpg"}]
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18212,6 +19178,35 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/cleanup-test.js << 'EOF'
 const Database = requi...`
+
+Remove leftover test data from the earlier FTS trigger test
+
+```bash
+cat > /home/kel/dev/DiscDock/cleanup-test.js << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+const media = db.prepare("SELECT id FROM media_item WHERE label = 'Test Disc'").get()
+if (media) {
+  db.prepare('DELETE FROM file_record WHERE media_item_id = ?').run(media.id)
+  db.prepare('DELETE FROM media_item WHERE id = ?').run(media.id)
+  console.log('Removed test media item', media.id)
+} else {
+  console.log('No test media item found')
+}
+console.log('media_item count:', db.prepare('SELECT COUNT(*) c FROM media_item').get())
+console.log('file_record count:', db.prepare('SELECT COUNT(*) c FROM file_record').get())
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron cleanup-test.js 2>&1; rm -f cleanup-test.js
+```
+
+**Result:**
+
+```
+Removed test media item 1
+media_item count: { c: 0 }
+file_record count: { c: 0 }
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18224,6 +19219,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Rebuild after fixing the FTS MATCH alias bug
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=65dd3d2a-f13e-4661-a344-9cfe5e8f4cb3). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 27 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-Cr8rPYTc.css    4.82 kB │ gzip:  1.31 kB
+dist/assets/index-D8B4D9v6.js   203.89 kB │ gzip: 63.76 kB
+
+✓ built in 174ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -18236,8 +19268,169 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app for final visual check of Search view
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=52790863-f0d2-4ae9-8847-addbac58b831
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="52790863-f0d2-4ae9-8847-addbac58b831" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="52790863-f0d2-4ae9-8847-addbac58b831" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
 No errors 
+
+No errors on launch. Let's close it and commit — I'm confident in the feature given the direct DB-level verification.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `52790863-f0d2-4ae9-8847-addbac58b831`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 52790863-f0d2-4ae9-8847-addbac58b831. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the search feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=2f035fa2-bf41-45dc-8fcc-3b2e577f535e). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  378G   57G  88% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  electron/db/index.ts
+A  electron/db/searchRepository.ts
+A  electron/ipc/search.ts
+M  electron/main.ts
+M  electron/preload.ts
+M  shared/types.ts
+M  src/App.tsx
+A  src/views/Search.css
+A  src/views/Search.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+57G free, healthy.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Implement global search: FTS5 sync triggers, search repositor...`
+
+Commit and push the search feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Implement global search: FTS5 sync triggers, search repository/IPC, and Search view" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Implement global search: FTS5 sync triggers, search repository/IPC, and Search view" 2>&1 | tail -20 && git push 2>&1` (terminal ID=31e4f221-6ac4-4835-a3ba-5295bfac1cda). This is the output of running that command instead:
+[main 3b44931] Implement global search: FTS5 sync triggers, search repository/IP
+C, and Search view
+ 11 files changed, 3520 insertions(+), 562 deletions(-)
+ create mode 100644 electron/db/searchRepository.ts
+ create mode 100644 electron/ipc/search.ts
+ create mode 100644 src/views/Search.css
+ create mode 100644 src/views/Search.tsx
+Enumerating objects: 37, done.
+Counting objects: 100% (37/37), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (20/20), done.
+Writing objects: 100% (21/21), 14.83 KiB | 1.85 MiB/s, done.
+Total 21 (delta 11), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (11/11), completed with 11 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   ae7720e..3b44931  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (disk healthy at 57G free).
+
+**Implemented: Global Search (Epic 3)**
+- Migration 2 — FTS5 sync triggers (`file_record_ai/ad/au`) so the `file_record_fts` external-content index stays in sync with all inserts/updates/deletes
+- `searchRepository.ts` — prefix-based FTS5 `MATCH` query combined with structured filters (media type, kind, size range), paginated
+- `search.ts` + `preload.ts` — `search:query` IPC
+- `Search.tsx` — search bar, media type/kind filters, paginated results table, wired into the sidebar nav
+
+**Bug caught and fixed during testing:** SQLite FTS5 requires `MATCH` against the literal virtual table name, not a query alias (`fts MATCH ...` fails with "no such column: fts"; `file_record_fts MATCH ...` works). I verified this directly against the real dev database (inserted test rows, confirmed FTS triggers populated correctly, confirmed prefix match worked) before and after the fix, then cleaned up the test data.
+
+**Next logical step:** Duplicate Detection (Epic 4) — now that files are hashed and searchable, grouping by `hash_value` across media items is a small, high-value addition. Alternatively, Media Detail view (Browse tab / folder tree) would round out core navigation. Let me know which you'd like next.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Add FTS5 sync triggers* (1/6)
+</details></tool-use>
