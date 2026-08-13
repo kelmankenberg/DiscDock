@@ -27033,6 +27033,12 @@ when I try to add media, the app should automatically identify any media that is
 
 _**Agent (copilot/auto)**_
 
+<think><details><summary>Thought Process</summary>
+Now add `isOptical` to the shared `DetectedDevice` type, and use it to default the media type intelligently:
+</details></think>
+
+_**Agent (copilot/auto)**_
+
 Good catch — let me verify how `lsblk` reports optical/DVD drives, since our current filter may be excluding them entirely.   
 
 _**Agent (copilot/auto)**_
@@ -27041,6 +27047,82 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` lsblk -J -b -o NAME,LABEL,FSTYPE,MOUNTPOINT,SIZE,RM,TYPE,UUID 2>&1`
+
+Inspect actual lsblk output structure to check how optical/DVD drives are reported (type, removable flag)
+
+```bash
+lsblk -J -b -o NAME,LABEL,FSTYPE,MOUNTPOINT,SIZE,RM,TYPE,UUID 2>&1
+```
+
+**Result:**
+
+```
+{
+   "blockdevices": [
+      {
+         "name": "sda",
+         "label": null,
+         "fstype": null,
+         "mountpoint": null,
+         "size": 0,
+         "rm": true,
+         "type": "disk",
+         "uuid": null
+      },{
+         "name": "sr0",
+         "label": "My Disc",
+         "fstype": "iso9660",
+         "mountpoint": "/media/kel/My Disc",
+         "size": 30980096,
+         "rm": true,
+         "type": "rom",
+         "uuid": "2004-11-05-19-17-00-00"
+      },{
+         "name": "nvme0n1",
+         "label": null,
+         "fstype": null,
+         "mountpoint": null,
+         "size": 1000204886016,
+         "rm": false,
+         "type": "disk",
+         "uuid": null,
+         "children": [
+            {
+               "name": "nvme0n1p1",
+               "label": "Files",
+               "fstype": "exfat",
+               "mountpoint": "/mnt/Files",
+               "size": 1000203091968,
+               "rm": false,
+               "type": "part",
+               "uuid": "5C5B-B227"
+            }
+         ]
+      },{
+         "name": "nvme1n1",
+         "label": null,
+         "fstype": null,
+         "mountpoint": null,
+         "size": 500107862016,
+         "rm": false,
+         "type": "disk",
+         "uuid": null,
+         "children": [
+            {
+               "name": "nvme1n1p2",
+               "label": null,
+               "fstype": "ext4",
+               "mountpoint": "/",
+               "size": 499595083776,
+               "rm": false,
+               "type": "part",
+               "uuid": "bb6ae056-140b-487d-bfad-e19ed43cc27e"
+            }
+         ]
+      }
+   ]
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -27049,18 +27131,97 @@ Found it — you actually have a disc inserted right now (`sr0`, label "My Disc"
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `deviceDetection.ts`, lines 40 to 65
+
+**Input:**
+
+- endLine: `65`
+- filePath: `/home/kel/dev/DiscDock/electron/devices/deviceDetection.ts`
+- startLine: `40`
+
+**Result:**
+
+```
+ * This is the documented fallback strategy (no udisks2 D-Bus dependency for v0.1.0).
+ */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  try {
+    const { stdout } = await execFileAsync('lsblk', [
+      '-J',
+      '-b',
+      '-o',
+      'NAME,LABEL,FSTYPE,MOUNTPOINT,SIZE,RM,TYPE,UUID'
+    ])
+    const parsed = JSON.parse(stdout) as { blockdevices: LsblkDevice[] }
+    const flat = flatten(parsed.blockdevices)
+
+    return flat
+      .filter((d) => isRemovable(d) && d.mountpoint && d.type === 'part')
+      .map((d) => ({
+        devicePath: `/dev/${d.name}`,
+        label: d.label ?? null,
+        fsType: d.fstype ?? null,
+        mountPoint: d.mountpoint as string,
+        sizeBytes: toBytes(d.size),
+        uuid: d.uuid ?? null
+      }))
+  } catch {
+    // lsblk unavailable or failed — degrade gracefully to no auto-detected devices (FR-1.2/NFR-3.4).
+    return []
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_multiReplaceString"><details>
-<summary>Tool use: **copilot_multiReplaceString**</summary>
+<tool-use data-tool-type="generic" data-tool-name="multi_replace_string_in_file"><details>
+<summary>Tool use: **multi_replace_string_in_file**</summary>
 
 Multi-Replace String in Files
+
+**Input:**
+
+- explanation: `Include optical drives (type 'rom') in device detection, not just removable partitions`
+- oldString:
+
+```
+    return flat
+      .filter((d) => isRemovable(d) && d.mountpoint && d.type === 'part')
+      .map((d) => ({
+        devicePath: `/dev/${d.name}`,
+        label: d.label ?? null,
+        fsType: d.fstype ?? null,
+        mountPoint: d.mountpoint as string,
+        sizeBytes: toBytes(d.size),
+        uuid: d.uuid ?? null
+      }))
+```
+
+- replacements:
+
+```
+[{"filePath": "/home/kel/dev/DiscDock/electron/devices/deviceDetection.ts", "newString">    return flat
+      .filter((d) => isRemovable(d) && d.mountpoint && (d.type === 'part' || d.type === 'rom'))
+      .map((d) => ({
+        devicePath: `/dev/${d.name}`,
+        label: d.label ?? null,
+        fsType: d.fstype ?? null,
+        mountPoint: d.mountpoint as string,
+        sizeBytes: toBytes(d.size),
+        uuid: d.uuid ?? null,
+        isOptical: d.type === 'rom'
+      }))
+```
+
+
+**Result:**
+
+```
+ERROR: Your input to the tool was invalid (must be array)
+Please check your input and try again.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -27113,18 +27274,52 @@ Now add  to the shared  type, and use it to default the media type intelligently
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `DetectedDevice` (`**/shared/types.ts`), 1 result
+
+**Input:**
+
+- includePattern: `shared/types.ts`
+- isRegexp: `false`
+- query: `DetectedDevice`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "DetectedDevice"
+
+shared/types.ts
+65:export interface DetectedDevice {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 65 to 73
+
+**Input:**
+
+- endLine: `73`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `65`
+
+**Result:**
+
+```
+export interface DetectedDevice {
+  devicePath: string
+  label: string | null
+  fsType: string | null
+  mountPoint: string
+  sizeBytes: number | null
+  uuid: string | null
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -27150,18 +27345,61 @@ Created 5 todos
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `handleRegister` (`**/src/views/Dashboard.tsx`), 2 results
+
+**Input:**
+
+- includePattern: `src/views/Dashboard.tsx`
+- isRegexp: `false`
+- query: `handleRegister`
+
+**Result:**
+
+```
+Found 2 matches in 1 file for "handleRegister"
+
+src/views/Dashboard.tsx
+48:  const handleRegister = (device: DetectedDevice): void => {
+116:                    <button type="button" className="button button--small" onClick={() => handleRegister(device)}>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Dashboard.tsx`, lines 48 to 63
+
+**Input:**
+
+- endLine: `63`
+- filePath: `/home/kel/dev/DiscDock/src/views/Dashboard.tsx`
+- startLine: `48`
+
+**Result:**
+
+```
+  const handleRegister = (device: DetectedDevice): void => {
+    void window.discdock.media
+      .create({
+        label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
+        mediaType: 'external_hdd',
+        capacityBytes: device.sizeBytes,
+        physicalLocation: null,
+        notes: null,
+        deviceFingerprint: device.uuid ?? device.devicePath
+      })
+      .then((result) => {
+        if (result.ok) {
+          setRegistered((prev) => new Set(prev).add(device.devicePath))
+          refreshSummary()
+        }
+      })
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -27182,10 +27420,84 @@ Now let's integrate device detection directly into the **Add Media** form itself
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 1 to 115
+
+**Input:**
+
+- endLine: `115`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+
+  useEffect(() => {
+    const unsubProgress = window.discdock.scan.onProgress((progress: ScanProgress) => {
+      setJobToMedia((current) => {
+        const mediaId = current[progress.jobId]
+        if (mediaId === undefined) return current
+        setScansByMedia((prevScans) => ({
+          ...prevScans,
+          [mediaId]: {
+            jobId: progress.jobId,
+            filesProcessed: progress.filesProcessed,
+            currentPath: progress.currentPath
+          }
+        }))
+        return current
+      })
+    })
+
+    const finishScan = (jobId: number): void => {
+      setJobToMedia((current) => {
+        const mediaId = current[jobId]
+        if (mediaId !== undefined) {
+          setScansByMedia((prevScans) => {
+            const 
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -27253,18 +27565,57 @@ Now add the detected-devices picker UI inside the form JSX:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `showForm && (` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `showForm && (`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "showForm && ("
+
+src/views/MediaLibrary.tsx
+168:      {showForm && (
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 168 to 180
+
+**Input:**
+
+- endLine: `180`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `168`
+
+**Result:**
+
+```
+      {showForm && (
+        <form className="media-form" onSubmit={handleSubmit}>
+          {error && <div className="media-form__error">{error}</div>}
+          <label>
+            Label
+            <input
+              type="text"
+              value={form.label}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -27304,10 +27655,51 @@ Now add the CSS for the picker:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.css`, lines 1 to 30
+
+**Input:**
+
+- endLine: `30`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.css`
+- startLine: `1`
+
+**Result:**
+
+```
+.media-library__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.media-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.media-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.media-form input,
+.media-form select,
+.media-form textarea {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -27347,10 +27739,57 @@ Let's check for errors, verify file integrity, and rebuild:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `MediaLibrary.tsx`, `deviceDetection.ts`, `types.ts`, `Dashboard.tsx`, 2 problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/electron/devices/deviceDetection.ts",
+  "/home/kel/dev/DiscDock/shared/types.ts",
+  "/home/kel/dev/DiscDock/src/views/Dashboard.tsx",
+  "/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx"
+]
+```
+
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import './MediaLibrary.css'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+This code at line 18
+```
+interface ActiveScan {
+```
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/devices/deviceDetection.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/shared/types.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/views/Dashboard.tsx">
+No errors found
+</errors>
+````
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -27371,6 +27810,24 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c electron/devices/deviceDetection.ts shared/types.ts src/views/Dashboar...`
+
+Verify all edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/devices/deviceDetection.ts shared/types.ts src/views/Dashboard.tsx src/views/MediaLibrary.tsx src/views/MediaLibrary.css
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/devices/deviceDetection.ts shared/types.ts src/views/Dashboard.tsx src/views/MediaLibrary.tsx src/views/MediaLibrary.css` (terminal ID=3635bf0d-cbcc-4519-bcf6-6ff07814928d). This is the output of running that command instead:
+ 1956 electron/devices/deviceDetection.ts
+ 4081 shared/types.ts
+ 4395 src/views/Dashboard.tsx
+10438 src/views/MediaLibrary.tsx
+ 1434 src/views/MediaLibrary.css
+22304 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -27383,11 +27840,627 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with the optical drive detection fix and Add Media device picker
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=f2e7d4a5-960f-4117-a98b-61591acfec94). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 35 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-CQ4LkIOR.css    7.76 kB │ gzip:  1.79 kB
+dist/assets/index-CwY1mi1c.js   215.91 kB │ gzip: 66.34 kB
+
+✓ built in 186ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
 Clean build. Now let's launch and verify the actual DVD in your drive gets detected, since that's the real-world test.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+
+Launch the app to verify the currently-inserted DVD is now detected
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=9db1206b-1a91-4bc3-8747-ef10cab73e83
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="9db1206b-1a91-4bc3-8747-ef10cab73e83" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="9db1206b-1a91-4bc3-8747-ef10cab73e83" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` import -window root /tmp/discdock-dvd-detect.png && echo done`
+
+Screenshot the Dashboard to verify the DVD now appears in Detected Devices
+
+```bash
+import -window root /tmp/discdock-dvd-detect.png && echo done
+```
+
+**Result:**
+
+```
+done
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="view_image"><details>
+<summary>Tool use: **view_image**</summary>
+
+Viewed image `discdock-dvd-detect.png`
+
+**Input:**
+
+- filePath: `/tmp/discdock-dvd-detect.png`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The fix works — "My Disc" now correctly appears in Detected Devices with label, mount point, ISO9660 filesystem, and size. Let's verify the Add Media form's new device picker too, then close and commit. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` import -window root /tmp/discdock-addmedia.png && echo done`
+
+Screenshot to check the Add Media form's device picker (will need Media Library nav clicked, but capturing current state first)
+
+```bash
+import -window root /tmp/discdock-addmedia.png && echo done
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  import -window root /tmp/discdock-addmedia.png
+&& echo done
+done
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `9db1206b-1a91-4bc3-8747-ef10cab73e83`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 9db1206b-1a91-4bc3-8747-ef10cab73e83. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the device detection fix
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=b2dccc0b-48f5-45c2-8938-cc317e83a3c4). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  384G   50G  89% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  electron/devices/deviceDetection.ts
+M  shared/types.ts
+M  src/views/Dashboard.tsx
+M  src/views/MediaLibrary.css
+M  src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+50G free, healthy.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Fix optical drive detection \(lsblk type=rom\) and add device a...`
+
+Commit and push the device detection fix and Add Media picker
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Fix optical drive detection (lsblk type=rom) and add device auto-fill to the Add Media form" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Fix optical drive detection (lsblk type=rom) and add device auto-fill to the Add Media form" 2>&1 | tail -20 && git push 2>&1` (terminal ID=70a10049-6709-49f1-9527-5469b5be6c4b). This is the output of running that command instead:
+kel@kel-EQ-Mint:~/dev/DiscDock$  git commit -m "Fix optical drive detection (lsb
+lk type=rom) and add device auto-fill to the Add Media form" 2>&1 | tail -20 &&
+git push 2>&1
+[main 95e8094] Fix optical drive detection (lsblk type=rom) and add device auto-
+fill to the Add Media form
+ 7 files changed, 1314 insertions(+), 60 deletions(-)
+Enumerating objects: 31, done.
+Counting objects: 100% (31/31), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (15/15), done.
+Writing objects: 100% (16/16), 8.30 KiB | 708.00 KiB/s, done.
+Total 16 (delta 12), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (12/12), completed with 12 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   b598da7..95e8094  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+You weren't missing anything — it was a real bug. Committed and pushed.
+
+**Root cause:** `lsblk` reports optical drives with `type: "rom"`, but our device detection only matched `type: "part"`, so DVDs/CDs were silently excluded from detection entirely. I confirmed this directly — you actually had a disc inserted ("My Disc", ISO9660, mounted at `/media/kel/My Disc`) that the app was ignoring.
+
+**Fixed:**
+- `deviceDetection.ts` — now includes `type: "rom"` (optical) alongside partitions, and tags devices with  so the app can default the media type to DVD vs. external drive intelligently
+- **Add Media form** (Media Library) now shows a "Detected media" quick-pick row — clicking a detected device auto-fills label, media type, capacity, and device fingerprint, so you don't have to type it manually
+- Dashboard's existing "Register as Media" now also picks `dvd` as the default type for optical media instead of always `external_hdd`
+
+**Verified live**: relaunched the app and confirmed "My Disc" now appears correctly in Detected Devices with label/mount point/filesystem/size.
+
+**One real limitation to be aware of** (documented in the planning docs, FR-1.7): this only works for discs with a mounted filesystem (data DVDs/CDs with ISO9660/UDF, like yours). A pure audio CD (CDDA) has no filesystem for `lsblk` to read metadata from — that needs a separate track-listing feature, which is tracked as a Phase 3 stretch goal, not yet implemented. Let me know if you want that prioritized sooner.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Add detected-device picker to Add Media form* (3/3)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 19:02:24Z)**_
+
+I think we would benefit from prompting the user to scan the media once it has been added.
+
+---
+
+_**Agent (copilot/auto)**_
+
+Good idea — let's prompt to scan immediately after a media item is added, in both places media gets created (manual Add Media form and Dashboard's "Register as Media").  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 80 to 140
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 140 to 160
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 141-150 @@
+
+```
+beginScanWithPath = (mediaId: number, rootPath: string): void => {
+    void window.discdock.scan.start(mediaId, rootPath).then((startResult) => {
+      if (startResult.ok) {
+        const jobId = startResult.data.jobId
+        setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+        setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
+      }
+    })
+  }
+
+  const handleScan = (mediaId: number): void => {
+    void window.discdock.dialogs.pickFolder().then((pickResult) => {
+      if (!pickResult.ok || !pickResult.data.path) return
+      beginScanWithPath(mediaId, pickResult.data.path
+```
+
+@@ lines 111-125 @@
+
+```
+
+        const mediaId = result.data.id
+        if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
+          if (deviceMountPoint) {
+            beginScanWithPath(mediaId, deviceMountPoint)
+          } else {
+            handleScan(mediaId)
+          }
+        }
+        setDeviceMountPoint(null)
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleUseDevice = (device: DetectedDevice): void => {
+    setForm({
+      label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
+      mediaType: device.isOptical ? 'dvd' : 'external_hdd',
+      capacityBytes: device.sizeBytes,
+      physicalLocation: null,
+      notes: null,
+      deviceFingerprint: device.uuid ?? device.devicePath
+    })
+    setDeviceMountPoint(device.mountPoint
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now add the  state declaration:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `const [devices, setDevices]` (`**/src/views/MediaLibrary.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 31-31 @@
+
+```
+
+  const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `onClick={() => setShowForm(false)}` (`**/src/views/MediaLibrary.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 243 to 252
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 248-248 @@
+
+```
+
+              type="button"
+              className="button"
+              onClick={() => {
+                setShowForm(false)
+                setDeviceMountPoint(null)
+              }}
+            
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update Dashboard's "Register as Media" flow to also prompt for scanning:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 1 to 65
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Dashboard.tsx**</summary>
+
+@@ lines 62-62 @@
+
+```
+
+          if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
+            setScanning((prev) => new Set(prev).add(device.devicePath))
+            void window.discdock.scan.start(result.data.id, device.mountPoint).then(() => {
+              setScanning((prev) => {
+                const next = new Set(prev)
+                next.delete(device.devicePath)
+                return next
+              })
+              refreshSummary()
+            })
+          }
+
+```
+
+@@ lines 21-21 @@
+
+```
+
+  const [scanning, setScanning] = useState<Set<string>>(new Set())
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Dashboard.tsx**</summary>
+
+@@ lines 62-62 @@
+
+```
+
+          if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
+            setScanning((prev) => new Set(prev).add(device.devicePath))
+            void window.discdock.scan.start(result.data.id, device.mountPoint).then(() => {
+              setScanning((prev) => {
+                const next = new Set(prev)
+                next.delete(device.devicePath)
+                return next
+              })
+              refreshSummary()
+            })
+          }
+
+```
+
+@@ lines 21-21 @@
+
+```
+
+  const [scanning, setScanning] = useState<Set<string>>(new Set())
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 1 to 75
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Dashboard.tsx**</summary>
+
+@@ lines 65-72 @@
+
+```
+Devices((prev) => new Set(prev).add(device.devicePath))
+            void window.discdock.scan.start(result.data.id, device.mountPoint).then((startResult) => {
+              if (startResult.ok) {
+                setJobToDevice((prev) => ({ ...prev, [startResult.data.jobId]: device.devicePath }))
+              }
+```
+
+@@ lines 43-45 @@
+
+```
+const finishScan = (jobId: number): void => {
+      setJobToDevice((current) => {
+        const devicePath = current[jobId]
+        if (devicePath !== undefined) {
+          setScanningDevices((prev) => {
+            const next = new Set(prev)
+            next.delete(devicePath)
+            return next
+          })
+        }
+        const next = { ...current }
+        delete next[jobId]
+        return next
+      })
+      refreshSummary()
+    }
+    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
+    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
+
+    return () => {
+      unsubConnect()
+      unsubDisconnect()
+      unsubCompleted()
+      unsubFailed()
+      unsubCancelled
+```
+
+@@ lines 22-22 @@
+
+```
+Devices, setScanningDevices] = useState<Set<string>>(new Set())
+  const [jobToDevice, setJobToDevice] = useState<Record<number, string>>({}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update the render section to show "Scanning…" status for scanning devices instead of the Register button:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 110 to 150
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 150 to 160
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Dashboard.tsx**</summary>
+
+@@ lines 147-147 @@
+
+```
+scanningDevices.has(device.devicePath) ? (
+                    <span className="status-badge">Scanning…</span>
+                  ) : 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's check for errors, verify integrity, and build:     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `MediaLibrary.tsx`, `Dashboard.tsx`, 2 problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Known non-blocking IDE quirk. Verify file integrity and build:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/views/Dashboard.tsx src/views/MediaLibrary.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's launch and do a real end-to-end test: register the actual DVD from Dashboard, confirm the scan prompt, and verify it scans.   
 
 _**Agent (copilot/auto)**_
 

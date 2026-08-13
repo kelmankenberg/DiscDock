@@ -29,6 +29,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
   const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
   const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
 
   const loadItems = (): void => {
     void window.discdock.media.list().then((result) => {
@@ -108,6 +109,16 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
         setForm(EMPTY_FORM)
         setShowForm(false)
         loadItems()
+
+        const mediaId = result.data.id
+        if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
+          if (deviceMountPoint) {
+            beginScanWithPath(mediaId, deviceMountPoint)
+          } else {
+            handleScan(mediaId)
+          }
+        }
+        setDeviceMountPoint(null)
       } else {
         setError(result.error.message)
       }
@@ -123,6 +134,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
       notes: null,
       deviceFingerprint: device.uuid ?? device.devicePath
     })
+    setDeviceMountPoint(device.mountPoint)
   }
 
   const handleRetire = (id: number): void => {
@@ -138,16 +150,20 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     })
   }
 
+  const beginScanWithPath = (mediaId: number, rootPath: string): void => {
+    void window.discdock.scan.start(mediaId, rootPath).then((startResult) => {
+      if (startResult.ok) {
+        const jobId = startResult.data.jobId
+        setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+        setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
+      }
+    })
+  }
+
   const handleScan = (mediaId: number): void => {
     void window.discdock.dialogs.pickFolder().then((pickResult) => {
       if (!pickResult.ok || !pickResult.data.path) return
-      void window.discdock.scan.start(mediaId, pickResult.data.path).then((startResult) => {
-        if (startResult.ok) {
-          const jobId = startResult.data.jobId
-          setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
-          setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
-        }
-      })
+      beginScanWithPath(mediaId, pickResult.data.path)
     })
   }
 
@@ -229,7 +245,14 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
             <button type="submit" className="button button--primary">
               Save
             </button>
-            <button type="button" className="button" onClick={() => setShowForm(false)}>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setShowForm(false)
+                setDeviceMountPoint(null)
+              }}
+            >
               Cancel
             </button>
           </div>

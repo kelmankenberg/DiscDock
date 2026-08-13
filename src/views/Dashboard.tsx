@@ -19,6 +19,8 @@ export default function Dashboard(): JSX.Element {
   const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY)
   const [devices, setDevices] = useState<DetectedDevice[]>([])
   const [registered, setRegistered] = useState<Set<string>>(new Set())
+  const [scanningDevices, setScanningDevices] = useState<Set<string>>(new Set())
+  const [jobToDevice, setJobToDevice] = useState<Record<number, string>>({})
 
   const refreshSummary = (): void => {
     void window.discdock.dashboard.getSummary().then((result) => {
@@ -39,9 +41,32 @@ export default function Dashboard(): JSX.Element {
       setDevices((prev) => prev.filter((d) => d.devicePath !== devicePath))
     })
 
+    const finishScan = (jobId: number): void => {
+      setJobToDevice((current) => {
+        const devicePath = current[jobId]
+        if (devicePath !== undefined) {
+          setScanningDevices((prev) => {
+            const next = new Set(prev)
+            next.delete(devicePath)
+            return next
+          })
+        }
+        const next = { ...current }
+        delete next[jobId]
+        return next
+      })
+      refreshSummary()
+    }
+    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
+    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
+
     return () => {
       unsubConnect()
       unsubDisconnect()
+      unsubCompleted()
+      unsubFailed()
+      unsubCancelled()
     }
   }, [])
 
@@ -59,6 +84,15 @@ export default function Dashboard(): JSX.Element {
         if (result.ok) {
           setRegistered((prev) => new Set(prev).add(device.devicePath))
           refreshSummary()
+
+          if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
+            setScanningDevices((prev) => new Set(prev).add(device.devicePath))
+            void window.discdock.scan.start(result.data.id, device.mountPoint).then((startResult) => {
+              if (startResult.ok) {
+                setJobToDevice((prev) => ({ ...prev, [startResult.data.jobId]: device.devicePath }))
+              }
+            })
+          }
         }
       })
   }
@@ -110,7 +144,9 @@ export default function Dashboard(): JSX.Element {
                 <td>{device.fsType ?? '—'}</td>
                 <td>{device.sizeBytes ? formatBytes(device.sizeBytes) : '—'}</td>
                 <td>
-                  {registered.has(device.devicePath) ? (
+                  {scanningDevices.has(device.devicePath) ? (
+                    <span className="status-badge">Scanning…</span>
+                  ) : registered.has(device.devicePath) ? (
                     <span className="status-badge">Registered</span>
                   ) : (
                     <button type="button" className="button button--small" onClick={() => handleRegister(device)}>
