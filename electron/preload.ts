@@ -91,7 +91,10 @@ const api = {
     }
   },
   dialogs: {
-    pickFolder: (): Promise<IpcResult<{ path: string | null }>> => ipcRenderer.invoke('dialog:pickFolder')
+    pickFolder: (): Promise<IpcResult<{ path: string | null }>> => ipcRenderer.invoke('dialog:pickFolder'),
+    pickSaveFile: (defaultName?: string): Promise<IpcResult<{ path: string | null }>> =>
+      ipcRenderer.invoke('dialog:pickSaveFile', { defaultName }),
+    pickOpenFile: (): Promise<IpcResult<{ path: string | null }>> => ipcRenderer.invoke('dialog:pickOpenFile')
   },
   search: {
     query: (text: string, filters: SearchFilters, page: number): Promise<IpcResult<SearchResultPage>> =>
@@ -109,6 +112,12 @@ const api = {
     get: (): Promise<IpcResult<AppSettings>> => ipcRenderer.invoke('settings:get'),
     update: (patch: Partial<AppSettings>): Promise<IpcResult<AppSettings>> =>
       ipcRenderer.invoke('settings:update', patch)
+  },
+  backup: {
+    run: (destinationPath: string): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('backup:run', { destinationPath }),
+    restore: (sourcePath: string): Promise<IpcResult<{ safetyBackupPath: string }>> =>
+      ipcRenderer.invoke('backup:restore', { sourcePath })
   }
 }
 

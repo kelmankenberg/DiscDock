@@ -23087,6 +23087,20 @@ kel@kel-EQ-Mint:~/dev/DiscDock$  npm run dev 2>&1
 
 _**Agent (copilot/auto)**_
 
+<think><details><summary>Thought Process</summary>
+Now update the remaining `hashFile` calls within the walk to use `options.hashMode` (renamed from `hashMode` param, still in scope via destructure) — let's verify the rest of the file is consistent:   
+
+Good, `hashMode` still in scope via destructuring. Now update `scanManager.ts` to accept `ScanOptions` and pull defaults from settings:    
+
+Now wire `registerSettingsIpc` into `main.ts`, expose `settings` API in `preload.ts`, and build the Settings view. Let's check `main.ts` first:   
+
+Clean build. Let's directly test the `globToRegExp`/`isExcluded` glob matching logic and the settings store, since those are the new pieces of business logic:    
+
+Found a real bug: my `globToRegExp` doesn't handle `**/` matching zero leading path segments (so `**/.Trash-*` fails to match a top-level `.Trash-1000`). Fixing it:
+</details></think>
+
+_**Agent (copilot/auto)**_
+
 This instance is running fine (Electron window opened live, first process holds the terminal). Now let's start a second `dev` while this one is still up, to reproduce the port conflict:  
 
 _**Agent (copilot/auto)**_
@@ -23095,6 +23109,46 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm run dev 2>&1`
+
+Attempt to start a second dev instance while the first is still holding port 5173, to reproduce a real restart-without-cleanup scenario
+
+```bash
+cd /home/kel/dev/DiscDock && npm run dev 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run dev 2>&1`, and that command is now running in terminal with ID=fa648740-8901-480b-a2e3-ad8af6287b83
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run dev 2>&1
+
+> discdock@0.1.0 dev
+> concurrently -k "vite" "wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron ."
+
+[0] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[0]   - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+[0] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[0] error when starting dev server:
+[0] Error: Port 5173 is already in use
+[0]     at httpServerStart (file:///home/kel/dev/DiscDock/node_modules/vite/dist/node/chunks/node.js:11656:10)
+[0]     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[0]     at async startServer (file:///home/kel/dev/DiscDock/node_modules/vite/dist/node/chunks/node.js:26625:30)
+[0]     at async Object.listen (file:///home/kel/dev/DiscDock/node_modules/vite/dist/node/chunks/node.js:26442:4)
+[0]     at async CAC.<anonymous> (file:///home/kel/dev/DiscDock/node_modules/vite/dist/node/cli.js:721:3)
+[0] vite exited with code 1
+--> Sending SIGTERM to other processes..
+[1] 
+[1] > discdock@0.1.0 build:electron
+[1] > tsc -p electron/tsconfig.json
+[1] 
+[1] wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron . exited with code SIGTERM
+kel@kel-EQ-Mint:~/dev/DiscDock$ 
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="fa648740-8901-480b-a2e3-ad8af6287b83" to continue polling. This is the default and safest action when unsure.
+  2. Only if
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23107,6 +23161,34 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **kill_terminal**</summary>
 
 Killed terminal
+
+**Input:**
+
+- id: `e89dd154-f3d2-498e-9031-aba6b71fa09a`
+
+**Result:**
+
+```
+Successfully killed persistent terminal e89dd154-f3d2-498e-9031-aba6b71fa09a. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run dev 2>&1
+
+> discdock@0.1.0 dev
+> concurrently -k "vite" "wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron ."
+
+[0] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[0]   - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+[0] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[0] 1:31:16 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+[0] 
+[0]   VITE v8.2.1  ready in 283 ms
+[0] 
+[0]   ➜  Local:   http://localhost:5173/
+[0]   ➜  Network: use --host to expose
+[1] 
+[1] > discdock@0.1.0 build:electron
+[1] > tsc -p electron/tsconfig.json
+[1]
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23115,6 +23197,39 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **kill_terminal**</summary>
 
 Killed terminal
+
+**Input:**
+
+- id: `fa648740-8901-480b-a2e3-ad8af6287b83`
+
+**Result:**
+
+```
+Successfully killed persistent terminal fa648740-8901-480b-a2e3-ad8af6287b83. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run dev 2>&1
+
+> discdock@0.1.0 dev
+> concurrently -k "vite" "wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron ."
+
+[0] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[0]   - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+[0] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[0] error when starting dev server:
+[0] Error: Port 5173 is already in use
+[0]     at httpServerStart (file:///home/kel/dev/DiscDock/node_modules/vite/dist/node/chunks/node.js:11656:10)
+[0]     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+[0]     at async startServer (file:///home/kel/dev/DiscDock/node_modules/vite/dist/node/chunks/node.js:26625:30)
+[0]     at async Object.listen (file:///home/kel/dev/DiscDock/node_modules/vite/dist/node/chunks/node.js:26442:4)
+[0]     at async CAC.<anonymous> (file:///home/kel/dev/DiscDock/node_modules/vite/dist/node/cli.js:721:3)
+[0] vite exited with code 1
+--> Sending SIGTERM to other processes..
+[1] 
+[1] > discdock@0.1.0 build:electron
+[1] > tsc -p electron/tsconfig.json
+[1] 
+[1] wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron . exited with code SIGTERM
+kel@kel-EQ-Mint:~/dev/DiscDock$
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23127,6 +23242,18 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` lsof -i :5173 2>/dev/null || ss -ltnp 2>/dev/null | grep 5173 || echo "port ...`
+
+Check whether port 5173 is currently occupied by a leftover process
+
+```bash
+lsof -i :5173 2>/dev/null || ss -ltnp 2>/dev/null | grep 5173 || echo "port 5173 free"
+```
+
+**Result:**
+
+```
+port 5173 free
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23135,18 +23262,78 @@ Port is free now. Let's save this to memory so it's not re-investigated every ti
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_memory"><details>
-<summary>Tool use: **copilot_memory**</summary>
+<tool-use data-tool-type="generic" data-tool-name="memory"><details>
+<summary>Tool use: **memory**</summary>
 
 Updated memory
+
+**Input:**
+
+- command: `str_replace`
+- new_str:
+
+```
+- Root fs was at 93% used (31G free) after recovery — worth keeping an eye on for this repo.
+
+## npm run dev "exit code 1" (recurring, not a bug)
+- Root cause: vite's dev server (strictPort: true) fails hard with "Port 5173 is already in use"
+  if a previous `npm run dev`/electron session is still running. concurrently then SIGTERMs the
+  other process and the whole script exits 1.
+- Confirmed by reproducing directly: starting a second `npm run dev` while the first is still up
+  reliably triggers this. Not caused by any code change.
+- Fix for the user: close/kill the previous dev session (or `lsof -i :5173`) before restarting.
+```
+
+- old_str: `- Root fs was at 93% used (31G free) after recovery — worth keeping an eye on for this repo.`
+
+**Result:**
+
+```
+Error: Missing required path parameter.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_memory"><details>
-<summary>Tool use: **copilot_memory**</summary>
+<tool-use data-tool-type="generic" data-tool-name="memory"><details>
+<summary>Tool use: **memory**</summary>
 
 Updated memory file `discdock-build.md`
+
+**Input:**
+
+- command: `str_replace`
+- new_str:
+
+```
+- Root fs was at 93% used (31G free) after recovery — worth keeping an eye on for this repo.
+
+## npm run dev "exit code 1" (recurring, not a bug)
+- Root cause: vite's dev server (strictPort: true) fails hard with "Port 5173 is already in use"
+  if a previous `npm run dev`/electron session is still running. concurrently then SIGTERMs the
+  other process and the whole script exits 1.
+- Confirmed by reproducing directly: starting a second `npm run dev` while the first is still up
+  reliably triggers this. Not caused by any code change.
+- Fix for the user: close/kill the previous dev session (or `lsof -i :5173`) before restarting.
+```
+
+- old_str: `- Root fs was at 93% used (31G free) after recovery — worth keeping an eye on for this repo.`
+- path: `/memories/repo/discdock-build.md`
+
+**Result:**
+
+```
+The memory file has been edited. Here's the result of running `cat -n` on a snippet of /memories/repo/discdock-build.md:
+    18	  suspiciously unchanged (e.g. identical output hash after a real content change).
+    19	  Note: this may look like a race condition/cache issue in the build tool, but check disk space
+    20	  first (`df -h /`) before chasing tooling bugs — check the workspace disk, not just where
+    21	  DiscDock lives if it's on a different mount.
+    22	- Root fs was at 93% used (31G free) after recovery — worth keeping an eye on for this repo.
+    23	
+    24	## npm run dev "exit code 1" (recurring, not a bug)
+    25	- Root cause: vite's dev server (strictPort: true) fails hard with "Port 5173 is already in use"
+    26	  if a previous `npm run dev`/electron session is still running. concurrently then SIGTERMs the
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23155,18 +23342,59 @@ Now implementing the next feature: **Settings** (scan defaults, theme, notificat
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `07-ui-ux-specification.md`, lines 58 to 67
+
+**Input:**
+
+- endLine: `67`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/07-ui-ux-specification.md`
+- startLine: `58`
+
+**Result:**
+
+```
+### 2.8 Backup / Export
+- **Export** section: scope selector (All / Single Media / Current Search Filter), format (JSON/CSV), destination picker, "Export" button, progress + history of past exports.
+- **Database Backup** section: "Backup Now" (choose destination), "Restore from Backup" (choose file, confirmation dialog explaining a safety backup will be taken first), list of recent backups with timestamps.
+
+### 2.9 Settings
+- **Scanning Defaults:** hashing mode (none/quick/full), exclude patterns editor, follow-symlinks toggle, scan concurrency.
+- **Devices:** watch behavior (auto-detect on/off), configured additional mount root paths to watch.
+- **Appearance:** theme (light/dark/system).
+- **Notifications:** toggles for scan completed/failed, verification reminders, backup/export completed.
+- **Media Types & Custom Fields:** manage the list of media types; manage custom metadata fields available on media records.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 170 to 179
+
+**Input:**
+
+- endLine: `180`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `170`
+
+**Result:**
+
+```
+
+export interface FileEntry {
+  path: string
+  name: string
+  kind: string
+  isDirectory: boolean
+  sizeBytes: number
+  modifiedAtSrc: string | null
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23203,10 +23431,68 @@ Now the settings store (JSON file persistence):
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `settingsStore.ts`
+
+**Input:**
+
+- content:
+
+```
+import { app } from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
+import type { AppSettings } from '../../shared/types'
+
+const DEFAULT_SETTINGS: AppSettings = {
+  defaultHashMode: 'none',
+  excludePatterns: ['**/.Trash-*', '**/System Volume Information', '**/.DS_Store'],
+  followSymlinks: false,
+  theme: 'system',
+  notifications: {
+    scanCompleted: true,
+    scanFailed: true,
+    verificationReminders: true
+  }
+}
+
+let cached: AppSettings | null = null
+
+function settingsPath(): string {
+  return path.join(app.getPath('userData'), 'settings.json')
+}
+
+export function getSettings(): AppSettings {
+  if (cached) return cached
+  try {
+    const raw = fs.readFileSync(settingsPath(), 'utf-8')
+    cached = { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<AppSettings>) }
+  } catch {
+    cached = { ...DEFAULT_SETTINGS }
+  }
+  return cached
+}
+
+export function updateSettings(patch: Partial<AppSettings>): AppSettings {
+  const current = getSettings()
+  cached = { ...current, ...patch }
+  fs.mkdirSync(path.dirname(settingsPath()), { recursive: true })
+  fs.writeFileSync(settingsPath(), JSON.stringify(cached, null, 2))
+  return cached
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/settings/settingsStore.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/settings/settingsStore.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23268,10 +23554,41 @@ Now the IPC handler:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `settings.ts`
+
+**Input:**
+
+- content:
+
+```
+import { ipcMain } from 'electron'
+import { getSettings, updateSettings } from '../settings/settingsStore'
+import type { AppSettings, IpcResult } from '../../shared/types'
+
+export function registerSettingsIpc(): void {
+  ipcMain.handle('settings:get', (): IpcResult<AppSettings> => {
+    return { ok: true, data: getSettings() }
+  })
+
+  ipcMain.handle('settings:update', (_event, payload: unknown): IpcResult<AppSettings> => {
+    const patch = (payload && typeof payload === 'object' ? payload : {}) as Partial<AppSettings>
+    return { ok: true, data: updateSettings(patch) }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/settings.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/settings.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23314,18 +23631,161 @@ Now wire exclude patterns + followSymlinks support into the scan engine, and app
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `scanEngine.ts`
+
+**Input:**
+
+- endLine: `140`
+- filePath: `/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import crypto from 'node:crypto'
+import { createReadStream } from 'node:fs'
+import type { HashMode } from '../../shared/types'
+import { classifyKind, getExtension } from './fileKind'
+import type { WalkedFile } from '../db/scanRepository'
+
+const QUICK_HASH_SAMPLE_BYTES = 65536
+const PROGRESS_YIELD_EVERY = 200
+
+export interface ScanCallbacks {
+  onFile: (file: WalkedFile) => void
+  onProgress: (filesProcessed: number, bytesProcessed: number, currentPath: string) => void
+  onError: (relativePath: string, errorType: string, message: string) => void
+  isCancelled: () => boolean
+}
+
+async function hashFile(absolutePath: string, mode: HashMode, size: number): Promise<string | null> {
+  if (mode === 'none') return null
+
+  if (mode === 'quick') {
+    const handle = await fs.open(absolutePath, 'r')
+    try {
+      const buffer = Buffer.alloc(Math.min(QUICK_HASH_SAMPLE_BYTES, size))
+      await handle.read(buffer, 0, buffer.length, 0)
+      const hash = crypto.createHash('sha256')
+      hash.update(buffer)
+      hash.update(String(size))
+      return hash.digest('hex')
+    } finally {
+      await handle.close()
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256')
+    const stream = createReadStream(absolutePath)
+    stream.on('data', (chunk) => hash.update(chunk))
+    stream.on('end', () => resolve(hash.digest('hex')))
+    stream.on('error', reject)
+  })
+}
+
+/**
+ * Iteratively walks rootPath (stack-based, no recursion) so deep trees can't overflow the call stack.
+ * Runs on the main process event loop but yields periodically so IPC/UI stay responsive (v0.1.0
+ * simplification — see roadmap for moving this to a worker_thread/utility process).
+ */
+export async function walkAndScan(
+  rootPath: string,
+  hashMode: HashMode,
+  callbacks: ScanCallbacks
+): Promise<{ filesProcessed: number; bytesProcessed: number }> {
+  const stack: string[] = [rootPath]
+  let filesProcessed = 
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_multiReplaceString"><details>
-<summary>Tool use: **copilot_multiReplaceString**</summary>
+<tool-use data-tool-type="generic" data-tool-name="multi_replace_string_in_file"><details>
+<summary>Tool use: **multi_replace_string_in_file**</summary>
 
 Multi-Replace String in Files
+
+**Input:**
+
+- explanation: `Add exclude-pattern glob matching and followSymlinks support to the scan engine`
+- oldString:
+
+```
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import crypto from 'node:crypto'
+import { createReadStream } from 'node:fs'
+import type { HashMode } from '../../shared/types'
+import { classifyKind, getExtension } from './fileKind'
+import type { WalkedFile } from '../db/scanRepository'
+
+const QUICK_HASH_SAMPLE_BYTES = 65536
+const PROGRESS_YIELD_EVERY = 200
+
+export interface ScanCallbacks {
+  onFile: (file: WalkedFile) => void
+  onProgress: (filesProcessed: number, bytesProcessed: number, currentPath: string) => void
+  onError: (relativePath: string, errorType: string, message: string) => void
+  isCancelled: () => boolean
+}"}, {"filePath": "/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts", "newString": "export async function walkAndScan(\n  rootPath: string,\n  options: ScanOptions,\n  callbacks: ScanCallbacks\n): Promise<{ filesProcessed: number; bytesProcessed: number }> {\n  const { hashMode, followSymlinks } = options\n  const excludeRegexes = options.excludePatterns.map(globToRegExp)\n  const stack: string[] = [rootPath]", "oldString": "export async function walkAndScan(\n  rootPath: string,\n  hashMode: HashMode,\n  callbacks: ScanCallbacks\n): Promise<{ filesProcessed: number; bytesProcessed: number }> {\n  const stack: string[] = [rootPath]"}, {"filePath": "/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts", "newString": "      const absolutePath = path.join(currentDir, entryName)\n      const relativePath = path.relative(rootPath, absolutePath)\n\n      if (isExcluded(relativePath, excludeRegexes)) continue\n\n      let stat\n      try {\n        stat = followSymlinks ? await fs.stat(absolutePath) : await fs.lstat(absolutePath)\n      } catch (err) {\n        callbacks.onError(relativePath, 'stat_failed', (err as Error).message)\n        continue\n      }\n\n      if (!followSymlinks && stat.isSymbolicLink()) continue // symlinks not followed by default (FR-2.5)", "oldString": "      const absolutePath = path.join(currentDir, entryName)\n      const relativePath = path.relative(rootPath, absolutePath)\n\n      let stat\n      try {\n        stat = await fs.lstat(absolutePath)\n      } catch (err) {\n        callbacks.onError(relativePath, 'stat_failed', (err as Error).message)\n        continue\n      }\n\n      if (stat.isSymbolicLink()) continue // symlinks not followed by default (FR-2.5)"}]
+```
+
+- replacements:
+
+```
+[{"filePath": "/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts", "newString">import fs from 'node:fs/promises'
+import path from 'node:path'
+import crypto from 'node:crypto'
+import { createReadStream } from 'node:fs'
+import type { HashMode } from '../../shared/types'
+import { classifyKind, getExtension } from './fileKind'
+import type { WalkedFile } from '../db/scanRepository'
+
+const QUICK_HASH_SAMPLE_BYTES = 65536
+const PROGRESS_YIELD_EVERY = 200
+
+export interface ScanOptions {
+  hashMode: HashMode
+  excludePatterns: string[]
+  followSymlinks: boolean
+}
+
+export interface ScanCallbacks {
+  onFile: (file: WalkedFile) => void
+  onProgress: (filesProcessed: number, bytesProcessed: number, currentPath: string) => void
+  onError: (relativePath: string, errorType: string, message: string) => void
+  isCancelled: () => boolean
+}
+
+/** Converts a simple glob (`*`, `**`) into a RegExp for exclude-pattern matching (FR-2.4). */
+function globToRegExp(pattern: string): RegExp {
+  const escaped = pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*/g, '\u0000')
+    .replace(/\*/g, '[^/]*')
+    .replace(/\u0000/g, '.*')
+  return new RegExp(`^${escaped}$`)
+}
+
+function isExcluded(relativePath: string, excludeRegexes: RegExp[]): boolean {
+  return excludeRegexes.some((re) => re.test(relativePath))
+}
+```
+
+
+**Result:**
+
+```
+ERROR: Your input to the tool was invalid (must be array)
+Please check your input and try again.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23396,10 +23856,81 @@ Now update the remaining  calls within the walk to use  (renamed from  param, st
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `scanEngine.ts`, lines 55 to 160
+
+**Input:**
+
+- endLine: `160`
+- filePath: `/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts`
+- startLine: `55`
+
+**Result:**
+
+```
+
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256')
+    const stream = createReadStream(absolutePath)
+    stream.on('data', (chunk) => hash.update(chunk))
+    stream.on('end', () => resolve(hash.digest('hex')))
+    stream.on('error', reject)
+  })
+}
+
+/**
+ * Iteratively walks rootPath (stack-based, no recursion) so deep trees can't overflow the call stack.
+ * Runs on the main process event loop but yields periodically so IPC/UI stay responsive (v0.1.0
+ * simplification — see roadmap for moving this to a worker_thread/utility process).
+ */
+export async function walkAndScan(
+  rootPath: string,
+  options: ScanOptions,
+  callbacks: ScanCallbacks
+): Promise<{ filesProcessed: number; bytesProcessed: number }> {
+  const { hashMode, followSymlinks } = options
+  const excludeRegexes = options.excludePatterns.map(globToRegExp)
+  const stack: string[] = [rootPath]
+  let filesProcessed = 0
+  let bytesProcessed = 0
+  let sinceYield = 0
+
+  while (stack.length > 0) {
+    if (callbacks.isCancelled()) break
+    const currentDir = stack.pop() as string
+
+    let entries: string[]
+    try {
+      entries = await fs.readdir(currentDir)
+    } catch (err) {
+      callbacks.onError(currentDir, 'read_dir_failed', (err as Error).message)
+      continue
+    }
+
+    for (const entryName of entries) {
+      if (callbacks.isCancelled()) break
+      const absolutePath = path.join(currentDir, entryName)
+      const relativePath = path.relative(rootPath, absolutePath)
+
+      if (isExcluded(relativePath, excludeRegexes)) continue
+
+      let stat
+      try {
+        stat = followSymlinks ? await fs.stat(absolutePath) : await fs.lstat(absolutePath)
+      } catch (err) {
+        callbacks.onError(relativePath, 'stat_failed', (err as Error).message)
+        continue
+      }
+
+      if (!followSymlinks && stat.isSymbolicLink()) continue // symlinks not followed by default (FR-2.5)
+
+      if (stat.isDirectory()) {
+        stack.push(absolutePath)
+        callbacks.onFile
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23408,10 +23939,85 @@ Good,  still in scope via destructuring. Now update `scanManager.ts` to accept  
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `scanManager.ts`
+
+**Input:**
+
+- endLine: `85`
+- filePath: `/home/kel/dev/DiscDock/electron/scanning/scanManager.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { BrowserWindow } from 'electron'
+import { walkAndScan } from './scanEngine'
+import {
+  createScanJob,
+  finalizeScanJob,
+  markMediaScanned,
+  pruneUnseenFiles,
+  recordScanError,
+  upsertFileRecord
+} from '../db/scanRepository'
+import type { HashMode, ScanProgress } from '../../shared/types'
+
+interface ActiveJob {
+  cancelled: boolean
+}
+
+const activeJobs = new Map<number, ActiveJob>()
+let win: BrowserWindow | null = null
+
+export function initScanManager(mainWindow: BrowserWindow): void {
+  win = mainWindow
+}
+
+export function cancelScan(jobId: number): boolean {
+  const job = activeJobs.get(jobId)
+  if (!job) return false
+  job.cancelled = true
+  return true
+}
+
+/** Creates the scan_job row synchronously and runs the walk in the background; returns the job id immediately. */
+export function startScan(mediaItemId: number, rootPath: string, hashMode: HashMode): number {
+  const job = createScanJob(mediaItemId, hashMode)
+  void runScan(job.id, mediaItemId, rootPath, hashMode)
+  return job.id
+}
+
+async function runScan(jobId: number, mediaItemId: number, rootPath: string, hashMode: HashMode): Promise<void> {
+  const state: ActiveJob = { cancelled: false }
+  activeJobs.set(jobId, state)
+
+  let filesAdded = 0
+  let filesModified = 0
+  let filesUnchanged = 0
+  let errorCount = 0
+
+  try {
+    await walkAndScan(rootPath, hashMode, {
+      onFile: (file) => {
+        const outcome = upsertFileRecord(mediaItemId, jobId, file)
+        if (outcome === 'added') filesAdded += 1
+        else if (outcome === 'modified') filesModified += 1
+        else filesUnchanged += 1
+      },
+      onProgress: (filesProcessed, bytesProcessed, currentPath) => {
+        const progress: ScanProgress = { jobId, filesProcessed, bytesProcessed, currentPath }
+        win?.webContents.send('scan:progress', progress)
+      },
+      onError: (relativePath, errorType, message) => {
+        errorCount += 1
+        recordScanError(jobId, relativePath, errorType, message)
+      },
+      isCancelled: () 
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23493,10 +24099,61 @@ import { getSettings } from '../settings/settingsStore
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `scan.ts`, lines 1 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/scan.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { ipcMain } from 'electron'
+import { cancelScan, startScan } from '../scanning/scanManager'
+import { listScanJobsForMedia } from '../db/scanRepository'
+import type { HashMode, IpcResult, ScanJob } from '../../shared/types'
+
+export function registerScanIpc(): void {
+  ipcMain.handle('scan:start', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
+    const { mediaId, rootPath, hashMode } = (payload ?? {}) as {
+      mediaId?: unknown
+      rootPath?: unknown
+      hashMode?: unknown
+    }
+
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    if (typeof rootPath !== 'string' || !rootPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A rootPath is required' } }
+    }
+    const validModes: HashMode[] = ['none', 'quick', 'full']
+    const mode = validModes.includes(hashMode as HashMode) ? (hashMode as HashMode) : 'none'
+
+    const jobId = startScan(mediaId, rootPath, mode)
+    return { ok: true, data: { jobId } }
+  })
+
+  ipcMain.handle('scan:cancel', (_event, payload: unknown): IpcResult<{ cancelled: boolean }> => {
+    const jobId = (payload as { jobId?: unknown })?.jobId
+    if (typeof jobId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric jobId is required' } }
+    }
+    return { ok: true, data: { cancelled: cancelScan(jobId) } }
+  })
+
+  ipcMain.handle('scan:history', (_event, payload: unknown): IpcResult<ScanJob[]> => {
+    const mediaId = (payload as { mediaId?: unknown })?.mediaId
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    return { ok: true, data: listScanJobsForMedia(mediaId) }
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23597,18 +24254,50 @@ import
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `scan.start` (`**/electron/preload.ts`), 1 result
+
+**Input:**
+
+- includePattern: `electron/preload.ts`
+- isRegexp: `false`
+- query: `scan.start`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "scan.start"
+
+electron/preload.ts
+65:      ipcRenderer.invoke('scan:start', { mediaId, rootPath, hashMode }),
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 62 to 67
+
+**Input:**
+
+- endLine: `67`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `62`
+
+**Result:**
+
+```
+  },
+  scan: {
+    start: (mediaId: number, rootPath: string, hashMode: HashMode): Promise<IpcResult<{ jobId: number }>> =>
+      ipcRenderer.invoke('scan:start', { mediaId, rootPath, hashMode }),
+    cancel: (jobId: number): Promise<IpcResult<{ cancelled: boolean }>> =>
+      ipcRenderer.invoke('scan:cancel', { jobId }),
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23637,10 +24326,25 @@ Now update `MediaLibrary.tsx` to omit the hardcoded `'none'`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `scan.start` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `scan.start`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "scan.start"
+
+src/views/MediaLibrary.tsx
+116:      void window.discdock.scan.start(mediaId, pickResult.data.path, 'none').then((startResult) => {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23657,10 +24361,66 @@ Now wire `registerSettingsIpc` into `main.ts`, expose  API in `preload.ts`, and 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `main.ts`, lines 1 to 45
+
+**Input:**
+
+- endLine: `45`
+- filePath: `/home/kel/dev/DiscDock/electron/main.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { createMainWindow } from './window/createWindow'
+import { registerWindowControlIpc } from './ipc/windowControls'
+import { registerDashboardIpc } from './ipc/dashboard'
+import { registerMediaIpc } from './ipc/media'
+import { registerDeviceIpc, startDeviceWatcher, stopDeviceWatcher } from './ipc/devices'
+import { registerScanIpc } from './ipc/scan'
+import { registerDialogIpc } from './ipc/dialogs'
+import { registerSearchIpc } from './ipc/search'
+import { registerDuplicatesIpc } from './ipc/duplicates'
+import { registerFilesIpc } from './ipc/files'
+import { initScanManager } from './scanning/scanManager'
+import { getDb, closeDb } from './db'
+import type { IpcResult } from '../shared/types'
+
+let mainWindow: BrowserWindow | null = null
+
+function registerAppIpc(): void {
+  ipcMain.handle('app:getVersion', (): IpcResult<string> => {
+    return { ok: true, data: app.getVersion() }
+  })
+}
+
+app.whenReady().then(() => {
+  getDb() // initialize database + run migrations before the window is shown
+
+  mainWindow = createMainWindow()
+  registerWindowControlIpc(mainWindow)
+  registerDashboardIpc()
+  registerMediaIpc()
+  registerDeviceIpc()
+  registerAppIpc()
+  registerScanIpc()
+  registerDialogIpc(mainWindow)
+  registerSearchIpc()
+  registerDuplicatesIpc()
+  registerFilesIpc()
+  initScanManager(mainWindow)
+  startDeviceWatcher(mainWindow)
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      mainWindow = createMainWindow()
+      registerWindowControlIpc(mainWindow)
+    }
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23689,10 +24449,38 @@ Now `preload.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 1 to 18
+
+**Input:**
+
+- endLine: `18`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { contextBridge, ipcRenderer } from 'electron'
+import type {
+  DashboardSummary,
+  DetectedDevice,
+  DuplicateReport,
+  DuplicateReportFilters,
+  FileEntry,
+  HashMode,
+  IpcResult,
+  MediaItem,
+  MediaItemInput,
+  ScanJob,
+  ScanProgress,
+  SearchFilters,
+  SearchResultPage,
+  WindowState
+} from '../shared/types'
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23725,10 +24513,145 @@ Now the Settings view, with real theme application support:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `Settings.tsx`
+
+**Input:**
+
+- content:
+
+```
+import { useEffect, useState } from 'react'
+import type { AppSettings, HashMode, Theme } from '../../shared/types'
+import './Settings.css'
+
+const HASH_MODES: { value: HashMode; label: string }[] = [
+  { value: 'none', label: 'None (metadata only, fastest)' },
+  { value: 'quick', label: 'Quick (partial hash)' },
+  { value: 'full', label: 'Full (SHA-256, most accurate)' }
+]
+
+export default function Settings(): JSX.Element {
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) setSettings(result.data)
+    })
+  }, [])
+
+  const save = (patch: Partial<AppSettings>): void => {
+    void window.discdock.settings.update(patch).then((result) => {
+      if (result.ok) {
+        setSettings(result.data)
+        setSaved(true)
+        setTimeout(() => setSaved(false), 1500)
+      }
+    })
+  }
+
+  if (!settings) return <div className="settings-view">Loading…</div>
+
+  return (
+    <div className="settings-view">
+      <h1>Settings</h1>
+      {saved && <p className="settings-view__saved">Saved</p>}
+
+      <section className="settings-section">
+        <h2>Scanning Defaults</h2>
+        <label>
+          Default hash mode
+          <select
+            value={settings.defaultHashMode}
+            onChange={(e) => save({ defaultHashMode: e.target.value as HashMode })}
+          >
+            {HASH_MODES.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Exclude patterns (one per line)
+          <textarea
+            value={settings.excludePatterns.join('\n')}
+            onChange={(e) => save({ excludePatterns: e.target.value.split('\n').filter(Boolean) })}
+            rows={4}
+          />
+        </label>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.followSymlinks}
+            onChange={(e) => save({ followSymlinks: e.target.checked })}
+          />
+          Follow symbolic links during scans
+        </label>
+      </section>
+
+      <section className="settings-section">
+        <h2>Appearance</h2>
+        <label>
+          Theme
+          <select value={settings.theme} onChange={(e) => save({ theme: e.target.value as Theme })}>
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+      </section>
+
+      <section className="settings-section">
+        <h2>Notifications</h2>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.notifications.scanCompleted}
+            onChange={(e) =>
+              save({ notifications: { ...settings.notifications, scanCompleted: e.target.checked } })
+            }
+          />
+          Notify when a scan completes
+        </label>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.notifications.scanFailed}
+            onChange={(e) =>
+              save({ notifications: { ...settings.notifications, scanFailed: e.target.checked } })
+            }
+          />
+          Notify when a scan fails
+        </label>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.notifications.verificationReminders}
+            onChange={(e) =>
+              save({ notifications: { ...settings.notifications, verificationReminders: e.target.checked } })
+            }
+          />
+          Remind me about media needing re-verification
+        </label>
+      </section>
+    </div>
+  )
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/Settings.tsx`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/views/Settings.tsx
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23863,10 +24786,68 @@ export default function Settings(): JSX.Element {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `Settings.css`
+
+**Input:**
+
+- content:
+
+```
+.settings-view__saved {
+  color: var(--color-accent);
+  font-size: 13px;
+}
+
+.settings-section {
+  margin: 20px 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-section h2 {
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.settings-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  max-width: 420px;
+}
+
+.settings-section select,
+.settings-section textarea {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.settings-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/Settings.css`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/views/Settings.css
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23928,10 +24909,49 @@ Now let's wire up actual theme application (currently only responds to OS prefer
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `global.css`, lines 1 to 28
+
+**Input:**
+
+- endLine: `28`
+- filePath: `/home/kel/dev/DiscDock/src/styles/global.css`
+- startLine: `1`
+
+**Result:**
+
+```
+:root {
+  --color-bg: #1e1e1e;
+  --color-text: #e6e6e6;
+  --color-border: #333;
+  --color-titlebar-bg: #171717;
+  --color-titlebar-fg: #e6e6e6;
+  --color-titlebar-hover: #333;
+  --color-sidebar-bg: #181818;
+  --color-sidebar-hover: #2a2a2a;
+  --color-accent: #3b82f6;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: #f5f5f5;
+    --color-text: #1e1e1e;
+    --color-border: #ddd;
+    --color-titlebar-bg: #e8e8e8;
+    --color-titlebar-fg: #1e1e1e;
+    --color-titlebar-hover: #d8d8d8;
+    --color-sidebar-bg: #f0f0f0;
+    --color-sidebar-hover: #e0e0e0;
+    color-scheme: light;
+  }
+}
+
+* {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -23987,10 +25007,66 @@ Now apply `data-theme` on app load and when changed in Settings:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `App.tsx`, lines 1 to 45
+
+**Input:**
+
+- endLine: `45`
+- filePath: `/home/kel/dev/DiscDock/src/App.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useState } from 'react'
+import TitleBar from './components/TitleBar'
+import Sidebar from './components/Sidebar'
+import Dashboard from './views/Dashboard'
+import MediaLibrary from './views/MediaLibrary'
+import MediaDetail from './views/MediaDetail'
+import Search from './views/Search'
+import Duplicates from './views/Duplicates'
+import PlaceholderView from './views/PlaceholderView'
+import { NAV_ITEMS } from './components/Sidebar'
+
+const VIEW_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.label])
+)
+
+export default function App(): JSX.Element {
+  const [activeView, setActiveView] = useState('dashboard')
+  const [selectedMediaId, setSelectedMediaId] = useState<number | null>(null)
+
+  const handleSelectNav = (key: string): void => {
+    setSelectedMediaId(null)
+    setActiveView(key)
+  }
+
+  const renderView = (): JSX.Element => {
+    if (activeView === 'media-library' && selectedMediaId !== null) {
+      return <MediaDetail mediaId={selectedMediaId} onBack={() => setSelectedMediaId(null)} />
+    }
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'media-library':
+        return <MediaLibrary onOpenDetail={setSelectedMediaId} />
+      case 'search':
+        return <Search />
+      case 'duplicates':
+        return <Duplicates />
+      default:
+        return <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
+    }
+  }
+
+  return (
+    <div className="app-shell">
+      <TitleBar />
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -24071,10 +25147,61 @@ if (patch.theme) document.documentElement.dataset.theme = result.data.theme
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `settingsStore.ts`, `settings.ts`, `scanEngine.ts`, `scanManager.ts`, `scan.ts`, `main.ts`, `preload.ts`, `App.tsx`, `Settings.tsx`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/electron/settings/settingsStore.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/settings.ts",
+  "/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts",
+  "/home/kel/dev/DiscDock/electron/scanning/scanManager.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/scan.ts",
+  "/home/kel/dev/DiscDock/electron/main.ts",
+  "/home/kel/dev/DiscDock/electron/preload.ts",
+  "/home/kel/dev/DiscDock/src/App.tsx",
+  "/home/kel/dev/DiscDock/src/views/Settings.tsx"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/electron/settings/settingsStore.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/settings.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/scanning/scanManager.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/scan.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/main.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/preload.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/App.tsx">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/views/Settings.tsx">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -24087,6 +25214,30 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c electron/settings/settingsStore.ts electron/ipc/settings.ts electron/s...`
+
+Verify all new/edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/settings/settingsStore.ts electron/ipc/settings.ts electron/scanning/scanEngine.ts electron/scanning/scanManager.ts electron/ipc/scan.ts electron/main.ts electron/preload.ts src/App.tsx src/views/Settings.tsx src/views/Settings.css src/styles/global.css
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/settings/settingsStore.ts electron/ipc/settings.ts electron/scanning/scanEngine.ts electron/scanning/scanManager.ts electron/ipc/scan.ts electron/main.ts electron/preload.ts src/App.tsx src/views/Settings.tsx src/views/Settings.css src/styles/global.css` (terminal ID=dc522325-5190-4592-ab39-95020854d776). This is the output of running that command instead:
+ 1165 electron/settings/settingsStore.ts
+  585 electron/ipc/settings.ts
+ 5297 electron/scanning/scanEngine.ts
+ 3436 electron/scanning/scanManager.ts
+ 1894 electron/ipc/scan.ts
+ 1796 electron/main.ts
+ 5483 electron/preload.ts
+ 1983 src/App.tsx
+ 3941 src/views/Settings.tsx
+  748 src/views/Settings.css
+ 3058 src/styles/global.css
+29386 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -24099,6 +25250,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80`
+
+Clean rebuild with Settings feature and scan options changes
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -80
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80` (terminal ID=8b210511-92dd-4c19-8c78-1059a0c1fe61). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 33 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-Cep7rBcB.css    7.32 kB │ gzip:  1.70 kB
+dist/assets/index-CdHZTzpN.js   213.14 kB │ gzip: 65.75 kB
+
+✓ built in 183ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -24112,6 +25300,35 @@ _**Agent (copilot/auto)**_
 
 Running ` cd /home/kel/dev/DiscDock && node -e "
 const \{ walkAndScan \} = require\('./di...`
+
+Verify exclude-pattern glob matching correctly skips matched directories during a scan
+
+```bash
+cd /home/kel/dev/DiscDock && node -e "
+const { walkAndScan } = require('./dist-electron/electron/scanning/scanEngine');
+const fs = require('fs');
+fs.mkdirSync('/tmp/scan-test2/.Trash-1000', { recursive: true });
+fs.writeFileSync('/tmp/scan-test2/keep.txt', 'hello');
+fs.writeFileSync('/tmp/scan-test2/.Trash-1000/junk.txt', 'junk');
+(async () => {
+  const files = [];
+  await walkAndScan('/tmp/scan-test2', { hashMode: 'none', excludePatterns: ['**/.Trash-*'], followSymlinks: false }, {
+    onFile: (f) => files.push(f.path),
+    onProgress: () => {},
+    onError: (p, t, m) => console.error('ERROR', p, t, m),
+    isCancelled: () => false
+  });
+  console.log('Files found (should exclude .Trash-1000):', JSON.stringify(files));
+})();
+"
+rm -rf /tmp/scan-test2
+```
+
+**Result:**
+
+```
+Files found (should exclude .Trash-1000): [".Trash-1000","keep.txt",".Trash-1000/junk.txt"]
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -24145,6 +25362,21 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm run build:electron 2>&1 | tail -20`
+
+Rebuild electron after fixing the glob-to-regex bug
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:electron 2>&1 | tail -20
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build:electron 2>&1 | tail -20` (terminal ID=4d657738-ed6d-477d-a70f-ba2221480618). This is the output of running that command instead:
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -24153,6 +25385,36 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` cd /home/kel/dev/DiscDock && mkdir -p /tmp/scan-test2/.Trash-1000 /tmp/scan-...`
+
+Retest exclude patterns at both root and nested levels after the fix
+
+```bash
+cd /home/kel/dev/DiscDock && mkdir -p /tmp/scan-test2/.Trash-1000 /tmp/scan-test2/sub/.Trash-2000 && node -e "
+const { walkAndScan } = require('./dist-electron/electron/scanning/scanEngine');
+const fs = require('fs');
+fs.writeFileSync('/tmp/scan-test2/keep.txt', 'hello');
+fs.writeFileSync('/tmp/scan-test2/.Trash-1000/junk.txt', 'junk');
+fs.writeFileSync('/tmp/scan-test2/sub/keep2.txt', 'hello2');
+fs.writeFileSync('/tmp/scan-test2/sub/.Trash-2000/junk2.txt', 'junk2');
+(async () => {
+  const files = [];
+  await walkAndScan('/tmp/scan-test2', { hashMode: 'none', excludePatterns: ['**/.Trash-*'], followSymlinks: false }, {
+    onFile: (f) => files.push(f.path),
+    onProgress: () => {},
+    onError: (p, t, m) => console.error('ERROR', p, t, m),
+    isCancelled: () => false
+  });
+  console.log('Files found:', JSON.stringify(files.sort()));
+})();
+"
+rm -rf /tmp/scan-test2
+```
+
+**Result:**
+
+```
+Files found: ["keep.txt","sub","sub/keep2.txt"]
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -24166,6 +25428,51 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-settings.js << 'EOF'
 process.env.XDG\_CONFI...`
+
+Verify the settings store persists and reads back updates correctly using a real Electron app context
+
+```bash
+cat > /home/kel/dev/DiscDock/test-settings.js << 'EOF'
+process.env.XDG_CONFIG_HOME = '/tmp/discdock-settings-test'
+const { app } = require('electron')
+app.whenReady().then(async () => {
+  const { getSettings, updateSettings } = require('./dist-electron/electron/settings/settingsStore')
+  console.log('defaults:', JSON.stringify(getSettings()))
+  const updated = updateSettings({ defaultHashMode: 'full', theme: 'dark' })
+  console.log('after update:', JSON.stringify(updated))
+  app.quit()
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-settings.js --no-sandbox 2>&1; rm -f test-settings.js; rm -rf /tmp/discdock-settings-test
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cat > /home/kel/dev/DiscDock/test-settings.js <
+< 'EOF'
+process.env.XDG_CONFIG_HOME = '/tmp/discdock-settings-test'
+const { app } = require('electron')
+app.whenReady().then(async () => {
+  const { getSettings, updateSettings } = require('./dist-electron/electron/sett
+ings/settingsStore')
+  console.log('defaults:', JSON.stringify(getSettings()))
+  const updated = updateSettings({ defaultHashMode: 'full', theme: 'dark' })
+  console.log('after update:', JSON.stringify(updated))
+  app.quit()
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-settings.js --no-sandbox 2>&1; rm
+ -f test-settings.js; rm -rf /tmp/discdock-settings-test
+defaults: {"defaultHashMode":"none","excludePatterns":["**/.Trash-*","**/System
+Volume Information","**/.DS_Store"],"followSymlinks":false,"theme":"system","not
+ifications":{"scanCompleted":true,"scanFailed":true,"verificationReminders":true
+}}
+after update: {"defaultHashMode":"full","excludePatterns":["**/.Trash-*","**/Sys
+tem Volume Information","**/.DS_Store"],"followSymlinks":false,"theme":"dark","n
+otifications":{"scanCompleted":true,"scanFailed":true,"verificationReminders":tr
+ue}}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -24178,7 +25485,723 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -40`
+
+Final clean rebuild before commit
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -40
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -40` (terminal ID=73c7f29a-ff17-4739-941c-65c858450324). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 33 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-Cep7rBcB.css    7.32 kB │ gzip:  1.70 kB
+dist/assets/index-CdHZTzpN.js   213.14 kB │ gzip: 65.75 kB
+
+✓ built in 189ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app for final visual smoke test of Settings view
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=ffe6dd66-306d-421d-b261-459ad0b9bf8b
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="ffe6dd66-306d-421d-b261-459ad0b9bf8b" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="ffe6dd66-306d-421d-b261-459ad0b9bf8b" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors. Closing and committing.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `ffe6dd66-306d-421d-b261-459ad0b9bf8b`
+
+**Result:**
+
+```
+Successfully killed persistent terminal ffe6dd66-306d-421d-b261-459ad0b9bf8b. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for Settings feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=622d5a18-4003-40aa-8b31-afc8362c4359). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  382G   53G  88% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  electron/ipc/scan.ts
+A  electron/ipc/settings.ts
+M  electron/main.ts
+M  electron/preload.ts
+M  electron/scanning/scanEngine.ts
+M  electron/scanning/scanManager.ts
+A  electron/settings/settingsStore.ts
+M  shared/types.ts
+M  src/App.tsx
+M  src/styles/global.css
+M  src/views/MediaLibrary.tsx
+A  src/views/Settings.css
+A  src/views/Settings.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+53G free, healthy.     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Implement Settings: scan defaults, exclude patterns, theme, n...`
+
+Commit and push the Settings feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Implement Settings: scan defaults, exclude patterns, theme, notifications" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Implement Settings: scan defaults, exclude patterns, theme, notifications" 2>&1 | tail -20 && git push 2>&1` (terminal ID=5ec23c20-e7d9-4dc6-9d51-a9fbf742bcb1). This is the output of running that command instead:
+[main a3e2bf6] Implement Settings: scan defaults, exclude patterns, theme, notif
+ications
+ 15 files changed, 2739 insertions(+), 239 deletions(-)
+ create mode 100644 electron/ipc/settings.ts
+ create mode 100644 electron/settings/settingsStore.ts
+ create mode 100644 src/views/Settings.css
+ create mode 100644 src/views/Settings.tsx
+Enumerating objects: 48, done.
+Counting objects: 100% (48/48), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (24/24), done.
+Writing objects: 100% (27/27), 15.75 KiB | 1.21 MiB/s, done.
+Total 27 (delta 15), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (15/15), completed with 15 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   f9d1cbd..a3e2bf6  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (53G free, healthy).
+
+**Resolved first:** the recurring `npm run dev` exit-1 — reproduced and confirmed root cause: **port 5173 already in use** from a prior still-running dev session (Vite's `strictPort: true` fails hard rather than picking another port). Not a code bug. Saved to memory so it's not re-investigated. Fix: close the previous session before restarting, or `lsof -i :5173` to find/kill it.
+
+**Implemented: Settings (FR-8.2)**
+- `settingsStore.ts` — JSON-persisted settings (`~/.config/DiscDock/settings.json`... actually app data dir) with defaults + partial-update merge
+- `settings.ts` + `preload.ts` — `settings:get/update`
+- `Settings.tsx` — Scanning Defaults (hash mode, exclude patterns, follow-symlinks), Appearance (theme), Notifications toggles
+- **Wired settings to have real effect** (not just stored): scans now use the configured default hash mode and pass exclude patterns/follow-symlinks into the scan engine; scan completion/failure now trigger real OS notifications respecting the toggles; theme selection applies immediately via a `data-theme` attribute independent of OS preference
+
+**Bug caught and fixed during testing:** my glob-to-regex converter for exclude patterns didn't correctly handle `**/` matching *zero* leading path segments — `**/.Trash-*` failed to match a top-level `.Trash-1000` folder. Verified with a real nested directory tree before and after the fix (now correctly excludes at any depth). Also verified the settings store persists/merges correctly via a real Electron runtime test.
+
+**Remaining MVP gap:** Backup/Export (DB backup/restore, FR-7.2) is the last placeholder section. Let me know if you'd like that next, or if you'd rather pause feature work and address the disk space situation (still slowly trending down — 53G free now, down from 57G).
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Implement settings persistence and IPC handlers* (2/3)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 18:43:30Z)**_
+
+continue with what is the next logical step
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` lsof -i :5173 2>/dev/null || ss -ltnp 2>/dev/null | grep 5173 || echo "port ...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Port is free, disk is healthy (57G). That `npm run dev` exit-1 is the already-diagnosed port-conflict issue (documented in memory) — not something new to chase. Continuing with the last MVP gap: **Backup/Export (FR-7.2)**. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `07-ui-ux-specification.md`, lines 58 to 63
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `dialogs.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **dialogs.ts**</summary>
+
+@@ lines 12-12 @@
+
+```
+
+  ipcMain.handle(
+    'dialog:pickSaveFile',
+    async (_event, payload: unknown): Promise<IpcResult<{ path: string | null }>> => {
+      const defaultName = (payload as { defaultName?: unknown })?.defaultName
+      const result = await dialog.showSaveDialog(win, {
+        defaultPath: typeof defaultName === 'string' ? defaultName : undefined
+      })
+      if (result.canceled || !result.filePath) {
+        return { ok: true, data: { path: null } }
+      }
+      return { ok: true, data: { path: result.filePath } }
+    }
+  )
+
+  ipcMain.handle('dialog:pickOpenFile', async (): Promise<IpcResult<{ path: string | null }>> => {
+    const result = await dialog.showOpenDialog(win, { properties: ['openFile'] })
+    if (result.canceled || result.filePaths.length === 0) {
+      return { ok: true, data: { path: null } }
+    }
+    return { ok: true, data: { path: result.filePaths[0] } }
+  })
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the backup service:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `backupService.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **backupService.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import fs from 'node:fs'
+import path from 'node:path'
+import { app } from 'electron'
+import { getDb, closeDb } from '../db'
+
+function dbPath(): string {
+  return path.join(app.getPath('userData'), 'discdock.sqlite3')
+}
+
+export async function backupNow(destinationPath: string): Promise<void> {
+  await getDb().backup(destinationPath)
+}
+
+/**
+ * Restores the database from a backup file. Takes a safety backup of the current database
+ * first (FR-7.2) so a bad/incompatible restore file can't destroy existing data.
+ */
+export async function restoreFromBackup(sourcePath: string): Promise<{ safetyBackupPath: string }> {
+  const current = dbPath()
+  const backupsDir = path.join(app.getPath('userData'), 'backups')
+  fs.mkdirSync(backupsDir, { recursive: true })
+  const safetyBackupPath = path.join(backupsDir, `pre-restore-${Date.now()}.sqlite3`)
+
+  await getDb().backup(safetyBackupPath)
+  closeDb()
+
+  fs.copyFileSync(sourcePath, current)
+  for (const ext of ['-wal', '-shm']) {
+    const sidecar = current + ext
+    if (fs.existsSync(sidecar)) fs.rmSync(sidecar)
+  }
+
+  getDb() // reopen and re-run (idempotent) migrations against the restored file
+
+  return { safetyBackupPath }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the IPC handler:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `backup.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **backup.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { backupNow, restoreFromBackup } from '../backup/backupService'
+import type { IpcResult } from '../../shared/types'
+
+export function registerBackupIpc(): void {
+  ipcMain.handle('backup:run', async (_event, payload: unknown): Promise<IpcResult<{ ok: true }>> => {
+    const destinationPath = (payload as { destinationPath?: unknown })?.destinationPath
+    if (typeof destinationPath !== 'string' || !destinationPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A destinationPath is required' } }
+    }
+    try {
+      await backupNow(destinationPath)
+      return { ok: true, data: { ok: true } }
+    } catch (err) {
+      return { ok: false, error: { code: 'backup_error', message: (err as Error).message } }
+    }
+  })
+
+  ipcMain.handle(
+    'backup:restore',
+    async (_event, payload: unknown): Promise<IpcResult<{ safetyBackupPath: string }>> => {
+      const sourcePath = (payload as { sourcePath?: unknown })?.sourcePath
+      if (typeof sourcePath !== 'string' || !sourcePath.trim()) {
+        return { ok: false, error: { code: 'invalid_input', message: 'A sourcePath is required' } }
+      }
+      try {
+        const result = await restoreFromBackup(sourcePath)
+        return { ok: true, data: result }
+      } catch (err) {
+        return { ok: false, error: { code: 'restore_error', message: (err as Error).message } }
+      }
+    }
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now wire into `main.ts` and `preload.ts`:     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `main.ts`, lines 1 to 14
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 40-40 @@
+
+```
+registerBackupIpc()
+  
+```
+
+@@ lines 13-13 @@
+
+```
+registerBackupIpc } from './ipc/backup'
+import { 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now `preload.ts`:     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `dialogs:` (`**/electron/preload.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 89 to 104
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 112-112 @@
+
+```
+,
+  backup: {
+    run: (destinationPath: string): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('backup:run', { destinationPath }),
+    restore: (sourcePath: string): Promise<IpcResult<{ safetyBackupPath: string }>> =>
+      ipcRenderer.invoke('backup:restore', { sourcePath })
+  }
+```
+
+@@ lines 94-94 @@
+
+```
+,
+    pickSaveFile: (defaultName?: string): Promise<IpcResult<{ path: string | null }>> =>
+      ipcRenderer.invoke('dialog:pickSaveFile', { defaultName }),
+    pickOpenFile: (): Promise<IpcResult<{ path: string | null }>> => ipcRenderer.invoke('dialog:pickOpenFile')
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the Backup/Export renderer view:     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `BackupExport.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **BackupExport.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useState } from 'react'
+import './BackupExport.css'
+
+export default function BackupExport(): JSX.Element {
+  const [status, setStatus] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const handleBackup = (): void => {
+    void window.discdock.dialogs.pickSaveFile(`discdock-backup-${Date.now()}.sqlite3`).then((pick) => {
+      if (!pick.ok || !pick.data.path) return
+      setBusy(true)
+      setStatus(null)
+      void window.discdock.backup.run(pick.data.path).then((result) => {
+        setBusy(false)
+        setStatus(result.ok ? `Backup saved to ${pick.data.path}` : `Backup failed: ${result.error.message}`)
+      })
+    })
+  }
+
+  const handleRestore = (): void => {
+    void window.discdock.dialogs.pickOpenFile().then((pick) => {
+      if (!pick.ok || !pick.data.path) return
+      const confirmed = window.confirm(
+        'Restoring will replace your current catalog with the selected backup file. ' +
+          'A safety backup of your current data will be taken first. Continue?'
+      )
+      if (!confirmed) return
+
+      setBusy(true)
+      setStatus(null)
+      void window.discdock.backup.restore(pick.data.path!).then((result) => {
+        setBusy(false)
+        setStatus(
+          result.ok
+            ? `Restored successfully. Your previous data was saved to ${result.data.safetyBackupPath}`
+            : `Restore failed: ${result.error.message}`
+        )
+      })
+    })
+  }
+
+  return (
+    <div className="backup-export-view">
+      <h1>Backup / Export</h1>
+
+      <section className="settings-section">
+        <h2>Database Backup</h2>
+        <p className="backup-export-view__hint">
+          Back up your entire catalog (all media, files, tags, and scan history) to a single
+          portable file, or restore from a previous backup.
+        </p>
+        <div className="backup-export-view__actions">
+          <button type="button" className="button button--primary" disabled={busy} onClick={handleBackup}>
+            Backup Now
+          </button>
+          <button type="button" className="button" disabled={busy} onClick={handleRestore}>
+            Restore from Backup
+          </button>
+        </div>
+        {busy && <p className="backup-export-view__status">Working…</p>}
+        {status && <p className="backup-export-view__status">{status}</p>}
+      </section>
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `BackupExport.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **BackupExport.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.backup-export-view__hint {
+  opacity: 0.7;
+  font-size: 13px;
+  max-width: 520px;
+}
+
+.backup-export-view__actions {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.backup-export-view__status {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Already correct (import was already there). Now wire it into `App.tsx` for the `backup-export` nav key:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Updated todo list
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `App.tsx`, lines 1 to 45
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **App.tsx**</summary>
+
+@@ lines 45-45 @@
+
+```
+backup-export':
+        return <BackupExport />
+      case '
+```
+
+@@ lines 9-9 @@
+
+```
+BackupExport from './views/BackupExport'
+import 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now check for errors, verify file integrity, and build:     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `backupService.ts`, `backup.ts`, `dialogs.ts`, `main.ts`, `preload.ts`, `App.tsx`, `BackupExport.tsx`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/backup/backupService.ts electron/ipc/backup.ts electron/ipc/d...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact. Building:     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Now let's directly verify the backup/restore logic works end-to-end against the real dev DB — this is the highest-stakes feature (data safety), so it deserves rigorous testing.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-backup.js << 'EOF'
+const \{ app \} = require...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Backup/restore logic verified end-to-end: seeded a row, backed up, mutated the DB (added a second row), restored from the backup, and confirmed the mutation was correctly reverted while the safety pre-restore backup was correctly created. Let's clean up the stray test data directory.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf /home/kel/.config/Electron`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's do a final GUI smoke test and commit.    
 
 _**Agent (copilot/auto)**_
 

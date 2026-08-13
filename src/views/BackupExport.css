@@ -1,0 +1,16 @@
+.backup-export-view__hint {
+  opacity: 0.7;
+  font-size: 13px;
+  max-width: 520px;
+}
+
+.backup-export-view__actions {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.backup-export-view__status {
+  font-size: 13px;
+  opacity: 0.85;
+}

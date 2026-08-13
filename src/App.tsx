@@ -6,6 +6,7 @@ import MediaLibrary from './views/MediaLibrary'
 import MediaDetail from './views/MediaDetail'
 import Search from './views/Search'
 import Duplicates from './views/Duplicates'
+import BackupExport from './views/BackupExport'
 import SettingsView from './views/Settings'
 import PlaceholderView from './views/PlaceholderView'
 import { NAV_ITEMS } from './components/Sidebar'
@@ -42,6 +43,8 @@ export default function App(): JSX.Element {
         return <Search />
       case 'duplicates':
         return <Duplicates />
+      case 'backup-export':
+        return <BackupExport />
       case 'settings':
         return <SettingsView />
       default:
