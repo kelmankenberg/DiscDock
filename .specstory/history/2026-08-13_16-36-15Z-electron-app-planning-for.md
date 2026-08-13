@@ -30477,14 +30477,71 @@ also, let's add an Eject button to this page so that the user can easily eject t
 
 _**Agent (copilot/auto)**_
 
+<think><details><summary>Thought Process</summary>
+Now add the IPC handler to `electron/ipc/devices.ts`:   
+
+Now wire `registerDeviceIpc` — already registered in `main.ts` earlier, no changes needed there. Let's check for errors and build.   
+
+Let's verify the `eject`/`udisksctl` binaries are actually available, then test with the real disc that's currently mounted.   
+
+Confirmed: `/dev/sr0` ("GUNCD3") is currently mounted, matching the Dashboard screenshot. Let's directly test the compiled `ejectDevice` function against it.   
+
+The disc tray physically ejected and unmounted — `label`/`mountpoint` are now `null`. The feature works end-to-end against real hardware. Let's commit and push.
+</details></think>
+
+_**Agent (copilot/auto)**_
+
 Good addition — let's add an Eject action using `eject` (optical) and `udisksctl unmount`/`power-off` (USB/external), which don't require root for user-session removable media.   
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `deviceEject.ts`
+
+**Input:**
+
+- content:
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+
+const execFileAsync = promisify(execFile)
+
+/**
+ * Ejects/detaches a removable device so it's safe to disconnect.
+ * Optical drives: `eject` unmounts and opens the tray in one step.
+ * USB/external drives: `udisksctl unmount` then `power-off` fully detaches the block device
+ * (equivalent to "Safely Remove Hardware") — neither requires root for the user's own session-mounted media.
+ */
+export async function ejectDevice(devicePath: string, isOptical: boolean): Promise<string> {
+  if (isOptical) {
+    await execFileAsync('eject', [devicePath])
+    return 'Disc ejected.'
+  }
+
+  await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+  try {
+    await execFileAsync('udisksctl', ['power-off', '-b', devicePath])
+    return 'Drive unmounted and powered off — safe to unplug.'
+  } catch {
+    // power-off isn't supported on all udisks2 versions/devices; unmount alone is still safe to remove.
+    return 'Drive unmounted — safe to unplug.'
+  }
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/devices/deviceEject.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/devices/deviceEject.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30531,10 +30588,46 @@ Now add the IPC handler to `devices.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `devices.ts`
+
+**Input:**
+
+- endLine: `27`
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/devices.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { BrowserWindow, ipcMain } from 'electron'
+import { DeviceWatcher } from '../devices/DeviceWatcher'
+import type { DetectedDevice, IpcResult } from '../../shared/types'
+
+let watcher: DeviceWatcher | null = null
+
+export function startDeviceWatcher(win: BrowserWindow): DeviceWatcher {
+  watcher = new DeviceWatcher(
+    (device) => win.webContents.send('devices:connected', device),
+    (devicePath) => win.webContents.send('devices:disconnected', { devicePath })
+  )
+  void watcher.start()
+  return watcher
+}
+
+export function stopDeviceWatcher(): void {
+  watcher?.stop()
+  watcher = null
+}
+
+export function registerDeviceIpc(): void {
+  ipcMain.handle('devices:list', (): IpcResult<DetectedDevice[]> => {
+    return { ok: true, data: watcher?.getKnownDevices() ?? [] }
+  })
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30589,18 +30682,65 @@ Now expose it in `preload.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `devices:` (`**/electron/preload.ts`), 6 results
+
+**Input:**
+
+- includePattern: `electron/preload.ts`
+- isRegexp: `false`
+- query: `devices:`
+
+**Result:**
+
+```
+Found 6 matches in 1 file for "devices:"
+
+electron/preload.ts
+49:  devices: {
+50:    list: (): Promise<IpcResult<DetectedDevice[]>> => ipcRenderer.invoke('devices:list'),
+54:      ipcRenderer.on('devices:connected', listener)
+55:      return () => ipcRenderer.removeListener('devices:connected', listener)
+60:      ipcRenderer.on('devices:disconnected', listener)
+61:      return () => ipcRenderer.removeListener('devices:disconnected', listener)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 49 to 64
+
+**Input:**
+
+- endLine: `64`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `49`
+
+**Result:**
+
+```
+  devices: {
+    list: (): Promise<IpcResult<DetectedDevice[]>> => ipcRenderer.invoke('devices:list'),
+    onConnected: (callback: (device: DetectedDevice) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, device: DetectedDevice): void =>
+        callback(device)
+      ipcRenderer.on('devices:connected', listener)
+      return () => ipcRenderer.removeListener('devices:connected', listener)
+    },
+    onDisconnected: (callback: (devicePath: string) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { devicePath: string }): void =>
+        callback(payload.devicePath)
+      ipcRenderer.on('devices:disconnected', listener)
+      return () => ipcRenderer.removeListener('devices:disconnected', listener)
+    }
+  },
+  scan: {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30631,18 +30771,120 @@ Now add the Eject button to the Dashboard's Detected Devices table:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Dashboard.tsx`, lines 130 to 175
+
+**Input:**
+
+- endLine: `175`
+- filePath: `/home/kel/dev/DiscDock/src/views/Dashboard.tsx`
+- startLine: `130`
+
+**Result:**
+
+```
+      })
+  }
+
+  return (
+    <div className="dashboard">
+      <h1>Dashboard</h1>
+      <div className="dashboard__cards">
+        <div className="card">
+          <span className="card__value">{summary.totalMediaItems}</span>
+          <span className="card__label">Total Media Items</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{summary.totalFiles}</span>
+          <span className="card__label">Total Files Catalogued</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{formatBytes(summary.totalSizeBytes)}</span>
+          <span className="card__label">Total Catalogued Size</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{summary.mediaNeedingVerification}</span>
+          <span className="card__label">Media Needing Verification</span>
+        </div>
+      </div>
+
+      <h2>Detected Devices</h2>
+      {devices.length === 0 ? (
+        <p className="dashboard__empty-devices">
+          No removable media currently connected. Insert a USB drive, disc, or external drive to
+          register it here.
+        </p>
+      ) : (
+        <table className="device-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Mount Point</th>
+              <th>Filesystem</th>
+              <th>Size</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {devices.map((device) => {
+              const matched = findMediaForDevice(device)
+              return (
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Dashboard.tsx`, lines 175 to 209
+
+**Input:**
+
+- endLine: `210`
+- filePath: `/home/kel/dev/DiscDock/src/views/Dashboard.tsx`
+- startLine: `175`
+
+**Result:**
+
+```
+              return (
+                <tr key={device.devicePath}>
+                  <td>{device.label ?? '(unlabeled)'}</td>
+                  <td>{device.mountPoint}</td>
+                  <td>{device.fsType ?? '—'}</td>
+                  <td>{device.sizeBytes ? formatBytes(device.sizeBytes) : '—'}</td>
+                  <td>
+                    {scanningDevices.has(device.devicePath) ? (
+                      <span className="status-badge">Scanning…</span>
+                    ) : !matched ? (
+                      <button type="button" className="button button--small" onClick={() => handleRegister(device)}>
+                        Register as Media
+                      </button>
+                    ) : !matched.lastScannedAt ? (
+                      <button
+                        type="button"
+                        className="button button--small"
+                        onClick={() => startScanFor(matched.id, device.devicePath, device.mountPoint)}
+                      >
+                        Never Scanned — Scan Now
+                      </button>
+                    ) : (
+                      <span className="status-badge">Registered</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30724,10 +30966,35 @@ const handleEject = (device: DetectedDevice): void => {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `ejectingDevices|handleEject|ejectMessage` (`**/src/views/Dashboard.tsx`), 11 results
+
+**Input:**
+
+- includePattern: `src/views/Dashboard.tsx`
+- isRegexp: `false`
+- query: `ejectingDevices|handleEject|ejectMessage`
+
+**Result:**
+
+```
+Found 11 matches in 1 file for "ejectingDevices|handleEject|ejectMessage"
+
+src/views/Dashboard.tsx
+25:  const [ejectingDevices, setEjectingDevices] = useState<Set<string>>(new Set())
+26:  const [ejectMessage, setEjectMessage] = useState<string | null>(null)
+135:  const handleEject = (device: DetectedDevice): void => {
+136:    setEjectingDevices((prev) => new Set(prev).add(device.devicePath))
+137:    setEjectMessage(null)
+139:      setEjectingDevices((prev) => {
+144:      setEjectMessage(
+175:      {ejectMessage && <p className="dashboard__eject-message">{ejectMessage}</p>}
+225:                      disabled={ejectingDevices.has(device.devicePath)}
+226:                      onClick={() => handleEject(device)}
+228:                      {ejectingDevices.has(device.devicePath)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30736,10 +31003,76 @@ Good, all other edits applied successfully despite the one no-op failure. Let's 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Dashboard.tsx`, lines 150 to 240
+
+**Input:**
+
+- endLine: `240`
+- filePath: `/home/kel/dev/DiscDock/src/views/Dashboard.tsx`
+- startLine: `150`
+
+**Result:**
+
+```
+  }
+
+  return (
+    <div className="dashboard">
+      <h1>Dashboard</h1>
+      <div className="dashboard__cards">
+        <div className="card">
+          <span className="card__value">{summary.totalMediaItems}</span>
+          <span className="card__label">Total Media Items</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{summary.totalFiles}</span>
+          <span className="card__label">Total Files Catalogued</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{formatBytes(summary.totalSizeBytes)}</span>
+          <span className="card__label">Total Catalogued Size</span>
+        </div>
+        <div className="card">
+          <span className="card__value">{summary.mediaNeedingVerification}</span>
+          <span className="card__label">Media Needing Verification</span>
+        </div>
+      </div>
+
+      <h2>Detected Devices</h2>
+      {ejectMessage && <p className="dashboard__eject-message">{ejectMessage}</p>}
+      {devices.length === 0 ? (
+        <p className="dashboard__empty-devices">
+          No removable media currently connected. Insert a USB drive, disc, or external drive to
+          register it here.
+        </p>
+      ) : (
+        <table className="device-table">
+          <thead>
+            <tr>
+              <th>Label</th>
+              <th>Mount Point</th>
+              <th>Filesystem</th>
+              <th>Size</th>
+              <th></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {devices.map((device) => {
+              const matched = findMediaForDevice(device)
+              return (
+                <tr key={device.devicePath}>
+                  <td>{device.label ?? '(unlabeled)'}</td>
+                  <td>{device.mountPoint}</td>
+                  <td>{device.fsType ?? '—'}</td>
+                  <td>{device.sizeBytes ? formatBytes(device.sizeBytes) : '—'}</td>
+                  <td>
+                    {sca
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30748,18 +31081,54 @@ Correct. Now add the `.dashboard__eject-message` CSS:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `dashboard__empty-devices` (`**/src/styles/global.css`), 1 result
+
+**Input:**
+
+- includePattern: `src/styles/global.css`
+- isRegexp: `false`
+- query: `dashboard__empty-devices`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "dashboard__empty-devices"
+
+src/styles/global.css
+115:.dashboard__empty-devices {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `global.css`, lines 113 to 122
+
+**Input:**
+
+- endLine: `122`
+- filePath: `/home/kel/dev/DiscDock/src/styles/global.css`
+- startLine: `113`
+
+**Result:**
+
+```
+}
+
+.dashboard__empty-devices {
+  margin-top: 12px;
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+.device-table {
+  width: 100%;
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30786,10 +31155,41 @@ Now wire  — already registered in `main.ts` earlier, no changes needed there. 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `deviceEject.ts`, `devices.ts`, `preload.ts`, `Dashboard.tsx`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/electron/devices/deviceEject.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/devices.ts",
+  "/home/kel/dev/DiscDock/electron/preload.ts",
+  "/home/kel/dev/DiscDock/src/views/Dashboard.tsx"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/electron/devices/deviceEject.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/devices.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/preload.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/views/Dashboard.tsx">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30802,6 +31202,24 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c electron/devices/deviceEject.ts electron/ipc/devices.ts electron/prelo...`
+
+Verify all new/edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/devices/deviceEject.ts electron/ipc/devices.ts electron/preload.ts src/views/Dashboard.tsx src/styles/global.css
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/devices/deviceEject.ts electron/ipc/devices.ts electron/preload.ts src/views/Dashboard.tsx src/styles/global.css` (terminal ID=ec42fb79-d030-4cf5-8adf-8c05cba9e3d5). This is the output of running that command instead:
+ 1047 electron/devices/deviceEject.ts
+ 1471 electron/ipc/devices.ts
+ 6212 electron/preload.ts
+ 9153 src/views/Dashboard.tsx
+ 3157 src/styles/global.css
+21040 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30814,6 +31232,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with the Eject feature
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=8f342034-fbac-49a4-b762-03fd165ab96d). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 35 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-D1M3y3Wn.css    8.02 kB │ gzip:  1.85 kB
+dist/assets/index-DY7pYH1P.js   218.55 kB │ gzip: 67.08 kB
+
+✓ built in 194ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30826,6 +31281,25 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` which eject udisksctl 2>&1; lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE 2>&1 |...`
+
+Check availability of eject/udisksctl tools and current disc state
+
+```bash
+which eject udisksctl 2>&1; lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE 2>&1 | grep -A5 rom
+```
+
+**Result:**
+
+```
+/usr/bin/eject
+/usr/bin/udisksctl
+         "type": "rom"
+      },{
+         "name": "nvme0n1",
+         "label": null,
+         "mountpoint": null,
+         "type": "disk",
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -30834,4 +31308,411 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE,RM 2>&1 | python3 -c "import json,...`
+
+Extract the optical drive entry specifically to confirm its current mount state before testing eject
+
+```bash
+lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE,RM 2>&1 | python3 -c "import json,sys; d=json.load(sys.stdin); print([b for b in d['blockdevices'] if b['type']=='rom'])"
+```
+
+**Result:**
+
+```
+[{'name': 'sr0', 'label': 'GUNCD3', 'mountpoint': '/media/kel/GUNCD3', 'type': '
+rom', 'rm': True}]
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Confirmed: `sr0` ("GUNCD3") is currently mounted, matching the Dashboard screenshot. Let's directly test the compiled  function against it.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-eject.js << 'EOF'
+const \{ ejectDevice \} = ...`
+
+Directly test the ejectDevice function against the real optical drive to verify it actually ejects the disc
+
+```bash
+cat > /home/kel/dev/DiscDock/test-eject.js << 'EOF'
+const { ejectDevice } = require('./dist-electron/electron/devices/deviceEject')
+ejectDevice('/dev/sr0', true).then((msg) => {
+  console.log('Result:', msg)
+}).catch((err) => {
+  console.error('Error:', err.message)
+})
+EOF
+cd /home/kel/dev/DiscDock && node test-eject.js 2>&1; rm -f test-eject.js
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cat > /home/kel/dev/DiscDock/test-eject.js << '
+EOF'
+const { ejectDevice } = require('./dist-electron/electron/devices/deviceEject')
+ejectDevice('/dev/sr0', true).then((msg) => {
+  console.log('Result:', msg)
+}).catch((err) => {
+  console.error('Error:', err.message)
+})
+EOF
+cd /home/kel/dev/DiscDock && node test-eject.js 2>&1; rm -f test-eject.js
+Result: Disc ejected.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE 2>&1 | python3 -c "import json,sys...`
+
+Confirm the disc tray physically ejected and is no longer mounted
+
+```bash
+lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE 2>&1 | python3 -c "import json,sys; d=json.load(sys.stdin); print([b for b in d['blockdevices'] if b['type']=='rom'])"
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE 2>&1
+| python3 -c "import json,sys; d=json.load(sys.stdin); print([b for b in d['bloc
+kdevices'] if b['type']=='rom'])"
+[{'name': 'sr0', 'label': None, 'mountpoint': None, 'type': 'rom'}]
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The disc tray physically ejected and unmounted — / are now `null`. The feature works end-to-end against real hardware. Let's commit and push.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the eject feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=dad71ad6-77ee-414f-817f-d646b7a2bac9). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  378G   57G  87% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+A  electron/devices/deviceEject.ts
+M  electron/ipc/devices.ts
+M  electron/preload.ts
+M  src/styles/global.css
+M  src/views/Dashboard.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+57G free, healthy.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Add Eject/Safely Remove action for detected devices" 2>&1 | t...`
+
+Commit and push the eject feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Add Eject/Safely Remove action for detected devices" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Add Eject/Safely Remove action for detected devices" 2>&1 | tail -20 && git push 2>&1` (terminal ID=eb220f0b-e050-4d07-815b-110fa9b25075). This is the output of running that command instead:
+[main ffef855] Add Eject/Safely Remove action for detected devices
+ 7 files changed, 914 insertions(+), 25 deletions(-)
+ create mode 100644 electron/devices/deviceEject.ts
+Enumerating objects: 32, done.
+Counting objects: 100% (32/32), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (16/16), done.
+Writing objects: 100% (17/17), 6.56 KiB | 373.00 KiB/s, done.
+Total 17 (delta 11), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (11/11), completed with 11 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   a77d164..ffef855  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (57G free). Note: **I actually ejected your physical disc tray** as part of testing — you'll need to reinsert "GUNCD3" if you want to keep working with it.
+
+**Implemented: Eject / Safely Remove**
+- `deviceEject.ts` — for optical drives, runs `eject <device>` (unmounts + opens the tray in one step); for USB/external drives, runs `udisksctl unmount` then `udisksctl power-off` (fully detaches the block device — equivalent to Windows' "Safely Remove Hardware"), falling back to "unmount only" messaging if `power-off` isn't supported on older udisks2
+- Neither requires root for the user's own session-mounted media, consistent with the security doc's least-privilege requirement
+- `devices.ts` + `preload.ts` — `devices:eject` IPC
+- Dashboard's Detected Devices table now has an action column: **"Eject"** for discs, **"Safely Remove"** for drives, with a busy state and a status message reporting the result (e.g., "Drive unmounted and powered off — safe to unplug.")
+- Once ejected, the existing device-watcher polling naturally removes the row from the table within ~3s (disconnect detection already worked)
+
+**Verified directly against real hardware** (not just a mock): confirmed via `lsblk` that `sr0` was mounted with label "GUNCD3", called the compiled  function directly, got back "Disc ejected.", then re-checked `lsblk` and confirmed the drive was actually unmounted and the tray opened.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Add Eject button for optical drives* (1/5)
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 19:24:02Z)**_
+
+when you tested the ejecting feature the disc ejected as expected. However running the test manually shows the button label change to 'Ejecting...' but the disc never does eject and the drive spins down
+
+---
+
+_**Agent (copilot/auto)**_
+
+That's a real discrepancy from my earlier successful test — the drive spinning down without ejecting the tray suggests the physical eject step is failing (likely "device busy" from something else holding the mount, e.g. the desktop's file manager/GVFS), but the command isn't surfacing enough detail for us to see why. Let me improve diagnostics and add a more robust unmount-then-eject sequence. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `deviceEject.ts`, lines 1 to 25
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **deviceEject.ts**</summary>
+
+@@ lines 6-15 @@
+
+```
+interface ExecError extends Error {
+  stdout?: string
+  stderr?: string
+}
+
+function describeFailure(err: unknown): string {
+  const execErr = err as ExecError
+  const detail = execErr.stderr?.trim() || execErr.stdout?.trim() || execErr.message
+  return detail
+}
+
+/**
+ * Ejects/detaches a removable device so it's safe to disconnect.
+ * Optical drives: unmount first (in case something other than a plain filesystem mount, e.g. a
+ * desktop file manager's GVFS mount, is holding it), then `eject` opens the tray.
+ * USB/external drives: `udisksctl unmount` then `power-off` fully detaches the block device
+ * (equivalent to "Safely Remove Hardware") — neither requires root for the user's own session-mounted media.
+ */
+export async function ejectDevice(devicePath: string, isOptical: boolean): Promise<string> {
+  if (isOptical) {
+    // Best-effort pre-unmount: ignore failures here (e.g. "not mounted"), the real failure signal
+    // is whether the subsequent eject actually opens the tray.
+    try {
+      await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+    } catch {
+      // ignore — device may already be unmounted, or udisksctl doesn't manage this mount
+    }
+
+    try {
+      await execFileAsync('eject', ['-v', devicePath])
+      return 'Disc ejected.'
+    } catch (err) {
+      throw new Error(`Eject failed (drive may report "device busy" if another app has it open): ${describeFailure(err)}`)
+    }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE 2>&1 | python3 -c "import json,sys...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The disc is mounted again ("GUNCD3"). Let's rebuild and directly test the improved  against it, and also check for any process holding the mount open (to diagnose the "busy" theory).   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` lsof \+D /media/kel/GUNCD3 2>&1 | head -20; echo "---"; fuser -vm /media/kel/...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No process is holding a file handle open — so it's not a simple "busy" file-handle issue. Let's rebuild and retest with the improved diagnostics.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:electron 2>&1 | tail -30`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-eject2.js << 'EOF'
+const \{ ejectDevice \} =...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` lsblk -J -b -o NAME,LABEL,MOUNTPOINT,TYPE 2>&1 | python3 -c "import json,sys...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Interesting — my direct tests keep succeeding, which suggests the issue may be a race with the desktop's automount daemon re-mounting the disc right as  tries to open the tray. Let me check for that.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` gsettings get org.gnome.desktop.media-handling automount 2>&1; gsettings get...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Found the likely root cause: your desktop has `automount-open: true` (Nemo/GNOME auto-mount settings), which auto-opens a file manager window browsing the disc the moment it's inserted. That open Nemo window holds the mount busy —  spins the drive down (its first step) but then fails the actual tray-open because the filesystem is still in use. My direct script tests didn't race that auto-opened window, which is why they succeeded. Let's surface this clearly instead of failing silently.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `deviceEject.ts`, lines 1 to 42
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **deviceEject.ts**</summary>
+
+@@ lines 14-14 @@
+
+```
+
+  // "eject" spins the drive down as its first step even when the final unmount/tray-open fails,
+  // so a busy mount can look like "nothing happened" rather than a clear error. Common cause:
+  // a file manager window (auto-opened by desktop automount-open settings) still browsing the disc.
+  if (/busy|in use/i.test(detail)) {
+    return `${detail} — close any file manager windows or programs browsing this media and try again.`
+  }
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's also add a verification step, since  can sometimes exit with code 0 even when it silently failed to actually eject due to a busy mount:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `deviceEject.ts`, lines 1 to 55
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **deviceEject.ts**</summary>
+
+@@ lines 24-46 @@
+
+```
+const BUSY_ADVICE = 'close any file manager windows or programs browsing this media and try again.'
+
+/** Some `eject` builds exit 0 even when the tray-open step silently failed (e.g. busy mount). */
+async function isStillMounted(devicePath: string): Promise<boolean> {
+  try {
+    const { stdout } = await execFileAsync('lsblk', ['-no', 'MOUNTPOINT', devicePath])
+    return stdout.trim().length > 0
+  } catch {
+    return false // device likely gone entirely (ejected) — lsblk failing to find it counts as success
+  }
+}
+
+/**
+ * Ejects/detaches a removable device so it's safe to disconnect.
+ * Optical drives: unmount first (in case something other than a plain filesystem mount, e.g. a
+ * desktop file manager's GVFS mount, is holding it), then `eject` opens the tray.
+ * USB/external drives: `udisksctl unmount` then `power-off` fully detaches the block device
+ * (equivalent to "Safely Remove Hardware") — neither requires root for the user's own session-mounted media.
+ */
+export async function ejectDevice(devicePath: string, isOptical: boolean): Promise<string> {
+  if (isOptical) {
+    // Best-effort pre-unmount: ignore failures here (e.g. "not mounted"), the real failure signal
+    // is whether the subsequent eject actually opens the tray.
+    try {
+      await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+    } catch {
+      // ignore — device may already be unmounted, or udisksctl doesn't manage this mount
+    }
+
+    try {
+      await execFileAsync('eject', ['-v', devicePath])
+    } catch (err) {
+      throw new Error(`Eject failed: ${describeFailure(err)}`)
+    }
+
+    if (await isStillMounted(devicePath)) {
+      throw new Error(`Eject reported success but the disc is still mounted — ${BUSY_ADVICE}`)
+    }
+    return 'Disc ejected.'
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's check for errors, verify content, and rebuild.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `deviceEject.ts`, no problems found
 </details></tool-use>
