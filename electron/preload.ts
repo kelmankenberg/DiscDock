@@ -4,6 +4,7 @@ import type {
   DetectedDevice,
   DuplicateReport,
   DuplicateReportFilters,
+  FileEntry,
   HashMode,
   IpcResult,
   MediaItem,
@@ -98,6 +99,10 @@ const api = {
   duplicates: {
     report: (filters: DuplicateReportFilters): Promise<IpcResult<DuplicateReport>> =>
       ipcRenderer.invoke('duplicates:report', filters)
+  },
+  files: {
+    list: (mediaId: number, folderPath: string): Promise<IpcResult<FileEntry[]>> =>
+      ipcRenderer.invoke('files:list', { mediaId, folderPath })
   }
 }
 

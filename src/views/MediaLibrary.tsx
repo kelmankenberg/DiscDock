@@ -21,7 +21,7 @@ interface ActiveScan {
   currentPath: string
 }
 
-export default function MediaLibrary(): JSX.Element {
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
   const [items, setItems] = useState<MediaItem[]>([])
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
@@ -210,7 +210,11 @@ export default function MediaLibrary(): JSX.Element {
               const scan = scansByMedia[item.id]
               return (
                 <tr key={item.id}>
-                  <td>{item.label}</td>
+                  <td>
+                    <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
+                      {item.label}
+                    </button>
+                  </td>
                   <td>{mediaTypeLabel(item.mediaType)}</td>
                   <td>{item.physicalLocation ?? '—'}</td>
                   <td>

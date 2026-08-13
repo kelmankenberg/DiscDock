@@ -8,6 +8,7 @@ import { registerScanIpc } from './ipc/scan'
 import { registerDialogIpc } from './ipc/dialogs'
 import { registerSearchIpc } from './ipc/search'
 import { registerDuplicatesIpc } from './ipc/duplicates'
+import { registerFilesIpc } from './ipc/files'
 import { initScanManager } from './scanning/scanManager'
 import { getDb, closeDb } from './db'
 import type { IpcResult } from '../shared/types'
@@ -33,6 +34,7 @@ app.whenReady().then(() => {
   registerDialogIpc(mainWindow)
   registerSearchIpc()
   registerDuplicatesIpc()
+  registerFilesIpc()
   initScanManager(mainWindow)
   startDeviceWatcher(mainWindow)
 

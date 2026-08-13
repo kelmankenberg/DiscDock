@@ -167,3 +167,12 @@ export interface DuplicateReport {
   totalFiles: number
   reclaimableBytes: number
 }
+
+export interface FileEntry {
+  path: string
+  name: string
+  kind: string
+  isDirectory: boolean
+  sizeBytes: number
+  modifiedAtSrc: string | null
+}

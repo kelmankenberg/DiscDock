@@ -19566,6 +19566,33 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **get_terminal_output**</summary>
 
 Checked terminal output
+
+**Input:**
+
+- id: `7a3a75c3-ac6b-453d-886e-0802f4179b47`
+
+**Result:**
+
+```
+Output of terminal 7a3a75c3-ac6b-453d-886e-0802f4179b47:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run dev 2>&1
+
+> discdock@0.1.0 dev
+> concurrently -k "vite" "wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron ."
+
+[0] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[0]   - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+[0] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[0] 
+[0]   VITE v8.2.1  ready in 258 ms
+[0] 
+[0]   ➜  Local:   http://localhost:5173/
+[0]   ➜  Network: use --host to expose
+[1] 
+[1] > discdock@0.1.0 build:electron
+[1] > tsc -p electron/tsconfig.json
+[1]
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -19578,6 +19605,33 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **kill_terminal**</summary>
 
 Killed terminal
+
+**Input:**
+
+- id: `7a3a75c3-ac6b-453d-886e-0802f4179b47`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 7a3a75c3-ac6b-453d-886e-0802f4179b47. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run dev 2>&1
+
+> discdock@0.1.0 dev
+> concurrently -k "vite" "wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron ."
+
+[0] (!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+[0]   - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+[0] Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+[0] 
+[0]   VITE v8.2.1  ready in 258 ms
+[0] 
+[0]   ➜  Local:   http://localhost:5173/
+[0]   ➜  Network: use --host to expose
+[1] 
+[1] > discdock@0.1.0 build:electron
+[1] > tsc -p electron/tsconfig.json
+[1]
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -19586,26 +19640,100 @@ The `npm run dev` script actually works fine when I ran it fresh (Vite + tsc bot
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 115 to 140
+
+**Input:**
+
+- endLine: `140`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `115`
+
+**Result:**
+
+```
+export interface SearchFilters {
+  mediaItemId?: number
+  mediaType?: MediaType
+  kind?: FileKind
+  minSizeBytes?: number
+  maxSizeBytes?: number
+}
+
+export interface SearchQueryInput {
+  text: string
+  filters: SearchFilters
+  page: number
+  pageSize: number
+}
+
+export interface FileSearchResult {
+  id: number
+  mediaItemId: number
+  mediaLabel: string
+  path: string
+  name: string
+  sizeBytes: number
+  modifiedAtSrc: string | null
+  kind: string
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 130 to 141
+
+**Input:**
+
+- endLine: `141`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `130`
+
+**Result:**
+
+```
+export interface FileSearchResult {
+  id: number
+  mediaItemId: number
+  mediaLabel: string
+  path: string
+  name: string
+  sizeBytes: number
+  modifiedAtSrc: string | null
+  kind: string
+}
+
+export interface SearchResultPage {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 141 to 145
+
+**Input:**
+
+- endLine: `146`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `141`
+
+**Result:**
+
+```
+export interface SearchResultPage {
+  results: FileSearchResult[]
+  total: number
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -19651,10 +19779,98 @@ Now the duplicate repository:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `duplicateRepository.ts`
+
+**Input:**
+
+- content:
+
+```
+import { getDb } from './index'
+import type { DuplicateGroup, DuplicateOccurrence, DuplicateReport, DuplicateReportFilters } from '../../shared/types'
+
+interface HashGroupRow {
+  hash_value: string
+  size_bytes: number
+  occurrence_count: number
+}
+
+interface OccurrenceRow {
+  media_item_id: number
+  media_label: string
+  path: string
+}
+
+export function getDuplicateReport(filters: DuplicateReportFilters): DuplicateReport {
+  const db = getDb()
+  const minGroupSize = filters.minGroupSize ?? 2
+
+  const conditions = ['fr.hash_value IS NOT NULL', 'fr.is_directory = 0']
+  const params: Record<string, unknown> = { minGroupSize }
+
+  if (filters.mediaType !== undefined) {
+    conditions.push('mi.media_type = @mediaType')
+    params.mediaType = filters.mediaType
+  }
+  if (filters.kind !== undefined) {
+    conditions.push('fr.kind = @kind')
+    params.kind = filters.kind
+  }
+
+  const whereClause = conditions.join(' AND ')
+
+  const groupRows = db
+    .prepare(
+      `SELECT fr.hash_value, fr.size_bytes, COUNT(*) as occurrence_count
+       FROM file_record fr
+       JOIN media_item mi ON mi.id = fr.media_item_id
+       WHERE ${whereClause}
+       GROUP BY fr.hash_value
+       HAVING COUNT(*) >= @minGroupSize
+       ORDER BY fr.size_bytes DESC`
+    )
+    .all(params) as HashGroupRow[]
+
+  const occurrenceStmt = db.prepare(
+    `SELECT fr.media_item_id, mi.label as media_label, fr.path
+     FROM file_record fr
+     JOIN media_item mi ON mi.id = fr.media_item_id
+     WHERE fr.hash_value = ?`
+  )
+
+  const groups: DuplicateGroup[] = groupRows.map((row) => {
+    const occurrences = (occurrenceStmt.all(row.hash_value) as OccurrenceRow[]).map(
+      (o): DuplicateOccurrence => ({
+        mediaItemId: o.media_item_id,
+        mediaLabel: o.media_label,
+        path: o.path
+      })
+    )
+    return { hashValue: row.hash_value, sizeBytes: row.size_bytes, occurrences }
+  })
+
+  const totalFiles = groupRows.reduce((sum, row) => sum + row.occurrence_count, 0)
+  const reclaimableBytes = groupRows.reduce(
+    (sum, row) => sum + (row.occurrence_count - 1) * row.size_bytes,
+    0
+  )
+
+  return { groups, totalGroups: groups.length, totalFiles, reclaimableBytes }
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/db/duplicateRepository.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/db/duplicateRepository.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -19746,10 +19962,41 @@ Now the IPC handler:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `duplicates.ts`
+
+**Input:**
+
+- content:
+
+```
+import { ipcMain } from 'electron'
+import { getDuplicateReport } from '../db/duplicateRepository'
+import type { DuplicateReport, DuplicateReportFilters, IpcResult } from '../../shared/types'
+
+export function registerDuplicatesIpc(): void {
+  ipcMain.handle('duplicates:report', (_event, payload: unknown): IpcResult<DuplicateReport> => {
+    const filters = (payload && typeof payload === 'object' ? payload : {}) as DuplicateReportFilters
+    try {
+      return { ok: true, data: getDuplicateReport(filters) }
+    } catch (err) {
+      return { ok: false, error: { code: 'duplicates_error', message: (err as Error).message } }
+    }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/duplicates.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/duplicates.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -19792,10 +20039,31 @@ Wire into `main.ts` and `preload.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `main.ts`, lines 1 to 10
+
+**Input:**
+
+- endLine: `10`
+- filePath: `/home/kel/dev/DiscDock/electron/main.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { createMainWindow } from './window/createWindow'
+import { registerWindowControlIpc } from './ipc/windowControls'
+import { registerDashboardIpc } from './ipc/dashboard'
+import { registerMediaIpc } from './ipc/media'
+import { registerDeviceIpc, startDeviceWatcher, stopDeviceWatcher } from './ipc/devices'
+import { registerScanIpc } from './ipc/scan'
+import { registerDialogIpc } from './ipc/dialogs'
+import { registerSearchIpc } from './ipc/search'
+import { initScanManager } from './scanning/scanManager'
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -19840,10 +20108,35 @@ import {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 1 to 14
+
+**Input:**
+
+- endLine: `14`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { contextBridge, ipcRenderer } from 'electron'
+import type {
+  DashboardSummary,
+  DetectedDevice,
+  HashMode,
+  IpcResult,
+  MediaItem,
+  MediaItemInput,
+  ScanJob,
+  ScanProgress,
+  SearchFilters,
+  SearchResultPage,
+  WindowState
+} from '../shared/types'
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -19876,10 +20169,92 @@ Now the Duplicates view and wiring into `App.tsx`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `Duplicates.tsx`
+
+**Input:**
+
+- content:
+
+```
+import { useEffect, useState } from 'react'
+import type { DuplicateReport } from '../../shared/types'
+import './Duplicates.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+const EMPTY_REPORT: DuplicateReport = { groups: [], totalGroups: 0, totalFiles: 0, reclaimableBytes: 0 }
+
+export default function Duplicates(): JSX.Element {
+  const [report, setReport] = useState<DuplicateReport>(EMPTY_REPORT)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    void window.discdock.duplicates.report({}).then((result) => {
+      setLoading(false)
+      if (result.ok) setReport(result.data)
+    })
+  }, [])
+
+  return (
+    <div className="duplicates-view">
+      <h1>Duplicates</h1>
+
+      {loading ? (
+        <p className="duplicates-view__status">Scanning catalog for duplicates…</p>
+      ) : report.totalGroups === 0 ? (
+        <div className="empty-state">
+          <p>
+            No duplicate files found. Duplicate detection requires files to be scanned with hashing
+            enabled (Quick or Full).
+          </p>
+        </div>
+      ) : (
+        <>
+          <p className="duplicates-view__summary">
+            {report.totalGroups} duplicate group{report.totalGroups === 1 ? '' : 's'} · {report.totalFiles}{' '}
+            files involved · {formatBytes(report.reclaimableBytes)} reclaimable if only one copy of each
+            were kept
+          </p>
+          {report.groups.map((group) => (
+            <div key={group.hashValue} className="duplicate-group">
+              <div className="duplicate-group__header">
+                <span>{formatBytes(group.sizeBytes)}</span>
+                <span className="duplicate-group__hash">{group.hashValue.slice(0, 16)}…</span>
+                <span>{group.occurrences.length} copies</span>
+              </div>
+              <ul className="duplicate-group__occurrences">
+                {group.occurrences.map((occurrence, index) => (
+                  <li key={index}>
+                    <strong>{occurrence.mediaLabel}</strong> — {occurrence.path}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  )
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/Duplicates.tsx`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/views/Duplicates.tsx
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -19961,10 +20336,59 @@ export default function Duplicates(): JSX.Element {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `Duplicates.css`
+
+**Input:**
+
+- content:
+
+```
+.duplicates-view__status,
+.duplicates-view__summary {
+  opacity: 0.8;
+  font-size: 13px;
+  margin: 12px 0;
+}
+
+.duplicate-group {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+}
+
+.duplicate-group__header {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.duplicate-group__hash {
+  font-family: monospace;
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+.duplicate-group__occurrences {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/Duplicates.css`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/views/Duplicates.css
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -20013,10 +20437,56 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `App.tsx`, lines 1 to 35
+
+**Input:**
+
+- endLine: `35`
+- filePath: `/home/kel/dev/DiscDock/src/App.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useState } from 'react'
+import TitleBar from './components/TitleBar'
+import Sidebar from './components/Sidebar'
+import Dashboard from './views/Dashboard'
+import MediaLibrary from './views/MediaLibrary'
+import Search from './views/Search'
+import PlaceholderView from './views/PlaceholderView'
+import { NAV_ITEMS } from './components/Sidebar'
+
+const VIEW_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.label])
+)
+
+export default function App(): JSX.Element {
+  const [activeView, setActiveView] = useState('dashboard')
+
+  const renderView = (): JSX.Element => {
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'media-library':
+        return <MediaLibrary />
+      case 'search':
+        return <Search />
+      default:
+        return <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
+    }
+  }
+
+  return (
+    <div className="app-shell">
+      <TitleBar />
+      <div className="app-body">
+        <Sidebar active={activeView} onSelect={setActiveView} />
+        <main className="app-content">{renderView()}</main>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -20054,10 +20524,45 @@ Now let's verify file integrity, check for errors, and build:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `duplicateRepository.ts`, `duplicates.ts`, `main.ts`, `preload.ts`, `App.tsx`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/electron/db/duplicateRepository.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/duplicates.ts",
+  "/home/kel/dev/DiscDock/electron/main.ts",
+  "/home/kel/dev/DiscDock/electron/preload.ts",
+  "/home/kel/dev/DiscDock/src/App.tsx"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/electron/db/duplicateRepository.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/duplicates.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/main.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/preload.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/App.tsx">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -20066,6 +20571,27 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c electron/db/duplicateRepository.ts electron/ipc/duplicates.ts src/view...`
+
+Verify all new/edited files have real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/db/duplicateRepository.ts electron/ipc/duplicates.ts src/views/Duplicates.tsx src/views/Duplicates.css electron/main.ts electron/preload.ts shared/types.ts src/App.tsx
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/db/duplicateRepository.ts electron/ipc/duplicates.ts src/views/Duplicates.tsx src/views/Duplicates.css electron/main.ts electron/preload.ts shared/types.ts src/App.tsx` (terminal ID=75fbe7da-ff4c-49ff-89f8-d7baee8462c2). This is the output of running that command instead:
+ 2171 electron/db/duplicateRepository.ts
+  641 electron/ipc/duplicates.ts
+ 2420 src/views/Duplicates.tsx
+  523 src/views/Duplicates.css
+ 1651 electron/main.ts
+ 5058 electron/preload.ts
+ 3568 shared/types.ts
+ 1258 src/App.tsx
+17290 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -20078,6 +20604,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with the duplicate detection feature
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=8f73bc5d-5d90-4da9-8919-1bb808f92ae1). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 29 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-Bh6EGeAx.css    5.25 kB │ gzip:  1.41 kB
+dist/assets/index--n8JGtG4.js   205.65 kB │ gzip: 64.22 kB
+
+✓ built in 181ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -20091,6 +20654,34 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-dup.js << 'EOF'
 const Database = require\('...`
+
+Insert test duplicate file records directly into the dev database
+
+```bash
+cat > /home/kel/dev/DiscDock/test-dup.js << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+db.exec("INSERT INTO media_item (label, media_type) VALUES ('Disc A', 'cd'), ('Drive B', 'external_hdd')")
+const ids = db.prepare("SELECT id FROM media_item WHERE label IN ('Disc A','Drive B') ORDER BY id").all().map(r => r.id)
+const [a, b] = ids
+
+const hash = 'abc123'
+db.prepare("INSERT INTO file_record (media_item_id, path, name, kind, size_bytes, is_directory, hash_value, hash_algo) VALUES (?, 'photo.jpg', 'photo.jpg', 'image', 5000, 0, ?, 'sha256')").run(a, hash)
+db.prepare("INSERT INTO file_record (media_item_id, path, name, kind, size_bytes, is_directory, hash_value, hash_algo) VALUES (?, 'backup/photo.jpg', 'photo.jpg', 'image', 5000, 0, ?, 'sha256')").run(b, hash)
+db.prepare("INSERT INTO file_record (media_item_id, path, name, kind, size_bytes, is_directory, hash_value, hash_algo) VALUES (?, 'unique.txt', 'unique.txt', 'document', 100, 0, 'zzz', 'sha256')").run(a)
+
+db.close()
+console.log('Test data inserted for media', a, b)
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-dup.js 2>&1; rm -f test-dup.js
+```
+
+**Result:**
+
+```
+Test data inserted for media 2 3
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -20103,6 +20694,52 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npx electron . --no-sandbox 2>&1`
+
+Launch app to visually verify Duplicates view with real test data
+
+```bash
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npx electron . --no-sandbox 2>&1`, and that command is now running in terminal with ID=7d9134e9-04fa-4723-a162-de1773424937
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="7d9134e9-04fa-4723-a162-de1773424937" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="7d9134e9-04fa-4723-a162-de1773424937" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -20115,6 +20752,17 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **kill_terminal**</summary>
 
 Killed terminal
+
+**Input:**
+
+- id: `7d9134e9-04fa-4723-a162-de1773424937`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 7d9134e9-04fa-4723-a162-de1773424937. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npx electron . --no-sandbox 2>&1
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -20124,4 +20772,1227 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-dup-query.js << 'EOF'
 const Database = req...`
+
+Directly run the duplicate detection SQL query against the test data to verify grouping and summary math
+
+```bash
+cat > /home/kel/dev/DiscDock/test-dup-query.js << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+const params = { minGroupSize: 2 }
+const groupRows = db.prepare(`
+  SELECT fr.hash_value, fr.size_bytes, COUNT(*) as occurrence_count
+  FROM file_record fr
+  JOIN media_item mi ON mi.id = fr.media_item_id
+  WHERE fr.hash_value IS NOT NULL AND fr.is_directory = 0
+  GROUP BY fr.hash_value
+  HAVING COUNT(*) >= @minGroupSize
+  ORDER BY fr.size_bytes DESC
+`).all(params)
+
+console.log('Duplicate groups:', JSON.stringify(groupRows, null, 2))
+
+for (const row of groupRows) {
+  const occ = db.prepare(`
+    SELECT fr.media_item_id, mi.label as media_label, fr.path
+    FROM file_record fr JOIN media_item mi ON mi.id = fr.media_item_id
+    WHERE fr.hash_value = ?
+  `).all(row.hash_value)
+  console.log('Occurrences for', row.hash_value, JSON.stringify(occ))
+}
+
+const totalFiles = groupRows.reduce((s, r) => s + r.occurrence_count, 0)
+const reclaimable = groupRows.reduce((s, r) => s + (r.occurrence_count - 1) * r.size_bytes, 0)
+console.log('totalGroups', groupRows.length, 'totalFiles', totalFiles, 'reclaimableBytes', reclaimable)
+
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron test-dup-query.js 2>&1; rm -f test-dup-query.js
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cat > /home/kel/dev/DiscDock/test-dup-query.js
+<< 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+
+const params = { minGroupSize: 2 }
+const groupRows = db.prepare(`
+  SELECT fr.hash_value, fr.size_bytes, COUNT(*) as occurrence_count
+  FROM file_record fr
+  JOIN media_item mi ON mi.id = fr.media_item_id
+  WHERE fr.hash_value IS NOT NULL AND fr.is_directory = 0
+  GROUP BY fr.hash_value
+  HAVING COUNT(*) >= @minGroupSize
+  ORDER BY fr.size_bytes DESC
+`).all(params)
+
+console.log('Duplicate groups:', JSON.stringify(groupRows, null, 2))
+
+for (const row of groupRows) {
+  const occ = db.prepare(`
+    SELECT fr.media_item_id, mi.label as media_label, fr.path
+    FROM file_record fr JOIN media_item mi ON mi.id = fr.media_item_id
+    WHERE fr.hash_value = ?
+  `).all(row.hash_value)
+  console.log('Occurrences for', row.hash_value, JSON.stringify(occ))
+}
+
+const totalFiles = groupRows.reduce((s, r) => s + r.occurrence_count, 0)
+const reclaimable = groupRows.reduce((s, r) => s + (r.occurrence_count - 1) * r.
+size_bytes, 0)
+console.log('totalGroups', groupRows.length, 'totalFiles', totalFiles, 'reclaima
+js 2>&1; rm -f test-dup-query.jsCTRON_RUN_AS_NODE=1 npx electron test-dup-query.
+Duplicate groups: [
+  {
+    "hash_value": "abc123",
+    "size_bytes": 5000,
+    "occurrence_count": 2
+  }
+]
+Occurrences for abc123 [{"media_item_id":2,"media_label":"Disc A","path":"photo.
+jpg"},{"media_item_id":3,"media_label":"Drive B","path":"backup/photo.jpg"}]
+totalGroups 1 totalFiles 2 reclaimableBytes 5000
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Query logic is correct: 1 duplicate group found (photo.jpg on both media items), correctly excludes the unique file, and reclaimable bytes math is right (5000 = one extra copy of the 5000-byte file). Let's clean up test data.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/cleanup.js << 'EOF'
+const Database = require\('b...`
+
+Remove test media items and file records from the dev database
+
+```bash
+cat > /home/kel/dev/DiscDock/cleanup.js << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+const ids = db.prepare("SELECT id FROM media_item WHERE label IN ('Disc A','Drive B')").all().map(r => r.id)
+for (const id of ids) {
+  db.prepare('DELETE FROM file_record WHERE media_item_id = ?').run(id)
+  db.prepare('DELETE FROM media_item WHERE id = ?').run(id)
+}
+console.log('Cleaned up', ids)
+console.log('media_item count:', db.prepare('SELECT COUNT(*) c FROM media_item').get())
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron cleanup.js 2>&1; rm -f cleanup.js
+```
+
+**Result:**
+
+```
+Cleaned up [ 2, 3 ]
+media_item count: { c: 0 }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean. Now let's commit and push.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for duplicate detection feature
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=06d51064-5b0a-4821-9812-35305c3c0ed1). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  398G   37G  92% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+A  electron/db/duplicateRepository.ts
+A  electron/ipc/duplicates.ts
+M  electron/main.ts
+M  electron/preload.ts
+M  shared/types.ts
+M  src/App.tsx
+A  src/views/Duplicates.css
+A  src/views/Duplicates.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+37G free — still healthy but continuing to shrink over the session; noting it but proceeding since it's well above the danger zone.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Implement duplicate file detection: repository, IPC, and Dupl...`
+
+Commit and push the duplicate detection feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Implement duplicate file detection: repository, IPC, and Duplicates view" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Implement duplicate file detection: repository, IPC, and Duplicates view" 2>&1 | tail -20 && git push 2>&1` (terminal ID=848552c9-95f6-41d2-80b8-70c5055330fe). This is the output of running that command instead:
+[main f3a980f] Implement duplicate file detection: repository, IPC, and Duplicat
+es view
+ 10 files changed, 914 insertions(+), 5 deletions(-)
+ create mode 100644 electron/db/duplicateRepository.ts
+ create mode 100644 electron/ipc/duplicates.ts
+ create mode 100644 src/views/Duplicates.css
+ create mode 100644 src/views/Duplicates.tsx
+Enumerating objects: 35, done.
+Counting objects: 100% (35/35), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (19/19), done.
+Writing objects: 100% (20/20), 7.98 KiB | 817.00 KiB/s, done.
+Total 20 (delta 11), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (11/11), completed with 11 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   369b891..f3a980f  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed.
+
+**Investigated first:** the earlier failed `npm run dev` — a fresh run just now completed successfully (Vite dev server + `tsc` build both worked), so that was a transient/stale terminal issue, not a code problem.
+
+**Implemented: Duplicate Detection (Epic 4)**
+- `duplicateRepository.ts` — groups `file_record` rows by `hash_value` (min group size configurable, optional media type/kind filters), returns occurrences per group plus summary (total groups, total files, reclaimable bytes)
+- `duplicates.ts` + `preload.ts` — `duplicates:report` IPC
+- `Duplicates.tsx` — group list with size/hash/occurrence details and a summary line, wired into sidebar nav
+
+**Verified directly against the real dev database** (not just visual, since GUI click automation isn't available): inserted two files with a matching hash across two media items plus one unique file, confirmed the query correctly identified exactly 1 duplicate group of 2 occurrences and computed reclaimable bytes correctly (5000 bytes) — then cleaned up test data.
+
+⚠️ Disk space is down to 37G free (92% used), continuing to shrink — still safe for now but worth checking what's consuming it when convenient.
+
+**Next logical step:** Media Detail view (folder tree browser + scan history) or Backup/Export (DB backup/restore, FR-7.2) — both are still-placeholder sections. Let me know which you'd like next.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Updated todo list
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 18:24:01Z)**_
+
+continue with what is the next logical step
+
+---
+
+_**Agent (copilot/auto)**_
+
+Let me actually dig into this recurring `npm run dev` failure properly this time, since it keeps showing exit code 1.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ps aux | grep -iE "electron|vite|node" | grep -v grep`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `content.txt`, lines 1 to 120
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's build the **Media Detail view** (folder browsing + scan history) — the missing piece for actually inspecting a catalogued item's contents.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 143 to 150
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 150 to 168
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 168 to 170
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 170-170 @@
+
+```
+
+export interface FileEntry {
+  path: string
+  name: string
+  kind: string
+  isDirectory: boolean
+  sizeBytes: number
+  modifiedAtSrc: string | null
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the file repository for folder browsing:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `fileRepository.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **fileRepository.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { getDb } from './index'
+import type { FileEntry } from '../../shared/types'
+
+interface FileRow {
+  path: string
+  name: string
+  kind: string
+  is_directory: number
+  size_bytes: number
+  modified_at_src: string | null
+}
+
+/**
+ * Returns the immediate children of folderPath ('' for the media root) for the catalogued tree.
+ * Note: folderPath is matched as a literal prefix; paths containing SQL LIKE wildcards (% or _)
+ * are a known v0.1.0 edge case limitation.
+ */
+export function listFolderContents(mediaItemId: number, folderPath: string): FileEntry[] {
+  const prefix = folderPath ? `${folderPath}/` : ''
+
+  const rows = getDb()
+    .prepare(
+      `SELECT path, name, kind, is_directory, size_bytes, modified_at_src
+       FROM file_record
+       WHERE media_item_id = @mediaItemId
+         AND path LIKE @likePrefix
+         AND path != @folderPath
+         AND instr(substr(path, length(@prefix) + 1), '/') = 0
+       ORDER BY is_directory DESC, name COLLATE NOCASE`
+    )
+    .all({
+      mediaItemId,
+      prefix,
+      likePrefix: `${prefix}%`,
+      folderPath
+    }) as FileRow[]
+
+  return rows.map((row) => ({
+    path: row.path,
+    name: row.name,
+    kind: row.kind,
+    isDirectory: row.is_directory === 1,
+    sizeBytes: row.size_bytes,
+    modifiedAtSrc: row.modified_at_src
+  }))
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the IPC handler:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `files.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **files.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { listFolderContents } from '../db/fileRepository'
+import type { FileEntry, IpcResult } from '../../shared/types'
+
+export function registerFilesIpc(): void {
+  ipcMain.handle('files:list', (_event, payload: unknown): IpcResult<FileEntry[]> => {
+    const { mediaId, folderPath } = (payload ?? {}) as { mediaId?: unknown; folderPath?: unknown }
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    const path = typeof folderPath === 'string' ? folderPath : ''
+    try {
+      return { ok: true, data: listFolderContents(mediaId, path) }
+    } catch (err) {
+      return { ok: false, error: { code: 'files_error', message: (err as Error).message } }
+    }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Wire into `main.ts` and `preload.ts`:     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `main.ts`, lines 1 to 11
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 36-36 @@
+
+```
+registerFilesIpc()
+  
+```
+
+@@ lines 11-11 @@
+
+```
+registerFilesIpc } from './ipc/files'
+import { 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 1 to 16
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 101-101 @@
+
+```
+,
+  files: {
+    list: (mediaId: number, folderPath: string): Promise<IpcResult<FileEntry[]>> =>
+      ipcRenderer.invoke('files:list', { mediaId, folderPath })
+  }
+```
+
+@@ lines 7-7 @@
+
+```
+FileEntry,
+  
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the Media Detail view with Overview/Browse/Scan History tabs:     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `MediaDetail.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaDetail.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { FileEntry, MediaItem, ScanJob } from '../../shared/types'
+import './MediaDetail.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+interface MediaDetailProps {
+  mediaId: number
+  onBack: () => void
+}
+
+type Tab = 'overview' | 'browse' | 'history'
+
+export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.Element {
+  const [item, setItem] = useState<MediaItem | null>(null)
+  const [tab, setTab] = useState<Tab>('overview')
+  const [folderPath, setFolderPath] = useState('')
+  const [entries, setEntries] = useState<FileEntry[]>([])
+  const [history, setHistory] = useState<ScanJob[]>([])
+
+  useEffect(() => {
+    void window.discdock.media.get(mediaId).then((result) => {
+      if (result.ok) setItem(result.data)
+    })
+  }, [mediaId])
+
+  useEffect(() => {
+    if (tab !== 'browse') return
+    void window.discdock.files.list(mediaId, folderPath).then((result) => {
+      if (result.ok) setEntries(result.data)
+    })
+  }, [mediaId, folderPath, tab])
+
+  useEffect(() => {
+    if (tab !== 'history') return
+    void window.discdock.scan.history(mediaId).then((result) => {
+      if (result.ok) setHistory(result.data)
+    })
+  }, [mediaId, tab])
+
+  if (!item) return <div className="media-detail">Loading…</div>
+
+  const mediaTypeLabel = MEDIA_TYPES.find((t) => t.value === item.mediaType)?.label ?? item.mediaType
+  const breadcrumbs = folderPath ? folderPath.split('/') : []
+
+  return (
+    <div className="media-detail">
+      <button type="button" className="button button--small media-detail__back" onClick={onBack}>
+        ← Back to Media Library
+      </button>
+
+      <div className="media-detail__header">
+        <h1>{item.label}</h1>
+        <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+      </div>
+      <p className="media-detail__subtitle">
+        {mediaTypeLabel} {item.physicalLocation ? `· ${item.physicalLocation}` : ''}
+      </p>
+
+      <div className="media-detail__tabs">
+        <button type="button" className={tab === 'overview' ? 'tab tab--active' : 'tab'} onClick={() => setTab('overview')}>
+          Overview
+        </button>
+        <button type="button" className={tab === 'browse' ? 'tab tab--active' : 'tab'} onClick={() => setTab('browse')}>
+          Browse
+        </button>
+        <button type="button" className={tab === 'history' ? 'tab tab--active' : 'tab'} onClick={() => setTab('history')}>
+          Scan History
+        </button>
+      </div>
+
+      {tab === 'overview' && (
+        <div className="media-detail__overview">
+          <p>Capacity: {item.capacityBytes ? formatBytes(item.capacityBytes) : 'Unknown'}</p>
+          <p>Last scanned: {item.lastScannedAt ?? 'Never'}</p>
+          <p>Last verified: {item.lastVerifiedAt ?? 'Never'}</p>
+          <p>Notes: {item.notes ?? '—'}</p>
+        </div>
+      )}
+
+      {tab === 'browse' && (
+        <div className="media-detail__browse">
+          <div className="breadcrumbs">
+            <button type="button" onClick={() => setFolderPath('')}>
+              Root
+            </button>
+            {breadcrumbs.map((segment, index) => {
+              const pathAtIndex = breadcrumbs.slice(0, index + 1).join('/')
+              return (
+                <span key={pathAtIndex}>
+                  {' / '}
+                  <button type="button" onClick={() => setFolderPath(pathAtIndex)}>
+                    {segment}
+                  </button>
+                </span>
+              )
+            })}
+          </div>
+
+          {entries.length === 0 ? (
+            <p className="media-detail__status">This folder is empty (or hasn't been scanned yet).</p>
+          ) : (
+            <table className="media-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Kind</th>
+                  <th>Size</th>
+                  <th>Modified</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <tr key={entry.path}>
+                    <td>
+                      {entry.isDirectory ? (
+                        <button type="button" className="link-button" onClick={() => setFolderPath(entry.path)}>
+                          📁 {entry.name}
+                        </button>
+                      ) : (
+                        entry.name
+                      )}
+                    </td>
+                    <td>{entry.isDirectory ? 'folder' : entry.kind}</td>
+                    <td>{entry.isDirectory ? '—' : formatBytes(entry.sizeBytes)}</td>
+                    <td>{entry.modifiedAtSrc ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === 'history' && (
+        <div className="media-detail__history">
+          {history.length === 0 ? (
+            <p className="media-detail__status">No scans yet.</p>
+          ) : (
+            <table className="media-table">
+              <thead>
+                <tr>
+                  <th>Started</th>
+                  <th>Status</th>
+                  <th>Hash Mode</th>
+                  <th>Added</th>
+                  <th>Modified</th>
+                  <th>Removed</th>
+                  <th>Errors</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((job) => (
+                  <tr key={job.id}>
+                    <td>{job.startedAt}</td>
+                    <td>{job.status}</td>
+                    <td>{job.hashMode}</td>
+                    <td>{job.filesAdded}</td>
+                    <td>{job.filesModified}</td>
+                    <td>{job.filesRemoved}</td>
+                    <td>{job.errorCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `MediaDetail.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaDetail.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.media-detail__back {
+  margin-bottom: 12px;
+}
+
+.media-detail__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.media-detail__subtitle {
+  opacity: 0.7;
+  font-size: 13px;
+  margin-top: 0;
+}
+
+.media-detail__tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border);
+  margin: 16px 0;
+}
+
+.tab {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 2px solid transparent;
+}
+
+.tab--active {
+  border-bottom-color: var(--color-accent);
+  font-weight: 600;
+}
+
+.media-detail__overview p {
+  font-size: 13px;
+}
+
+.breadcrumbs {
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.breadcrumbs button {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  text-align: left;
+}
+
+.media-detail__status {
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaDetail.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { FileEntry, MediaItem, ScanJob } from '../../shared/types'
+import './MediaDetail.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+interface MediaDetailProps {
+  mediaId: number
+  onBack: () => void
+}
+
+type Tab = 'overview' | 'browse' | 'history'
+
+export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.Element {
+  const [item, setItem] = useState<MediaItem | null>(null)
+  const [tab, setTab] = useState<Tab>('overview')
+  const [folderPath, setFolderPath] = useState('')
+  const [entries, setEntries] = useState<FileEntry[]>([])
+  const [history, setHistory] = useState<ScanJob[]>([])
+
+  useEffect(() => {
+    void window.discdock.media.get(mediaId).then((result) => {
+      if (result.ok) setItem(result.data)
+    })
+  }, [mediaId])
+
+  useEffect(() => {
+    if (tab !== 'browse') return
+    void window.discdock.files.list(mediaId, folderPath).then((result) => {
+      if (result.ok) setEntries(result.data)
+    })
+  }, [mediaId, folderPath, tab])
+
+  useEffect(() => {
+    if (tab !== 'history') return
+    void window.discdock.scan.history(mediaId).then((result) => {
+      if (result.ok) setHistory(result.data)
+    })
+  }, [mediaId, tab])
+
+  if (!item) return <div className="media-detail">Loading…</div>
+
+  const mediaTypeLabel = MEDIA_TYPES.find((t) => t.value === item.mediaType)?.label ?? item.mediaType
+  const breadcrumbs = folderPath ? folderPath.split('/') : []
+
+  return (
+    <div className="media-detail">
+      <button type="button" className="button button--small media-detail__back" onClick={onBack}>
+        ← Back to Media Library
+      </button>
+
+      <div className="media-detail__header">
+        <h1>{item.label}</h1>
+        <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+      </div>
+      <p className="media-detail__subtitle">
+        {mediaTypeLabel} {item.physicalLocation ? `· ${item.physicalLocation}` : ''}
+      </p>
+
+      <div className="media-detail__tabs">
+        <button type="button" className={tab === 'overview' ? 'tab tab--active' : 'tab'} onClick={() => setTab('overview')}>
+          Overview
+        </button>
+        <button type="button" className={tab === 'browse' ? 'tab tab--active' : 'tab'} onClick={() => setTab('browse')}>
+          Browse
+        </button>
+        <button type="button" className={tab === 'history' ? 'tab tab--active' : 'tab'} onClick={() => setTab('history')}>
+          Scan History
+        </button>
+      </div>
+
+      {tab === 'overview' && (
+        <div className="media-detail__overview">
+          <p>Capacity: {item.capacityBytes ? formatBytes(item.capacityBytes) : 'Unknown'}</p>
+          <p>Last scanned: {item.lastScannedAt ?? 'Never'}</p>
+          <p>Last verified: {item.lastVerifiedAt ?? 'Never'}</p>
+          <p>Notes: {item.notes ?? '—'}</p>
+        </div>
+      )}
+
+      {tab === 'browse' && (
+        <div className="media-detail__browse">
+          <div className="breadcrumbs">
+            <button type="button" onClick={() => setFolderPath('')}>
+              Root
+            </button>
+            {breadcrumbs.map((segment, index) => {
+              const pathAtIndex = breadcrumbs.slice(0, index + 1).join('/')
+              return (
+                <span key={pathAtIndex}>
+                  {' / '}
+                  <button type="button" onClick={() => setFolderPath(pathAtIndex)}>
+                    {segment}
+                  </button>
+                </span>
+              )
+            })}
+          </div>
+
+          {entries.length === 0 ? (
+            <p className="media-detail__status">This folder is empty (or hasn't been scanned yet).</p>
+          ) : (
+            <table className="media-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Kind</th>
+                  <th>Size</th>
+                  <th>Modified</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <tr key={entry.path}>
+                    <td>
+                      {entry.isDirectory ? (
+                        <button type="button" className="link-button" onClick={() => setFolderPath(entry.path)}>
+                          📁 {entry.name}
+                        </button>
+                      ) : (
+                        entry.name
+                      )}
+                    </td>
+                    <td>{entry.isDirectory ? 'folder' : entry.kind}</td>
+                    <td>{entry.isDirectory ? '—' : formatBytes(entry.sizeBytes)}</td>
+                    <td>{entry.modifiedAtSrc ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === 'history' && (
+        <div className="media-detail__history">
+          {history.length === 0 ? (
+            <p className="media-detail__status">No scans yet.</p>
+          ) : (
+            <table className="media-table">
+              <thead>
+                <tr>
+                  <th>Started</th>
+                  <th>Status</th>
+                  <th>Hash Mode</th>
+                  <th>Added</th>
+                  <th>Modified</th>
+                  <th>Removed</th>
+                  <th>Errors</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((job) => (
+                  <tr key={job.id}>
+                    <td>{job.startedAt}</td>
+                    <td>{job.status}</td>
+                    <td>{job.hashMode}</td>
+                    <td>{job.filesAdded}</td>
+                    <td>{job.filesModified}</td>
+                    <td>{job.filesRemoved}</td>
+                    <td>{job.errorCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaDetail.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.media-detail__back {
+  margin-bottom: 12px;
+}
+
+.media-detail__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.media-detail__subtitle {
+  opacity: 0.7;
+  font-size: 13px;
+  margin-top: 0;
+}
+
+.media-detail__tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--color-border);
+  margin: 16px 0;
+}
+
+.tab {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 2px solid transparent;
+}
+
+.tab--active {
+  border-bottom-color: var(--color-accent);
+  font-weight: 600;
+}
+
+.media-detail__overview p {
+  font-size: 13px;
+}
+
+.breadcrumbs {
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.breadcrumbs button {
+  background: none;
+  border: none;
+  color: var(--color-accent);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+  text-align: left;
+}
+
+.media-detail__status {
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now wire it into `App.tsx`, and add a way to open Media Detail from the Media Library list (clicking a label):     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `App.tsx`, lines 1 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **App.tsx**</summary>
+
+@@ lines 6-37 @@
+
+```
+MediaDetail from './views/MediaDetail'
+import Search from './views/Search'
+import Duplicates from './views/Duplicates'
+import PlaceholderView from './views/PlaceholderView'
+import { NAV_ITEMS } from './components/Sidebar'
+
+const VIEW_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.label])
+)
+
+export default function App(): JSX.Element {
+  const [activeView, setActiveView] = useState('dashboard')
+  const [selectedMediaId, setSelectedMediaId] = useState<number | null>(null)
+
+  const handleSelectNav = (key: string): void => {
+    setSelectedMediaId(null)
+    setActiveView(key)
+  }
+
+  const renderView = (): JSX.Element => {
+    if (activeView === 'media-library' && selectedMediaId !== null) {
+      return <MediaDetail mediaId={selectedMediaId} onBack={() => setSelectedMediaId(null)} />
+    }
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'media-library':
+        return <MediaLibrary onOpenDetail={setSelectedMediaId} />
+      case 'search':
+        return <Search />
+      case 'duplicates':
+        return <Duplicates />
+      default:
+        return <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
+    }
+  }
+
+  return (
+    <div className="app-shell">
+      <TitleBar />
+      <div className="app-body">
+        <Sidebar active={activeView} onSelect={handleSelectNav
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Build Media Detail view with folder browsing and scan history* (2/3)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update `MediaLibrary.tsx` to accept the  prop and make labels clickable:     
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 1 to 20
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `export default function MediaLibrary` (`**/src/views/MediaLibrary.tsx`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 213-213 @@
+
+```
+
+                    <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
+                      {item.label}
+                    </button>
+                  
+```
+
+@@ lines 24-24 @@
+
+```
+{ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `MediaLibrary.tsx`, `fileRepository.ts`, `files.ts`, `main.ts`, `preload.ts`, `App.tsx`, 2 problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c electron/db/fileRepository.ts electron/ipc/files.ts src/views/MediaDet...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 213-213 @@
+
+```
+
+                    <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
+                      {item.label}
+                    </button>
+                  
+```
+
+@@ lines 24-24 @@
+
+```
+{ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+All intact. Let's build:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -80`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's verify the folder-listing query logic against the real DB with test data:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-files.js << 'EOF'
+const Database = require...`
 </details></tool-use>
