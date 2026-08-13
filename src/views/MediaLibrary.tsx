@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Scan, CircleX, Archive, Trash2, Eject as EjectIcon } from 'lucide-react'
 import { MEDIA_TYPES } from '../../shared/types'
 import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
 import './MediaLibrary.css'
@@ -572,16 +573,16 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                   <td className="media-table__actions">
                     {scan ? (
                       <button type="button" className="button button--small" onClick={() => handleCancelScan(item.id)}>
-                        Cancel
+                        <CircleX size={14} aria-hidden="true" /> Cancel
                       </button>
                     ) : (
                       <button type="button" className="button button--small" onClick={() => handleScan(item.id)}>
-                        Scan
+                        <Scan size={14} aria-hidden="true" /> Scan
                       </button>
                     )}
                     {item.status === 'active' && !scan && (
                       <button type="button" className="button button--small" onClick={() => handleRetire(item.id)}>
-                        Retire
+                        <Archive size={14} aria-hidden="true" /> Retire
                       </button>
                     )}
                     <button
@@ -589,7 +590,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                       className="button button--small button--danger"
                       onClick={() => handleDelete(item.id)}
                     >
-                      Delete
+                      <Trash2 size={14} aria-hidden="true" /> Delete
                     </button>
                     {presentDevice && (
                       <button
@@ -598,6 +599,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                         disabled={ejectingIds.has(item.id)}
                         onClick={() => handleEject(item, presentDevice)}
                       >
+                        <EjectIcon size={14} aria-hidden="true" />{' '}
                         {ejectingIds.has(item.id)
                           ? 'Ejecting…'
                           : presentDevice.isOptical

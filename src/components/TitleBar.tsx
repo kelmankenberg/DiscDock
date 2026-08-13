@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Disc3, Minus, Square, Copy, X } from 'lucide-react'
 import './TitleBar.css'
 
 interface WindowState {
@@ -19,9 +20,7 @@ export default function TitleBar(): JSX.Element {
   return (
     <header className="title-bar">
       <div className="title-bar__drag-region">
-        <span className="title-bar__icon" aria-hidden="true">
-          💿
-        </span>
+        <Disc3 size={16} className="title-bar__icon" aria-hidden="true" />
         <span className="title-bar__title">DiscDock</span>
       </div>
       <div className="title-bar__controls">
@@ -31,7 +30,7 @@ export default function TitleBar(): JSX.Element {
           aria-label="Minimize"
           onClick={() => void window.discdock.window.minimize()}
         >
-          &#x2212;
+          <Minus size={14} />
         </button>
         <button
           type="button"
@@ -39,7 +38,7 @@ export default function TitleBar(): JSX.Element {
           aria-label={maximized ? 'Restore' : 'Maximize'}
           onClick={() => void window.discdock.window.maximize()}
         >
-          {maximized ? '❐' : '☐'}
+          {maximized ? <Copy size={13} /> : <Square size={12} />}
         </button>
         <button
           type="button"
@@ -47,7 +46,7 @@ export default function TitleBar(): JSX.Element {
           aria-label="Close"
           onClick={() => void window.discdock.window.close()}
         >
-          &#x2715;
+          <X size={14} />
         </button>
       </div>
     </header>
