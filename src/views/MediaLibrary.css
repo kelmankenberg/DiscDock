@@ -81,6 +81,20 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.media-table__sort-header {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.media-table__sort-header:hover {
+  text-decoration: underline;
+}
+
 .media-table__actions {
   display: flex;
   gap: 6px;

@@ -29510,10 +29510,75 @@ Great, that confirms it's working as intended. Let's finalize — build, verify,
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `Dashboard.tsx`, lines 1 to 200
+
+**Input:**
+
+- endLine: `200`
+- filePath: `/home/kel/dev/DiscDock/src/views/Dashboard.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import type { DashboardSummary, DetectedDevice, MediaItem } from '../../shared/types'
+
+const EMPTY_SUMMARY: DashboardSummary = {
+  totalMediaItems: 0,
+  totalFiles: 0,
+  totalSizeBytes: 0,
+  mediaNeedingVerification: 0
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+export default function Dashboard(): JSX.Element {
+  const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY)
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
+  const [scanningDevices, setScanningDevices] = useState<Set<string>>(new Set())
+  const [jobToDevice, setJobToDevice] = useState<Record<number, string>>({})
+  const [promptedDevices, setPromptedDevices] = useState<Set<string>>(new Set())
+
+  const findMediaForDevice = (device: DetectedDevice): MediaItem | undefined =>
+    mediaItems.find((m) => m.deviceFingerprint === (device.uuid ?? device.devicePath))
+
+  const refreshSummary = (): void => {
+    void window.discdock.dashboard.getSummary().then((result) => {
+      if (result.ok) setSummary(result.data)
+    })
+  }
+
+  const refreshMediaItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setMediaItems(result.data)
+    })
+  }
+
+  const startScanFor = (mediaId: number, devicePath: string, mountPoint: string): void => {
+    setScanningDevices((prev) => new Set(prev).add(devicePath))
+    void window.discdock.scan.start(mediaId, mountPoint).then((startResult) => {
+      if (startResult.ok) {
+        setJobToDevice((prev) => ({ ...prev, [startResult.data.jobId]: devicePath }))
+      }
+    })
+  }
+
+  useEffect(() => {
+    refreshSummary()
+    refreshMediaItems()
+    void window.discdock.d
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -29522,10 +29587,22 @@ The implementation looks complete and correct. Let's rebuild and verify no error
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `Dashboard.tsx`, no problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/src/views/Dashboard.tsx"]`
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/src/views/Dashboard.tsx">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -29534,6 +29611,19 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c src/views/Dashboard.tsx`
+
+Verify Dashboard.tsx has real content before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/views/Dashboard.tsx
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/views/Dashboard.tsx` (terminal ID=58eb0997-8eff-4a86-8717-d0f5a4b3d532). This is the output of running that command instead:
+7741 src/views/Dashboard.tsx
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -29542,4 +29632,400 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with the never-scanned reconnection prompt feature
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=3bc9109a-1189-4c8c-a72a-b66e4eb46a04). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 35 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-CQ4LkIOR.css    7.76 kB │ gzip:  1.79 kB
+dist/assets/index-CRaH1bBA.js   217.35 kB │ gzip: 66.70 kB
+
+✓ built in 193ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build, and you've already confirmed the prompt appears correctly when the disc is reinserted. Let's clean up test data and commit.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/check-media.js << 'EOF'
+const Database = requir...`
+
+Check current state of media_item table to confirm test data is clean before committing
+
+```bash
+cat > /home/kel/dev/DiscDock/check-media.js << 'EOF'
+const Database = require('better-sqlite3')
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3')
+console.log(JSON.stringify(db.prepare('SELECT id, label, device_fingerprint, last_scanned_at FROM media_item').all(), null, 2))
+db.close()
+EOF
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 npx electron check-media.js 2>&1; rm -f check-media.js
+```
+
+**Result:**
+
+```
+[
+  {
+    "id": 5,
+    "label": "My Disc",
+    "device_fingerprint": "2004-11-05-19-17-00-00",
+    "last_scanned_at": "2026-08-13 19:10:25"
+  },
+  {
+    "id": 6,
+    "label": "GUNCD1",
+    "device_fingerprint": "2005-11-09-18-16-05-00",
+    "last_scanned_at": "2026-08-13 19:01:24"
+  }
+]
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+That's your real usage data from testing (both already scanned), not test artifacts — nothing to clean up. Committing.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` df -h / | tail -1 && git add -A && git status --short`
+
+Check disk space and review staged changes for the never-scanned reconnection prompt
+
+```bash
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` df -h / | tail -1 && git add -A && git status --short` (terminal ID=99d8231a-26c7-46e6-b8b5-989ad333481f). This is the output of running that command instead:
+/dev/nvme1n1p2  457G  402G   32G  93% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  src/views/Dashboard.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+32G free — continuing to drop. Still safe to commit, but worth flagging again. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Prompt to scan when a known-but-never-scanned media item's de...`
+
+Commit and push the never-scanned reconnection prompt feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Prompt to scan when a known-but-never-scanned media item's device is reconnected" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Prompt to scan when a known-but-never-scanned media item's device is reconnected" 2>&1 | tail -20 && git push 2>&1` (terminal ID=1070d9f3-48cf-416d-b77e-9b3acd0b5bf7). This is the output of running that command instead:
+[main b85c57c] Prompt to scan when a known-but-never-scanned media item's device
+ is reconnected
+ 3 files changed, 1177 insertions(+), 59 deletions(-)
+Enumerating objects: 17, done.
+Counting objects: 100% (17/17), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (9/9), done.
+Writing objects: 100% (9/9), 6.33 KiB | 431.00 KiB/s, done.
+Total 9 (delta 6), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (6/6), completed with 6 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   79cd665..b85c57c  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed. Confirmed working by your live test (reload the disc → prompt appears for "never scanned" state).
+
+**Implemented: Prompt on reconnecting known-but-unscanned media**
+- Dashboard now cross-references detected devices against registered media items by  (UUID or device path fallback)
+- If a match is found with `lastScannedAt === null`, the device row shows "Never Scanned — Scan Now" instead of "Registered", and a one-time confirm prompt offers to scan immediately when that device is (re)detected
+- Prompting is deduped per device path ( set) so it won't nag repeatedly while the same device stays connected
+- Only one confirm dialog surfaces at a time even if multiple unscanned devices are present simultaneously (avoids stacking blocking dialogs)
+
+⚠️ Disk space has dropped again to **32G free (93% used)**, down from 53G a few turns ago — this is trending down fairly quickly across the session. Worth checking what's consuming it when you get a chance, since we're approaching the range where the earlier file-corruption incident occurred.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+---
+
+_**User (2026-08-13 19:14:05Z)**_
+
+in the Media Library list, the columns should be sortable, unless that is covered in a later implementation
+
+---
+
+_**Agent (copilot/auto)**_
+
+Good catch — that's genuinely missing, not deferred; the UI spec already calls for it in Media Library ("Filter/sort by type, location, tag, status..."). Let me add click-to-sort column headers.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 255 to 280
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 1 to 30
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's add sort state, a comparator, and clickable headers with direction indicators:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 30-30 @@
+
+```
+
+  const [sortKey, setSortKey] = useState<SortKey>('label')
+  const [sortAsc, setSortAsc] = useState(true)
+
+  const handleSort = (key: SortKey): void => {
+    if (key === sortKey) {
+      setSortAsc((prev) => !prev)
+    } else {
+      setSortKey(key)
+      setSortAsc(true)
+    }
+  }
+
+  const sortedItems = [...items].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
+```
+
+@@ lines 16-16 @@
+
+```
+
+
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'label', label: 'Label' },
+  { key: 'mediaType', label: 'Type' },
+  { key: 'physicalLocation', label: 'Location' },
+  { key: 'status', label: 'Status' },
+  { key: 'lastScannedAt', label: 'Last Scanned' }
+]
+
+function sortValue(item: MediaItem, key: SortKey): string {
+  switch (key) {
+    case 'mediaType':
+      return mediaTypeLabel(item.mediaType)
+    case 'physicalLocation':
+      return item.physicalLocation ?? ''
+    case 'lastScannedAt':
+      return item.lastScannedAt ?? ''
+    default:
+      return item[key] ?? ''
+  }
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now update the table header and body to use sortable columns and :   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 280 to 300
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.tsx`, lines 298 to 340
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 309-318 @@
+
+```
+{COLUMNS.map((col) => (
+                <th key={col.key}>
+                  <button type="button" className="media-table__sort-header" onClick={() => handleSort(col.key)}>
+                    {col.label}
+                    {sortKey === col.key ? (sortAsc ? ' ▲' : ' ▼') : ''}
+                  </button>
+                </th>
+              ))}
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedI
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now add the CSS for `.media-table__sort-header`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `.media-table th` (`**/src/views/MediaLibrary.css`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaLibrary.css`, lines 75 to 85
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.css**</summary>
+
+@@ lines 84-84 @@
+
+```
+.media-table__sort-header {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.media-table__sort-header:hover {
+  text-decoration: underline;
+}
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's check for errors, verify integrity, and build:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `MediaLibrary.tsx`, 2 problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Known non-blocking IDE quirk. Verify content and build:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/views/MediaLibrary.tsx src/views/MediaLibrary.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Let's launch and screenshot the Media Library to confirm the sortable headers render correctly.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npx electron . --no-sandbox 2>&1`
 </details></tool-use>

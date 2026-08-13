@@ -15,6 +15,29 @@ function mediaTypeLabel(mediaType: MediaType): string {
   return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
 }
 
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'label', label: 'Label' },
+  { key: 'mediaType', label: 'Type' },
+  { key: 'physicalLocation', label: 'Location' },
+  { key: 'status', label: 'Status' },
+  { key: 'lastScannedAt', label: 'Last Scanned' }
+]
+
+function sortValue(item: MediaItem, key: SortKey): string {
+  switch (key) {
+    case 'mediaType':
+      return mediaTypeLabel(item.mediaType)
+    case 'physicalLocation':
+      return item.physicalLocation ?? ''
+    case 'lastScannedAt':
+      return item.lastScannedAt ?? ''
+    default:
+      return item[key] ?? ''
+  }
+}
+
 interface ActiveScan {
   jobId: number
   filesProcessed: number
@@ -28,6 +51,22 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   const [error, setError] = useState<string | null>(null)
   const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
   const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [sortKey, setSortKey] = useState<SortKey>('label')
+  const [sortAsc, setSortAsc] = useState(true)
+
+  const handleSort = (key: SortKey): void => {
+    if (key === sortKey) {
+      setSortAsc((prev) => !prev)
+    } else {
+      setSortKey(key)
+      setSortAsc(true)
+    }
+  }
+
+  const sortedItems = [...items].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
   const [devices, setDevices] = useState<DetectedDevice[]>([])
   const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
 
@@ -267,16 +306,19 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
         <table className="media-table">
           <thead>
             <tr>
-              <th>Label</th>
-              <th>Type</th>
-              <th>Location</th>
-              <th>Status</th>
-              <th>Last Scanned</th>
+              {COLUMNS.map((col) => (
+                <th key={col.key}>
+                  <button type="button" className="media-table__sort-header" onClick={() => handleSort(col.key)}>
+                    {col.label}
+                    {sortKey === col.key ? (sortAsc ? ' ▲' : ' ▼') : ''}
+                  </button>
+                </th>
+              ))}
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {items.map((item) => {
+            {sortedItems.map((item) => {
               const scan = scansByMedia[item.id]
               return (
                 <tr key={item.id}>
