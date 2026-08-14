@@ -57,6 +57,16 @@ jobs:
       - name: Build Debian and AppImage packages
         run: npm run package:linux
 
+      - name: Inspect Debian package metadata
+        run: |
+          dpkg-deb --info release/*.deb
+          dpkg-deb --contents release/*.deb | grep -E 'usr/share/applications|usr/share/icons'
+
+      - name: Verify AppImage extraction fallback
+        run: |
+          chmod +x release/*.AppImage
+          timeout 30s ./release/*.AppImage --appimage-extract-and-run --version || test $? -eq 124
+
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:

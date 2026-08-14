@@ -174,7 +174,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [ ] Test `.deb` installation on a current Ubuntu LTS image with `apt install ./package.deb` and `dpkg -i`.
 - [ ] Test desktop menu entry, icon, protocol registration, single-instance behavior, and deep links.
 - [ ] Test `.AppImage` on a non-Debian distribution with FUSE.
-- [~] Test the documented `--appimage-extract-and-run` fallback without FUSE. Extraction succeeded locally; clean application launch/quit did not complete within the smoke-test timeout.
+- [~] Test the documented `--appimage-extract-and-run` fallback without FUSE. Extraction succeeds locally and CI now exercises the fallback with a bounded timeout; clean GUI launch/quit remains unverified on this host because Xvfb is unavailable.
 - [x] Verify correct native-module ABI packaging for `better-sqlite3`. `electron-builder` rebuilt and packaged `better-sqlite3` for Electron 41.10.5 during the successful Linux package run.
 - [ ] Verify first-run data directories, permissions, migration behavior, uninstall behavior, and retained user data.
 - [ ] Decide whether updates are disabled for v1 or fully tested against signed published artifacts.
