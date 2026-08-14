@@ -222,6 +222,8 @@ export interface FileEntry {
   kind: string
   isDirectory: boolean
   sizeBytes: number
+  directoryFileCount?: number
+  directorySizeBytes?: number
   modifiedAtSrc: string | null
   durationSeconds: number | null
 }

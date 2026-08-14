@@ -7,6 +7,8 @@ interface FileRow {
   kind: string
   is_directory: number
   size_bytes: number
+  directory_file_count: number
+  directory_size_bytes: number
   modified_at_src: string | null
   duration_seconds: number | null
 }
@@ -21,9 +23,19 @@ export function listFolderContents(mediaItemId: number, folderPath: string): Fil
 
   const rows = getDb()
     .prepare(
-      `SELECT path, name, kind, is_directory, size_bytes, modified_at_src, duration_seconds
-       FROM file_record
-       WHERE media_item_id = @mediaItemId
+      `SELECT fr.path, fr.name, fr.kind, fr.is_directory, fr.size_bytes, fr.modified_at_src, fr.duration_seconds,
+              CASE WHEN fr.is_directory = 1 THEN (
+                SELECT COUNT(*) FROM file_record child
+                WHERE child.media_item_id = fr.media_item_id AND child.is_directory = 0
+                  AND substr(child.path, 1, length(fr.path) + 1) = fr.path || '/'
+              ) ELSE 0 END AS directory_file_count,
+              CASE WHEN fr.is_directory = 1 THEN (
+                SELECT COALESCE(SUM(child.size_bytes), 0) FROM file_record child
+                WHERE child.media_item_id = fr.media_item_id AND child.is_directory = 0
+                  AND substr(child.path, 1, length(fr.path) + 1) = fr.path || '/'
+              ) ELSE 0 END AS directory_size_bytes
+       FROM file_record fr
+      WHERE fr.media_item_id = @mediaItemId
          AND path LIKE @likePrefix
          AND path != @folderPath
          AND instr(substr(path, length(@prefix) + 1), '/') = 0
@@ -42,6 +54,8 @@ export function listFolderContents(mediaItemId: number, folderPath: string): Fil
     kind: row.kind,
     isDirectory: row.is_directory === 1,
     sizeBytes: row.size_bytes,
+    directoryFileCount: row.directory_file_count,
+    directorySizeBytes: row.directory_size_bytes,
     modifiedAtSrc: row.modified_at_src,
     durationSeconds: row.duration_seconds
   }))

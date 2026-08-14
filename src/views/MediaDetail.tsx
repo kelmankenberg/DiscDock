@@ -286,7 +286,7 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
                         )}
                       </td>
                       <td>{entry.isDirectory ? 'folder' : entry.kind}</td>
-                      <td>{entry.isDirectory ? '—' : formatBytes(entry.sizeBytes)}</td>
+                          <td>{entry.isDirectory ? `${entry.directoryFileCount ?? 0} files · ${formatBytes(entry.directorySizeBytes ?? 0)}` : formatBytes(entry.sizeBytes)}</td>
                       <td>{entry.durationSeconds !== null ? formatDuration(entry.durationSeconds) : '—'}</td>
                       <td>{entry.modifiedAtSrc ?? '—'}</td>
                       <td>

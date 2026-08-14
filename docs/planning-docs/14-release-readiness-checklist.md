@@ -152,7 +152,7 @@ These are useful improvements, but should not delay the first release if the MVP
 
 ### P1.3 Catalog fidelity and scale
 
-- [ ] Compute and display directory aggregate file counts and sizes.
+- [x] Compute and display directory aggregate file counts and sizes.
 - [ ] Verify pagination or virtualization for every potentially large table and folder listing.
 - [ ] Measure search performance at 500,000 file rows.
 - [ ] Measure usability and memory behavior at 1,000 media items and 2,000,000 file rows.
