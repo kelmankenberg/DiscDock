@@ -1,9 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
-import electronUpdater from 'electron-updater'
+import { autoUpdater } from 'electron-updater'
 import { getSettings } from '../settings/settingsStore'
 import type { IpcResult, UpdateStatus } from '../../shared/types'
-
-const { autoUpdater } = electronUpdater
 
 let win: BrowserWindow | null = null
 let lastStatus: UpdateStatus = { state: 'idle' }
