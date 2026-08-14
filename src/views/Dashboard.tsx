@@ -41,11 +41,22 @@ export default function Dashboard(): JSX.Element {
     })
   }
 
-  const startScanFor = (mediaId: number, devicePath: string, mountPoint: string): void => {
-    setScanningDevices((prev) => new Set(prev).add(devicePath))
-    void window.discdock.scan.start(mediaId, mountPoint).then((startResult) => {
+  const startScanFor = (mediaId: number, device: DetectedDevice): void => {
+    setScanningDevices((prev) => new Set(prev).add(device.devicePath))
+    // Audio CDs have no mount point to walk; they are cataloged from the disc's raw TOC.
+    const request = device.isAudioCd
+      ? window.discdock.scan.startAudioCd(mediaId, device.devicePath)
+      : window.discdock.scan.start(mediaId, device.mountPoint)
+
+    void request.then((startResult) => {
       if (startResult.ok) {
-        setJobToDevice((prev) => ({ ...prev, [startResult.data.jobId]: devicePath }))
+        setJobToDevice((prev) => ({ ...prev, [startResult.data.jobId]: device.devicePath }))
+      } else {
+        setScanningDevices((prev) => {
+          const next = new Set(prev)
+          next.delete(device.devicePath)
+          return next
+        })
       }
     })
   }
@@ -103,7 +114,7 @@ export default function Dashboard(): JSX.Element {
 
       setPromptedDevices((prev) => new Set(prev).add(device.devicePath))
       if (window.confirm(`"${matched.label}" has been added but never scanned. Scan it now?`)) {
-        startScanFor(matched.id, device.devicePath, device.mountPoint)
+        startScanFor(matched.id, device)
       }
       break // avoid stacking multiple blocking confirm() dialogs at once
     }
@@ -113,8 +124,10 @@ export default function Dashboard(): JSX.Element {
   const handleRegister = (device: DetectedDevice): void => {
     void window.discdock.media
       .create({
-        label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
-        mediaType: device.isOptical ? 'dvd' : 'external_hdd',
+        label: device.isAudioCd
+          ? (device.label ?? 'Audio CD')
+          : (device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath),
+        mediaType: device.isAudioCd ? 'cd' : device.isOptical ? 'dvd' : 'external_hdd',
         capacityBytes: device.sizeBytes,
         physicalLocation: null,
         notes: null,
@@ -127,7 +140,7 @@ export default function Dashboard(): JSX.Element {
           setPromptedDevices((prev) => new Set(prev).add(device.devicePath))
 
           if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
-            startScanFor(result.data.id, device.devicePath, device.mountPoint)
+            startScanFor(result.data.id, device)
           }
         }
       })
@@ -205,7 +218,7 @@ export default function Dashboard(): JSX.Element {
                     )}
                   </td>
                   <td>{device.label ?? '(unlabeled)'}</td>
-                  <td>{device.mountPoint}</td>
+                  <td>{device.mountPoint || (device.isAudioCd ? 'Audio CD (no filesystem)' : '—')}</td>
                   <td>{device.fsType ?? '—'}</td>
                   <td>{device.sizeBytes ? formatBytes(device.sizeBytes) : '—'}</td>
                   <td>
@@ -219,7 +232,7 @@ export default function Dashboard(): JSX.Element {
                       <button
                         type="button"
                         className="button button--small"
-                        onClick={() => startScanFor(matched.id, device.devicePath, device.mountPoint)}
+                        onClick={() => startScanFor(matched.id, device)}
                       >
                         Never Scanned — Scan Now
                       </button>

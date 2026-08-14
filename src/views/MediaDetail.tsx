@@ -18,6 +18,11 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
 }
 
+function formatDuration(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  return `${minutes}:${String(seconds % 60).padStart(2, '0')}`
+}
+
 interface MediaDetailProps {
   mediaId: number
   onBack: () => void
@@ -245,6 +250,7 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
                   <th>Name</th>
                   <th>Kind</th>
                   <th>Size</th>
+                  <th>Duration</th>
                   <th>Modified</th>
                   <th>Tags</th>
                   <th>Note</th>
@@ -269,6 +275,7 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
                       </td>
                       <td>{entry.isDirectory ? 'folder' : entry.kind}</td>
                       <td>{entry.isDirectory ? '—' : formatBytes(entry.sizeBytes)}</td>
+                      <td>{entry.durationSeconds !== null ? formatDuration(entry.durationSeconds) : '—'}</td>
                       <td>{entry.modifiedAtSrc ?? '—'}</td>
                       <td>
                         {isEditingTags ? (

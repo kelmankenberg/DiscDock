@@ -148,6 +148,12 @@ const MIGRATIONS: { version: number; sql: string }[] = [
       );
       CREATE INDEX IF NOT EXISTS idx_file_tag_tag ON file_tag(tag_id);
     `
+  },
+  {
+    version: 5,
+    sql: `
+      ALTER TABLE file_record ADD COLUMN duration_seconds INTEGER;
+    `
   }
 ]
 

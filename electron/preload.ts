@@ -104,6 +104,14 @@ const api = {
       ipcRenderer.on('scan:started', listener)
       return () => ipcRenderer.removeListener('scan:started', listener)
     },
+    onWarning: (callback: (payload: { jobId: number; message: string }) => void): (() => void) => {
+      const listener = (
+        _event: Electron.IpcRendererEvent,
+        payload: { jobId: number; message: string }
+      ): void => callback(payload)
+      ipcRenderer.on('scan:warning', listener)
+      return () => ipcRenderer.removeListener('scan:warning', listener)
+    },
     onCompleted: (callback: (payload: { jobId: number }) => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number }): void => callback(payload)
       ipcRenderer.on('scan:completed', listener)

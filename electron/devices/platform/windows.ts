@@ -56,7 +56,8 @@ export async function listConnectedDevices(): Promise<DetectedDevice[]> {
         mountPoint: `${disk.DeviceID}\\`,
         sizeBytes: toBytes(disk.Size),
         uuid: disk.VolumeSerialNumber || null,
-        isOptical: disk.DriveType === DRIVE_TYPE_CDROM
+        isOptical: disk.DriveType === DRIVE_TYPE_CDROM,
+        isAudioCd: false
       }))
   } catch {
     return []

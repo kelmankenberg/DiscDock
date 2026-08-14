@@ -1,5 +1,7 @@
 import { execFile } from 'node:child_process'
+import fs from 'node:fs/promises'
 import { promisify } from 'node:util'
+import { computeDiscId, readAudioCdToc } from '../../scanning/audioCd'
 import type { DetectedDevice } from '../../../shared/types'
 
 const execFileAsync = promisify(execFile)
@@ -31,13 +33,59 @@ function flatten(devices: LsblkDevice[]): LsblkDevice[] {
   return result
 }
 
+/**
+ * Reading the TOC is too slow for every poll, so disc IDs are cached per drive and dropped as soon
+ * as the drive reports empty (i.e. the disc was swapped or removed).
+ */
+const discIdCache = new Map<string, string | null>()
+
+/**
+ * Audio CDs have no filesystem UUID, so the drive path would be the only fingerprint available —
+ * which would make every disc in the same drive look like the same media item. The MusicBrainz
+ * disc ID is derived from the TOC, so it identifies the disc itself.
+ */
+async function audioCdFingerprint(devicePath: string): Promise<string | null> {
+  const cached = discIdCache.get(devicePath)
+  if (cached !== undefined) return cached
+
+  let discId: string | null = null
+  try {
+    discId = computeDiscId(await readAudioCdToc(devicePath))
+  } catch {
+    discId = null
+  }
+
+  const fingerprint = discId ? `audiocd:${discId}` : null
+  discIdCache.set(devicePath, fingerprint)
+  return fingerprint
+}
+
 function isRemovable(device: LsblkDevice): boolean {
   return device.rm === true || device.rm === '1'
 }
 
 /**
+ * An empty optical drive keeps reporting the previous disc's size in lsblk, so capacity can't tell
+ * us whether a disc is loaded. Opening the device fails with ENOMEDIUM when the tray is empty.
+ */
+async function isDiscPresent(devicePath: string): Promise<boolean> {
+  let handle: fs.FileHandle | undefined
+  try {
+    handle = await fs.open(devicePath, 'r')
+    return true
+  } catch {
+    discIdCache.delete(devicePath)
+    return false
+  } finally {
+    await handle?.close().catch(() => undefined)
+  }
+}
+
+/**
  * Detect currently connected/mounted removable media via `lsblk`.
  * This is the documented fallback strategy (no udisks2 D-Bus dependency for v0.1.0).
+ * Audio CDs are included even though they never mount: they have no filesystem to mount, so they
+ * are recognised as an optical device reporting a disc-sized capacity with no fstype.
  */
 export async function listConnectedDevices(): Promise<DetectedDevice[]> {
   try {
@@ -50,7 +98,7 @@ export async function listConnectedDevices(): Promise<DetectedDevice[]> {
     const parsed = JSON.parse(stdout) as { blockdevices: LsblkDevice[] }
     const flat = flatten(parsed.blockdevices)
 
-    return flat
+    const mounted = flat
       .filter((d) => isRemovable(d) && d.mountpoint && (d.type === 'part' || d.type === 'rom'))
       .map((d) => ({
         devicePath: `/dev/${d.name}`,
@@ -59,8 +107,30 @@ export async function listConnectedDevices(): Promise<DetectedDevice[]> {
         mountPoint: d.mountpoint as string,
         sizeBytes: toBytes(d.size),
         uuid: d.uuid ?? null,
-        isOptical: d.type === 'rom'
+        isOptical: d.type === 'rom',
+        isAudioCd: false
       }))
+
+    const audioCdCandidates = flat.filter((d) => d.type === 'rom' && !d.mountpoint && !d.fstype)
+    const audioCdPresence = await Promise.all(
+      audioCdCandidates.map((d) => isDiscPresent(`/dev/${d.name}`))
+    )
+    const audioCds = await Promise.all(
+      audioCdCandidates
+        .filter((_, index) => audioCdPresence[index])
+        .map(async (d) => ({
+          devicePath: `/dev/${d.name}`,
+          label: d.label ?? 'Audio CD',
+          fsType: null,
+          mountPoint: '',
+          sizeBytes: toBytes(d.size),
+          uuid: await audioCdFingerprint(`/dev/${d.name}`),
+          isOptical: true,
+          isAudioCd: true
+        }))
+    )
+
+    return [...mounted, ...audioCds]
   } catch {
     // lsblk unavailable or failed — degrade gracefully to no auto-detected devices (FR-1.2/NFR-3.4).
     return []

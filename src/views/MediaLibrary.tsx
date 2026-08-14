@@ -101,6 +101,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   }
 
   const [labelItems, setLabelItems] = useState<MediaItem[] | null>(null)
+  const [pendingAudioCdPath, setPendingAudioCdPath] = useState<string | null>(null)
 
   const knownLocations = Array.from(
     new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
@@ -394,7 +395,10 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     }
 
     const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
-    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+    const unsubFailed = window.discdock.scan.onFailed(({ jobId, error }) => {
+      setEjectMessage(error)
+      finishScan(jobId)
+    })
     const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
 
     const unsubStarted = window.discdock.scan.onStarted(({ mediaItemId }) => {
@@ -405,12 +409,15 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
       })
     })
 
+    const unsubWarning = window.discdock.scan.onWarning(({ message }) => setEjectMessage(message))
+
     return () => {
       unsubProgress()
       unsubCompleted()
       unsubFailed()
       unsubCancelled()
       unsubStarted()
+      unsubWarning()
     }
   }, [])
 
@@ -419,6 +426,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     setEditingItemId(null)
     setForm(EMPTY_FORM)
     setDeviceMountPoint(null)
+    setPendingAudioCdPath(null)
     setError(null)
   }
 
@@ -476,13 +484,16 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
 
         const mediaId = result.data.id
         if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
-          if (deviceMountPoint) {
+          if (pendingAudioCdPath) {
+            handleScanAudioCd(mediaId, pendingAudioCdPath)
+          } else if (deviceMountPoint) {
             beginScanWithPath(mediaId, deviceMountPoint)
           } else {
             handleScan(mediaId)
           }
         }
         setDeviceMountPoint(null)
+        setPendingAudioCdPath(null)
       } else {
         setError(result.error.message)
       }
@@ -491,14 +502,17 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
 
   const handleUseDevice = (device: DetectedDevice): void => {
     setForm({
-      label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
-      mediaType: device.isOptical ? 'dvd' : 'external_hdd',
+      label: device.isAudioCd
+        ? (device.label ?? 'Audio CD')
+        : (device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath),
+      mediaType: device.isAudioCd ? 'cd' : device.isOptical ? 'dvd' : 'external_hdd',
       capacityBytes: device.sizeBytes,
       physicalLocation: null,
       notes: null,
       deviceFingerprint: device.uuid ?? device.devicePath
     })
-    setDeviceMountPoint(device.mountPoint)
+    setDeviceMountPoint(device.mountPoint || null)
+    setPendingAudioCdPath(device.isAudioCd ? device.devicePath : null)
   }
 
   const handleRetire = (id: number): void => {
@@ -601,9 +615,9 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
           {unregisteredDevices.map((device) => (
             <div key={device.devicePath} className="new-media-banner__item">
               <span>
-                {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />} New
-                media detected: <strong>{device.label ?? device.mountPoint.split('/').pop()}</strong> — not yet
-                registered.
+                {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />}{' '}
+                {device.isAudioCd ? 'Audio CD detected' : 'New media detected'}:{' '}
+                <strong>{device.label ?? device.mountPoint.split('/').pop()}</strong> — not yet registered.
               </span>
               <button
                 type="button"
@@ -738,7 +752,19 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
             ))}
           </datalist>
 
-          {ejectMessage && <p className="media-library__eject-message">{ejectMessage}</p>}
+          {ejectMessage && (
+            <p className="media-library__eject-message">
+              {ejectMessage}
+              <button
+                type="button"
+                className="media-library__eject-message-dismiss"
+                onClick={() => setEjectMessage(null)}
+                aria-label="Dismiss message"
+              >
+                <CircleX size={14} aria-hidden="true" />
+              </button>
+            </p>
+          )}
 
           {selectedIds.size > 0 && (
             <div className="batch-actions">

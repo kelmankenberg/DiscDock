@@ -53,15 +53,17 @@ export async function listConnectedDevices(): Promise<DetectedDevice[]> {
           const removable = isYes(info['Removable Media']) || isYes(info['Ejectable']) || isOptical
           if (!removable) return null
 
-          return {
+          const device: DetectedDevice = {
             devicePath,
             label: info['Volume Name'] || null,
             fsType: info['Type (Bundle)'] || info['File System Personality'] || null,
             mountPoint,
             sizeBytes: parseBytes(info['Volume Total Space'] ?? info['Disk Size']),
             uuid: info['Volume UUID'] || null,
-            isOptical
-          } satisfies DetectedDevice
+            isOptical,
+            isAudioCd: false
+          }
+          return device
         } catch {
           return null
         }

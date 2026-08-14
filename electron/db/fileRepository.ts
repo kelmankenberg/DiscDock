@@ -8,6 +8,7 @@ interface FileRow {
   is_directory: number
   size_bytes: number
   modified_at_src: string | null
+  duration_seconds: number | null
 }
 
 /**
@@ -20,7 +21,7 @@ export function listFolderContents(mediaItemId: number, folderPath: string): Fil
 
   const rows = getDb()
     .prepare(
-      `SELECT path, name, kind, is_directory, size_bytes, modified_at_src
+      `SELECT path, name, kind, is_directory, size_bytes, modified_at_src, duration_seconds
        FROM file_record
        WHERE media_item_id = @mediaItemId
          AND path LIKE @likePrefix
@@ -41,6 +42,7 @@ export function listFolderContents(mediaItemId: number, folderPath: string): Fil
     kind: row.kind,
     isDirectory: row.is_directory === 1,
     sizeBytes: row.size_bytes,
-    modifiedAtSrc: row.modified_at_src
+    modifiedAtSrc: row.modified_at_src,
+    durationSeconds: row.duration_seconds
   }))
 }

@@ -123,6 +123,7 @@ export interface WalkedFile {
   modifiedAtSrc: string | null
   hashAlgo: string | null
   hashValue: string | null
+  durationSeconds?: number | null
 }
 
 interface ExistingFileRow {
@@ -151,13 +152,14 @@ export function upsertFileRecord(
     db.prepare(
       `INSERT INTO file_record
          (media_item_id, path, name, extension, kind, size_bytes, created_at_src, modified_at_src,
-          hash_algo, hash_value, is_directory, last_seen_scan_id)
+          hash_algo, hash_value, is_directory, last_seen_scan_id, duration_seconds)
        VALUES (@mediaItemId, @path, @name, @extension, @kind, @sizeBytes, @createdAtSrc, @modifiedAtSrc,
-               @hashAlgo, @hashValue, @isDirectory, @scanJobId)`
+               @hashAlgo, @hashValue, @isDirectory, @scanJobId, @durationSeconds)`
     ).run({
       mediaItemId,
       scanJobId,
       ...file,
+      durationSeconds: file.durationSeconds ?? null,
       isDirectory: file.isDirectory ? 1 : 0
     })
     return 'added'
@@ -171,9 +173,10 @@ export function upsertFileRecord(
   db.prepare(
     `UPDATE file_record
      SET size_bytes = @sizeBytes, created_at_src = @createdAtSrc, modified_at_src = @modifiedAtSrc,
-         hash_algo = @hashAlgo, hash_value = @hashValue, last_seen_scan_id = @scanJobId
+         hash_algo = @hashAlgo, hash_value = @hashValue, last_seen_scan_id = @scanJobId,
+         duration_seconds = @durationSeconds
      WHERE id = @id`
-  ).run({ id: existing.id, scanJobId, ...file })
+  ).run({ id: existing.id, scanJobId, ...file, durationSeconds: file.durationSeconds ?? null })
 
   return changed ? 'modified' : 'unchanged'
 }

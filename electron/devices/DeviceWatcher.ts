@@ -31,6 +31,12 @@ export class DeviceWatcher {
     const currentPaths = new Set(current.map((d) => d.devicePath))
 
     for (const device of current) {
+      const known = this.known.get(device.devicePath)
+      // Swapping discs keeps the same drive path, so treat a changed fingerprint as a new device.
+      if (known && known.uuid !== device.uuid) {
+        this.known.delete(device.devicePath)
+        this.onDisconnected(device.devicePath)
+      }
       if (!this.known.has(device.devicePath)) {
         this.known.set(device.devicePath, device)
         this.onConnected(device)

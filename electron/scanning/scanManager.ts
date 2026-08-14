@@ -1,6 +1,7 @@
 import { BrowserWindow, Notification } from 'electron'
 import { walkAndScan } from './scanEngine'
-import { readAudioCdTracks } from './audioCd'
+import { computeDiscId, fetchAudioCdMetadata, readAudioCdToc } from './audioCd'
+import { getMediaItem, updateMediaItem } from '../db/mediaRepository'
 import {
   createScanJob,
   finalizeScanJob,
@@ -11,7 +12,7 @@ import {
   upsertFileRecord
 } from '../db/scanRepository'
 import { getSettings } from '../settings/settingsStore'
-import type { HashMode, ScanProgress } from '../../shared/types'
+import type { AudioCdMetadata, HashMode, ScanProgress } from '../../shared/types'
 
 interface ActiveJob {
   cancelled: boolean
@@ -90,29 +91,60 @@ async function runAudioCdScan(jobId: number, mediaItemId: number, devicePath: st
   let filesUnchanged = 0
 
   try {
-    const tracks = await readAudioCdTracks(devicePath)
+    const toc = await readAudioCdToc(devicePath)
+    const discId = computeDiscId(toc)
 
-    for (const track of tracks) {
-      const name = `Track ${String(track.trackNumber).padStart(2, '0')}.${track.isAudio ? 'cdda' : 'bin'}`
+    let metadata: AudioCdMetadata | null = null
+    let metadataWarning: string | null = null
+    if (discId) {
+      try {
+        metadata = await fetchAudioCdMetadata(discId)
+        if (!metadata) metadataWarning = `This disc (${discId}) is not in the MusicBrainz database.`
+      } catch (err) {
+        metadataWarning = `Track titles unavailable: ${(err as Error).message}`
+      }
+    }
+
+    for (const track of toc.tracks) {
+      const extension = track.isAudio ? 'cdda' : 'bin'
+      const title = metadata?.trackTitles[track.trackNumber]
+      const numberPrefix = String(track.trackNumber).padStart(2, '0')
+      const name = title
+        ? `${numberPrefix} - ${title.replace(/\//g, '-')}.${extension}`
+        : `Track ${numberPrefix}.${extension}`
+
       const outcome = upsertFileRecord(mediaItemId, jobId, {
         path: name,
         name,
-        extension: track.isAudio ? 'cdda' : 'bin',
+        extension,
         kind: track.isAudio ? 'audio' : 'other',
         sizeBytes: track.sizeBytes,
         isDirectory: false,
         createdAtSrc: null,
         modifiedAtSrc: null,
         hashAlgo: null,
-        hashValue: null
+        hashValue: null,
+        durationSeconds: track.durationSeconds
       })
       if (outcome === 'added') filesAdded += 1
       else if (outcome === 'modified') filesModified += 1
       else filesUnchanged += 1
     }
 
+    if (metadata?.albumTitle) {
+      applyAudioCdLabel(mediaItemId, audioCdLabel(metadata))
+    }
+
+    // Non-fatal: the tracks are cataloged either way, but the user should see why titles are missing.
+    let errorCount = 0
+    if (metadataWarning) {
+      recordScanError(jobId, devicePath, 'metadata', metadataWarning)
+      errorCount = 1
+      win?.webContents.send('scan:warning', { jobId, message: metadataWarning })
+    }
+
     const filesRemoved = pruneUnseenFiles(mediaItemId, jobId)
-    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount: 0 }
+    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
     finalizeScanJob(jobId, 'completed', counts)
     markMediaScanned(mediaItemId, true)
     win?.webContents.send('scan:completed', { jobId, summary: counts })
@@ -127,6 +159,24 @@ async function runAudioCdScan(jobId: number, mediaItemId: number, devicePath: st
     recordScanError(jobId, devicePath, 'audio_cd', (err as Error).message)
     win?.webContents.send('scan:failed', { jobId, error: (err as Error).message })
   }
+}
+
+/** Only renames placeholder labels, so a user-chosen label is never overwritten. */
+function applyAudioCdLabel(mediaItemId: number, label: string): void {
+  const item = getMediaItem(mediaItemId)
+  if (!item) return
+  if (!/^(audio cd|unknown|untitled)\b/i.test(item.label)) return
+  updateMediaItem(mediaItemId, { label })
+}
+
+/** Multi-disc releases get their disc position in the label so set members stay distinguishable. */
+function audioCdLabel(metadata: AudioCdMetadata): string {
+  const base = metadata.artist ? `${metadata.artist} — ${metadata.albumTitle}` : `${metadata.albumTitle}`
+  if (metadata.discTotal && metadata.discTotal > 1) {
+    return `${base} (Disc ${metadata.discNumber ?? '?'} of ${metadata.discTotal})`
+  }
+  if (metadata.discNumber && metadata.discNumber > 1) return `${base} (Disc ${metadata.discNumber})`
+  return base
 }
 
 async function runScan(jobId: number, mediaItemId: number, rootPath: string, hashMode: HashMode): Promise<void> {

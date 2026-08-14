@@ -65,6 +65,7 @@ export interface DetectedDevice {
   sizeBytes: number | null
   uuid: string | null
   isOptical: boolean
+  isAudioCd: boolean
 }
 
 export interface DashboardSummary {
@@ -107,10 +108,25 @@ export interface ScanStartInput {
 
 export interface AudioCdTrack {
   trackNumber: number
+  startSector: number
   sectors: number
   durationSeconds: number
   sizeBytes: number
   isAudio: boolean
+}
+
+export interface AudioCdToc {
+  tracks: AudioCdTrack[]
+  leadoutSector: number
+}
+
+export interface AudioCdMetadata {
+  discId: string
+  albumTitle: string | null
+  artist: string | null
+  discNumber: number | null
+  discTotal: number | null
+  trackTitles: Record<number, string>
 }
 
 export const FILE_KINDS = ['image', 'video', 'audio', 'document', 'archive', 'other'] as const
@@ -180,6 +196,7 @@ export interface FileEntry {
   isDirectory: boolean
   sizeBytes: number
   modifiedAtSrc: string | null
+  durationSeconds: number | null
 }
 
 export interface FileAnnotation {
