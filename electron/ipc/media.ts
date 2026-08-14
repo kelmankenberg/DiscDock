@@ -11,11 +11,12 @@ import {
 } from '../db/mediaRepository'
 import { MEDIA_TYPES } from '../../shared/types'
 import type { IpcResult, MediaItem, MediaItemInput } from '../../shared/types'
+import { isNonEmptyString, isPositiveInteger, isRecord } from './validation'
 
 const VALID_MEDIA_TYPES = new Set(MEDIA_TYPES.map((t) => t.value))
 
 function validateMediaItemInput(input: unknown): MediaItemInput {
-  if (typeof input !== 'object' || input === null) {
+  if (!isRecord(input)) {
     throw new Error('Invalid media item payload')
   }
   const candidate = input as Record<string, unknown>
@@ -56,6 +57,19 @@ function validateMediaItemInput(input: unknown): MediaItemInput {
   }
 }
 
+function validateMediaItemPatch(patch: unknown): Partial<MediaItemInput> {
+  if (!isRecord(patch)) throw new Error('Invalid media update payload')
+  const allowed = new Set(['label', 'mediaType', 'capacityBytes', 'physicalLocation', 'notes', 'deviceFingerprint'])
+  if (Object.keys(patch).some((key) => !allowed.has(key))) throw new Error('Unknown media update field')
+  if (patch.label !== undefined && !isNonEmptyString(patch.label)) throw new Error('Label must be a non-empty string')
+  if (patch.mediaType !== undefined && !isNonEmptyString(patch.mediaType)) throw new Error('Media type must be a non-empty string')
+  if (patch.capacityBytes !== undefined && patch.capacityBytes !== null && (typeof patch.capacityBytes !== 'number' || !Number.isFinite(patch.capacityBytes) || patch.capacityBytes < 0)) throw new Error('Capacity must be a non-negative number')
+  for (const key of ['physicalLocation', 'notes', 'deviceFingerprint'] as const) {
+    if (patch[key] !== undefined && patch[key] !== null && typeof patch[key] !== 'string') throw new Error(`${key} must be a string or null`)
+  }
+  return patch as Partial<MediaItemInput>
+}
+
 function toErrorResult(err: unknown): IpcResult<never> {
   const message = err instanceof Error ? err.message : 'Unknown error'
   return { ok: false, error: { code: 'media_error', message } }
@@ -72,8 +86,8 @@ export function registerMediaIpc(): void {
 
   ipcMain.handle('media:get', (_event, payload: unknown): IpcResult<MediaItem> => {
     try {
-      const id = (payload as { id?: unknown })?.id
-      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
       const item = getMediaItem(id)
       if (!item) throw new Error(`Media item ${id} not found`)
       return { ok: true, data: item }
@@ -93,10 +107,10 @@ export function registerMediaIpc(): void {
 
   ipcMain.handle('media:update', (_event, payload: unknown): IpcResult<MediaItem> => {
     try {
-      const { id, patch } = (payload ?? {}) as { id?: unknown; patch?: unknown }
-      if (typeof id !== 'number') throw new Error('A numeric id is required')
-      const partial =
-        patch && typeof patch === 'object' ? (patch as Partial<MediaItemInput>) : {}
+      const candidate = isRecord(payload) ? payload : {}
+      const { id, patch } = candidate
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+      const partial = validateMediaItemPatch(patch)
       return { ok: true, data: updateMediaItem(id, partial) }
     } catch (err) {
       return toErrorResult(err)
@@ -105,8 +119,8 @@ export function registerMediaIpc(): void {
 
   ipcMain.handle('media:retire', (_event, payload: unknown): IpcResult<MediaItem> => {
     try {
-      const id = (payload as { id?: unknown })?.id
-      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
       return { ok: true, data: retireMediaItem(id) }
     } catch (err) {
       return toErrorResult(err)
@@ -115,8 +129,8 @@ export function registerMediaIpc(): void {
 
   ipcMain.handle('media:delete', (_event, payload: unknown): IpcResult<{ deleted: true }> => {
     try {
-      const id = (payload as { id?: unknown })?.id
-      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
       deleteMediaItem(id)
       return { ok: true, data: { deleted: true } }
     } catch (err) {
@@ -126,8 +140,8 @@ export function registerMediaIpc(): void {
 
   ipcMain.handle('media:markVerified', (_event, payload: unknown): IpcResult<MediaItem> => {
     try {
-      const id = (payload as { id?: unknown })?.id
-      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
       return { ok: true, data: markMediaVerified(id) }
     } catch (err) {
       return toErrorResult(err)
@@ -137,8 +151,8 @@ export function registerMediaIpc(): void {
   // Covers live outside the app bundle, so they are returned as a data URL rather than a file path.
   ipcMain.handle('media:cover', async (_event, payload: unknown): Promise<IpcResult<string | null>> => {
     try {
-      const id = (payload as { id?: unknown })?.id
-      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
       const item = getMediaItem(id)
       if (!item?.coverPath) return { ok: true, data: null }
       const png = await fs.readFile(item.coverPath)
