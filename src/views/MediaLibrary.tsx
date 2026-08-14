@@ -16,28 +16,16 @@ function mediaTypeLabel(mediaType: MediaType): string {
   return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
 }
 
-type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt' | 'tags'
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: 'label', label: 'Label' },
   { key: 'mediaType', label: 'Type' },
   { key: 'physicalLocation', label: 'Location' },
+  { key: 'tags', label: 'Tags' },
   { key: 'status', label: 'Status' },
   { key: 'lastScannedAt', label: 'Last Scanned' }
 ]
-
-function sortValue(item: MediaItem, key: SortKey): string {
-  switch (key) {
-    case 'mediaType':
-      return mediaTypeLabel(item.mediaType)
-    case 'physicalLocation':
-      return item.physicalLocation ?? ''
-    case 'lastScannedAt':
-      return item.lastScannedAt ?? ''
-    default:
-      return item[key] ?? ''
-  }
-}
 
 interface ActiveScan {
   jobId: number
@@ -69,12 +57,38 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   const [containerFilter, setContainerFilter] = useState<string>('')
   const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
   const [editingLocationValue, setEditingLocationValue] = useState('')
+  const [tagsByMedia, setTagsByMedia] = useState<Record<number, string[]>>({})
+  const [allTagNames, setAllTagNames] = useState<string[]>([])
+  const [tagFilter, setTagFilter] = useState<string>('')
+  const [editingTagsId, setEditingTagsId] = useState<number | null>(null)
+  const [editingTagsValue, setEditingTagsValue] = useState('')
 
   const knownLocations = Array.from(
     new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
   ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
 
-  const filteredItems = containerFilter ? items.filter((item) => item.physicalLocation === containerFilter) : items
+  const containerFilteredItems = containerFilter
+    ? items.filter((item) => item.physicalLocation === containerFilter)
+    : items
+
+  const filteredItems = tagFilter
+    ? containerFilteredItems.filter((item) => (tagsByMedia[item.id] ?? []).includes(tagFilter))
+    : containerFilteredItems
+
+  const sortValue = (item: MediaItem, key: SortKey): string => {
+    switch (key) {
+      case 'mediaType':
+        return mediaTypeLabel(item.mediaType)
+      case 'physicalLocation':
+        return item.physicalLocation ?? ''
+      case 'lastScannedAt':
+        return item.lastScannedAt ?? ''
+      case 'tags':
+        return (tagsByMedia[item.id] ?? []).join(', ')
+      default:
+        return item[key] ?? ''
+    }
+  }
 
   const sortedItems = [...filteredItems].sort((a, b) => {
     const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
@@ -175,6 +189,12 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   const loadItems = (): void => {
     void window.discdock.media.list().then((result) => {
       if (result.ok) setItems(result.data)
+    })
+    void window.discdock.tags.allForMedia().then((result) => {
+      if (result.ok) setTagsByMedia(result.data)
+    })
+    void window.discdock.tags.list().then((result) => {
+      if (result.ok) setAllTagNames(result.data)
     })
   }
 
@@ -326,6 +346,26 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     })
   }
 
+  const startEditingTags = (item: MediaItem): void => {
+    setEditingTagsId(item.id)
+    setEditingTagsValue((tagsByMedia[item.id] ?? []).join(', '))
+  }
+
+  const saveEditingTags = (id: number): void => {
+    const tagNames = Array.from(
+      new Set(
+        editingTagsValue
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      )
+    )
+    setEditingTagsId(null)
+    void window.discdock.tags.setForMedia(id, tagNames).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
   return (
     <div className="media-library">
       <div className="media-library__header">
@@ -462,6 +502,26 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
               </label>
             </div>
           )}
+          {allTagNames.length > 0 && (
+            <div className="container-filter">
+              <label>
+                Tag
+                <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+                  <option value="">All tags</option>
+                  {allTagNames.map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          <datalist id="tag-suggestions">
+            {allTagNames.map((tag) => (
+              <option key={tag} value={tag} />
+            ))}
+          </datalist>
 
           {ejectMessage && <p className="media-library__eject-message">{ejectMessage}</p>}
 
@@ -557,6 +617,29 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                     ) : (
                       <button type="button" className="link-button" onClick={() => startEditingLocation(item)}>
                         {item.physicalLocation ?? 'Set container…'}
+                      </button>
+                    )}
+                  </td>
+                  <td>
+                    {editingTagsId === item.id ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        list="tag-suggestions"
+                        className="media-table__location-input"
+                        value={editingTagsValue}
+                        onChange={(e) => setEditingTagsValue(e.target.value)}
+                        onBlur={() => saveEditingTags(item.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditingTags(item.id)
+                          if (e.key === 'Escape') setEditingTagsId(null)
+                        }}
+                      />
+                    ) : (
+                      <button type="button" className="link-button" onClick={() => startEditingTags(item)}>
+                        {(tagsByMedia[item.id] ?? []).length > 0
+                          ? (tagsByMedia[item.id] ?? []).join(', ')
+                          : 'Add tags…'}
                       </button>
                     )}
                   </td>
