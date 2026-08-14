@@ -3,6 +3,7 @@ import { autoUpdater } from 'electron-updater'
 import { getSettings } from '../settings/settingsStore'
 import type { IpcResult, UpdateStatus } from '../../shared/types'
 import { log } from '../logging'
+import { isTrustedRendererEvent } from '../ipc/validation'
 
 let win: BrowserWindow | null = null
 let lastStatus: UpdateStatus = { state: 'idle' }
@@ -39,9 +40,13 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
 }
 
 export function registerUpdateIpc(): void {
-  ipcMain.handle('update:status', (): IpcResult<UpdateStatus> => ({ ok: true, data: lastStatus }))
+  ipcMain.handle('update:status', (event): IpcResult<UpdateStatus> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    return { ok: true, data: lastStatus }
+  })
 
-  ipcMain.handle('update:check', async (): Promise<IpcResult<UpdateStatus>> => {
+  ipcMain.handle('update:check', async (event): Promise<IpcResult<UpdateStatus>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     if (!isSupported()) {
       const status: UpdateStatus = {
         state: 'error',
@@ -60,7 +65,8 @@ export function registerUpdateIpc(): void {
     }
   })
 
-  ipcMain.handle('update:download', async (): Promise<IpcResult<{ started: true }>> => {
+  ipcMain.handle('update:download', async (event): Promise<IpcResult<{ started: true }>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     if (!isSupported()) {
       return {
         ok: false,
@@ -77,7 +83,8 @@ export function registerUpdateIpc(): void {
     }
   })
 
-  ipcMain.handle('update:install', (): IpcResult<null> => {
+  ipcMain.handle('update:install', (event): IpcResult<null> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     if (lastStatus.state !== 'downloaded') {
       return { ok: false, error: { code: 'update_error', message: 'No downloaded update to install' } }
     }

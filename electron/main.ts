@@ -22,6 +22,7 @@ import { getSettings } from './settings/settingsStore'
 import { getDb, closeDb } from './db'
 import type { IpcResult } from '../shared/types'
 import { initializeLogging, log, logShutdown } from './logging'
+import { isTrustedRendererEvent } from './ipc/validation'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -37,7 +38,8 @@ function showVerificationReminder(): void {
 }
 
 function registerAppIpc(): void {
-  ipcMain.handle('app:getVersion', (): IpcResult<string> => {
+  ipcMain.handle('app:getVersion', (event): IpcResult<string> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     return { ok: true, data: app.getVersion() }
   })
 }

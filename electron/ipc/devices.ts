@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain } from 'electron'
 import { DeviceWatcher } from '../devices/DeviceWatcher'
 import { ejectDevice } from '../devices/deviceEject'
 import type { DetectedDevice, IpcResult } from '../../shared/types'
-import { isNonEmptyString, isRecord } from './validation'
+import { isNonEmptyString, isRecord, isTrustedRendererEvent } from './validation'
 import { log } from '../logging'
 
 let watcher: DeviceWatcher | null = null
@@ -22,11 +22,13 @@ export function stopDeviceWatcher(): void {
 }
 
 export function registerDeviceIpc(): void {
-  ipcMain.handle('devices:list', (): IpcResult<DetectedDevice[]> => {
+  ipcMain.handle('devices:list', (event): IpcResult<DetectedDevice[]> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     return { ok: true, data: watcher?.getKnownDevices() ?? [] }
   })
 
-  ipcMain.handle('devices:eject', async (_event, payload: unknown): Promise<IpcResult<{ message: string }>> => {
+  ipcMain.handle('devices:eject', async (event, payload: unknown): Promise<IpcResult<{ message: string }>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     const candidate = isRecord(payload) ? payload : {}
     const { devicePath, isOptical } = candidate
     if (!isNonEmptyString(devicePath)) {

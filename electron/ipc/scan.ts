@@ -59,7 +59,8 @@ export function registerScanIpc(): void {
     return { ok: true, data: { cancelled: cancelScan(jobId) } }
   })
 
-  ipcMain.handle('scan:history', (_event, payload: unknown): IpcResult<ScanJob[]> => {
+  ipcMain.handle('scan:history', (event, payload: unknown): IpcResult<ScanJob[]> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     const mediaId = (payload as { mediaId?: unknown })?.mediaId
     if (typeof mediaId !== 'number') {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
@@ -67,7 +68,8 @@ export function registerScanIpc(): void {
     return { ok: true, data: listScanJobsForMedia(mediaId) }
   })
 
-  ipcMain.handle('scan:errors', (_event, payload: unknown): IpcResult<ScanErrorEntry[]> => {
+  ipcMain.handle('scan:errors', (event, payload: unknown): IpcResult<ScanErrorEntry[]> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     const mediaId = (payload as { mediaId?: unknown })?.mediaId
     if (typeof mediaId !== 'number') {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }

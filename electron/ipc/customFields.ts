@@ -1,10 +1,11 @@
 import { ipcMain } from 'electron'
 import { getCustomFieldsForMedia, setCustomFieldForMedia } from '../db/customFieldRepository'
 import type { CustomFieldValue, IpcResult } from '../../shared/types'
-import { isNonEmptyString, isPositiveInteger, isRecord } from './validation'
+import { isNonEmptyString, isPositiveInteger, isRecord, isTrustedRendererEvent } from './validation'
 
 export function registerCustomFieldsIpc(): void {
-  ipcMain.handle('customFields:getForMedia', (_event, payload: unknown): IpcResult<CustomFieldValue[]> => {
+  ipcMain.handle('customFields:getForMedia', (event, payload: unknown): IpcResult<CustomFieldValue[]> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     const mediaId = isRecord(payload) ? payload.mediaId : undefined
     if (!isPositiveInteger(mediaId)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
@@ -12,7 +13,8 @@ export function registerCustomFieldsIpc(): void {
     return { ok: true, data: getCustomFieldsForMedia(mediaId) }
   })
 
-  ipcMain.handle('customFields:setForMedia', (_event, payload: unknown): IpcResult<{ ok: true }> => {
+  ipcMain.handle('customFields:setForMedia', (event, payload: unknown): IpcResult<{ ok: true }> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     const candidate = isRecord(payload) ? payload : {}
     const { mediaId, fieldName, fieldValue } = candidate
     if (!isPositiveInteger(mediaId) || !isNonEmptyString(fieldName)) {

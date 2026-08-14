@@ -95,12 +95,12 @@ These are useful improvements, but should not delay the first release if the MVP
 
 ### P0.4 Security and IPC hardening
 
-- [~] Validate every IPC payload with shared schemas or explicit type guards instead of unchecked casts. A shared validation module now covers settings, search, export, backup, duplicates, collections, tags, custom fields, files, devices, dialogs, and media; sender-origin checks cover the high-risk settings, search, export, backup, and scan operations, while lower-risk handlers remain.
+- [~] Validate every IPC payload with shared schemas or explicit type guards instead of unchecked casts. A shared validation module now covers settings, search, export, backup, duplicates, collections, tags, custom fields, files, devices, dialogs, and media; scan and sender-origin review coverage remain.
 - [~] Validate numeric IDs, enum values, strings, array contents, paths, pagination values, and settings ranges. The selected channels now reject malformed IDs, enums, arrays, ranges, paths, and pagination values; broader channel coverage remains.
 - [~] Validate and normalize scan roots before traversal; require an existing directory where appropriate. The scan IPC handler now resolves the path and rejects missing, unreadable, or non-directory roots; broader IPC validation remains.
 - [ ] Recheck that file open/reveal paths remain inside the linked media mount after symlink and case-related edge cases.
 - [ ] Validate backup/export destinations and selected restore files in the main process, even though the renderer uses native dialogs.
-- [~] Validate IPC sender origins and reject unexpected renderer senders. High-risk settings, search, export, backup, and scan operations now accept only the packaged `file://` renderer or the development localhost renderer; remaining handlers need the same guard.
+- [~] Validate IPC sender origins and reject unexpected renderer senders. All registered IPC handlers now accept only the packaged `file://` renderer or the development localhost renderer; explicit malformed-origin integration tests remain.
 - [ ] Replace the current permissive CSP with the strictest policy compatible with the renderer bundle, documenting any required exceptions.
 - [ ] Audit all remote calls and external process invocations, including MusicBrainz, Cover Art Archive, updater services, `lsblk`, `udisksctl`, and `eject`.
 

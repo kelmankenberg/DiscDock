@@ -10,7 +10,7 @@ import {
   setTagsForFile
 } from '../db/fileAnnotationRepository'
 import type { FileAnnotation, FileEntry, IpcResult } from '../../shared/types'
-import { isNonEmptyString, isPositiveInteger, isRecord, isStringArray } from './validation'
+import { isNonEmptyString, isPositiveInteger, isRecord, isStringArray, isTrustedRendererEvent } from './validation'
 
 const invalidInput = (message: string): IpcResult<never> => ({
   ok: false,
@@ -41,7 +41,8 @@ async function resolveLivePath(mediaId: number, filePath: string): Promise<strin
 }
 
 export function registerFilesIpc(): void {
-  ipcMain.handle('files:list', (_event, payload: unknown): IpcResult<FileEntry[]> => {
+  ipcMain.handle('files:list', (event, payload: unknown): IpcResult<FileEntry[]> => {
+    if (!isTrustedRendererEvent(event)) return invalidInput('Untrusted renderer')
     const candidate = isRecord(payload) ? payload : {}
     const { mediaId, folderPath } = candidate
     if (!isPositiveInteger(mediaId)) {
@@ -58,7 +59,8 @@ export function registerFilesIpc(): void {
 
   ipcMain.handle(
     'files:annotations',
-    (_event, payload: unknown): IpcResult<Record<string, FileAnnotation>> => {
+    (event, payload: unknown): IpcResult<Record<string, FileAnnotation>> => {
+      if (!isTrustedRendererEvent(event)) return invalidInput('Untrusted renderer')
       const mediaId = isRecord(payload) ? payload.mediaId : undefined
       if (!isPositiveInteger(mediaId)) return invalidInput('A positive numeric mediaId is required')
       try {
@@ -69,7 +71,8 @@ export function registerFilesIpc(): void {
     }
   )
 
-  ipcMain.handle('files:setTags', (_event, payload: unknown): IpcResult<FileAnnotation> => {
+  ipcMain.handle('files:setTags', (event, payload: unknown): IpcResult<FileAnnotation> => {
+    if (!isTrustedRendererEvent(event)) return invalidInput('Untrusted renderer')
     const candidate = isRecord(payload) ? payload : {}
     const { mediaId, filePath, tagNames } = candidate
     if (!isPositiveInteger(mediaId)) return invalidInput('A positive numeric mediaId is required')
@@ -82,7 +85,8 @@ export function registerFilesIpc(): void {
     }
   })
 
-  ipcMain.handle('files:setNote', (_event, payload: unknown): IpcResult<FileAnnotation> => {
+  ipcMain.handle('files:setNote', (event, payload: unknown): IpcResult<FileAnnotation> => {
+    if (!isTrustedRendererEvent(event)) return invalidInput('Untrusted renderer')
     const candidate = isRecord(payload) ? payload : {}
     const { mediaId, filePath, note } = candidate
     if (!isPositiveInteger(mediaId)) return invalidInput('A positive numeric mediaId is required')
@@ -96,7 +100,8 @@ export function registerFilesIpc(): void {
     }
   })
 
-  ipcMain.handle('files:open', async (_event, payload: unknown): Promise<IpcResult<{ opened: true }>> => {
+  ipcMain.handle('files:open', async (event, payload: unknown): Promise<IpcResult<{ opened: true }>> => {
+    if (!isTrustedRendererEvent(event)) return invalidInput('Untrusted renderer')
     const candidate = isRecord(payload) ? payload : {}
     const { mediaId, filePath } = candidate
     if (!isPositiveInteger(mediaId)) return invalidInput('A positive numeric mediaId is required')
@@ -111,7 +116,8 @@ export function registerFilesIpc(): void {
     }
   })
 
-  ipcMain.handle('files:reveal', async (_event, payload: unknown): Promise<IpcResult<{ revealed: true }>> => {
+  ipcMain.handle('files:reveal', async (event, payload: unknown): Promise<IpcResult<{ revealed: true }>> => {
+    if (!isTrustedRendererEvent(event)) return invalidInput('Untrusted renderer')
     const candidate = isRecord(payload) ? payload : {}
     const { mediaId, filePath } = candidate
     if (!isPositiveInteger(mediaId)) return invalidInput('A positive numeric mediaId is required')

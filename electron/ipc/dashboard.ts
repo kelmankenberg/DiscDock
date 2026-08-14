@@ -3,9 +3,11 @@ import { getDb } from '../db'
 import { countMediaNeedingVerification } from '../db/mediaRepository'
 import { getSettings } from '../settings/settingsStore'
 import type { DashboardSummary, IpcResult } from '../../shared/types'
+import { isTrustedRendererEvent } from './validation'
 
 export function registerDashboardIpc(): void {
-  ipcMain.handle('dashboard:summary', (): IpcResult<DashboardSummary> => {
+  ipcMain.handle('dashboard:summary', (event): IpcResult<DashboardSummary> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     const db = getDb()
 
     const { count: totalMediaItems } = db

@@ -1,10 +1,11 @@
 import { ipcMain } from 'electron'
 import { getDuplicateReport } from '../db/duplicateRepository'
 import type { DuplicateReport, DuplicateReportFilters, IpcResult } from '../../shared/types'
-import { isNonEmptyString, isPositiveInteger, isRecord } from './validation'
+import { isNonEmptyString, isPositiveInteger, isRecord, isTrustedRendererEvent } from './validation'
 
 export function registerDuplicatesIpc(): void {
-  ipcMain.handle('duplicates:report', (_event, payload: unknown): IpcResult<DuplicateReport> => {
+  ipcMain.handle('duplicates:report', (event, payload: unknown): IpcResult<DuplicateReport> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     if (payload !== undefined && !isRecord(payload)) return { ok: false, error: { code: 'invalid_input', message: 'Invalid duplicate filters' } }
     const candidate = (payload ?? {}) as Record<string, unknown>
     if (candidate.minGroupSize !== undefined && !isPositiveInteger(candidate.minGroupSize)) return { ok: false, error: { code: 'invalid_input', message: 'minGroupSize must be positive' } }

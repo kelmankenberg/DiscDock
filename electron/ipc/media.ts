@@ -11,7 +11,7 @@ import {
 } from '../db/mediaRepository'
 import { MEDIA_TYPES } from '../../shared/types'
 import type { IpcResult, MediaItem, MediaItemInput } from '../../shared/types'
-import { isNonEmptyString, isPositiveInteger, isRecord } from './validation'
+import { isNonEmptyString, isPositiveInteger, isRecord, isTrustedRendererEvent } from './validation'
 
 const VALID_MEDIA_TYPES = new Set(MEDIA_TYPES.map((t) => t.value))
 
@@ -76,7 +76,8 @@ function toErrorResult(err: unknown): IpcResult<never> {
 }
 
 export function registerMediaIpc(): void {
-  ipcMain.handle('media:list', (): IpcResult<MediaItem[]> => {
+  ipcMain.handle('media:list', (event): IpcResult<MediaItem[]> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     try {
       return { ok: true, data: listMediaItems() }
     } catch (err) {
@@ -84,7 +85,8 @@ export function registerMediaIpc(): void {
     }
   })
 
-  ipcMain.handle('media:get', (_event, payload: unknown): IpcResult<MediaItem> => {
+  ipcMain.handle('media:get', (event, payload: unknown): IpcResult<MediaItem> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     try {
       const id = isRecord(payload) ? payload.id : undefined
       if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
@@ -96,7 +98,8 @@ export function registerMediaIpc(): void {
     }
   })
 
-  ipcMain.handle('media:create', (_event, payload: unknown): IpcResult<MediaItem> => {
+  ipcMain.handle('media:create', (event, payload: unknown): IpcResult<MediaItem> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     try {
       const input = validateMediaItemInput(payload)
       return { ok: true, data: createMediaItem(input) }
@@ -105,7 +108,8 @@ export function registerMediaIpc(): void {
     }
   })
 
-  ipcMain.handle('media:update', (_event, payload: unknown): IpcResult<MediaItem> => {
+  ipcMain.handle('media:update', (event, payload: unknown): IpcResult<MediaItem> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     try {
       const candidate = isRecord(payload) ? payload : {}
       const { id, patch } = candidate
@@ -117,7 +121,8 @@ export function registerMediaIpc(): void {
     }
   })
 
-  ipcMain.handle('media:retire', (_event, payload: unknown): IpcResult<MediaItem> => {
+  ipcMain.handle('media:retire', (event, payload: unknown): IpcResult<MediaItem> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     try {
       const id = isRecord(payload) ? payload.id : undefined
       if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
@@ -127,7 +132,8 @@ export function registerMediaIpc(): void {
     }
   })
 
-  ipcMain.handle('media:delete', (_event, payload: unknown): IpcResult<{ deleted: true }> => {
+  ipcMain.handle('media:delete', (event, payload: unknown): IpcResult<{ deleted: true }> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     try {
       const id = isRecord(payload) ? payload.id : undefined
       if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
@@ -138,7 +144,8 @@ export function registerMediaIpc(): void {
     }
   })
 
-  ipcMain.handle('media:markVerified', (_event, payload: unknown): IpcResult<MediaItem> => {
+  ipcMain.handle('media:markVerified', (event, payload: unknown): IpcResult<MediaItem> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     try {
       const id = isRecord(payload) ? payload.id : undefined
       if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
@@ -149,7 +156,8 @@ export function registerMediaIpc(): void {
   })
 
   // Covers live outside the app bundle, so they are returned as a data URL rather than a file path.
-  ipcMain.handle('media:cover', async (_event, payload: unknown): Promise<IpcResult<string | null>> => {
+  ipcMain.handle('media:cover', async (event, payload: unknown): Promise<IpcResult<string | null>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     try {
       const id = isRecord(payload) ? payload.id : undefined
       if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
