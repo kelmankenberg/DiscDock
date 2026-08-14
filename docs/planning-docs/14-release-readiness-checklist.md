@@ -61,7 +61,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [~] Add database integration tests for migrations, FTS search, tags, collections, backup, restore, and foreign-key behavior. An Electron-runtime runner now verifies migrations, WAL, integrity, FTS trigger synchronization, tags, collections, and foreign-key rejection against the native SQLite ABI; backup/restore and interruption coverage remain.
 - [ ] Add IPC tests for malformed payloads and structured error responses.
 - [ ] Add renderer tests for the primary registration, scan, search, backup, restore, and Help workflows.
-- [!] Add `lint`, `typecheck`, and `test` scripts that fail on errors. `typecheck` and `test` pass; ESLint is blocked because the current TypeScript ESLint releases, including the canary, require TypeScript `<6.1` while this repository uses TypeScript 7.
+- [!] Add `lint`, `typecheck`, and `test` scripts that fail on errors. `typecheck` and `test` pass. Decision: retain TypeScript 7; ESLint remains blocked until a compatible parser is available, or an alternative lint strategy is selected.
 - [ ] Add a CI workflow that runs `npm ci`, dependency audit, lint, typecheck, tests, renderer build, Electron build, and packaging.
 - [ ] Keep the lockfile committed and fail CI on new high or critical dependency vulnerabilities, with documented exceptions when necessary.
 
@@ -214,5 +214,6 @@ The following decisions should be made before implementation reaches them:
 - Whether automatic update checks remain in v1.
 - Whether filtered search export is a release requirement or a documented post-release feature.
 - Whether the current audio-CD metadata network enrichment is enabled by default.
+- TypeScript 7 remains the project compiler; the initial release will not downgrade it solely to enable ESLint.
 
 Initial release readiness should be declared only when every P0 item is checked, the P1 core workflow acceptance suite passes, and the packaging QA checklist has been completed with recorded evidence.

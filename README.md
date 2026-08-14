@@ -15,6 +15,8 @@ npm install
 npm run dev            # Vite dev server + Electron with hot reload
 ```
 
+DiscDock uses TypeScript 7 for development and release builds. TypeScript and Node.js are build-time prerequisites only; packaged users do not need to install them.
+
 ## Building
 
 ```bash
