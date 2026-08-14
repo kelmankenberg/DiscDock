@@ -168,13 +168,13 @@ These are useful improvements, but should not delay the first release if the MVP
 
 ## P1 - Packaging and Distribution QA
 
-- [ ] Confirm `electron-builder` produces valid `.deb` and `.AppImage` artifacts from a clean checkout.
-- [ ] Add and verify the application icon referenced by the package configuration.
-- [ ] Add and verify the license file referenced by the AppImage configuration.
+- [x] Confirm `electron-builder` produces valid `.deb` and `.AppImage` artifacts from the current checkout. `npm run package:linux` produced both artifacts successfully.
+- [x] Add and verify the application icon referenced by the package configuration. The Debian package contains the DiscDock icon and desktop entry.
+- [x] Add and verify the license file referenced by the AppImage configuration. `LICENSE.txt` is embedded in the generated AppImage and Debian artifact.
 - [ ] Test `.deb` installation on a current Ubuntu LTS image with `apt install ./package.deb` and `dpkg -i`.
 - [ ] Test desktop menu entry, icon, protocol registration, single-instance behavior, and deep links.
 - [ ] Test `.AppImage` on a non-Debian distribution with FUSE.
-- [ ] Test the documented `--appimage-extract-and-run` fallback without FUSE.
+- [~] Test the documented `--appimage-extract-and-run` fallback without FUSE. Extraction succeeded locally; clean application launch/quit did not complete within the smoke-test timeout.
 - [ ] Verify correct native-module ABI packaging for `better-sqlite3`.
 - [ ] Verify first-run data directories, permissions, migration behavior, uninstall behavior, and retained user data.
 - [ ] Decide whether updates are disabled for v1 or fully tested against signed published artifacts.

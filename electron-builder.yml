@@ -9,6 +9,7 @@ files:
   - package.json
 linux:
   category: Utility
+  icon: build/icon.png
   target:
     - target: deb
       arch: [x64]
@@ -37,4 +38,4 @@ deb:
     - libgtk-3-0
   packageCategory: utils
 appImage:
-  license: LICENSE
+  license: LICENSE.txt

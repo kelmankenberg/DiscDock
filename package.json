@@ -2,10 +2,8 @@
   "name": "discdock",
   "version": "0.1.0",
   "description": "Catalog and search your external/removable media collection",
+  "desktopName": "DiscDock",
   "main": "dist-electron/electron/main.js",
-  "directories": {
-    "doc": "docs"
-  },
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron .\"",
     "build:renderer": "vite build",
@@ -25,7 +23,10 @@
     "url": "git+https://github.com/kelmankenberg/DiscDock.git"
   },
   "keywords": [],
-  "author": "",
+  "author": {
+    "name": "DiscDock contributors",
+    "email": "kelmankenberg@users.noreply.github.com"
+  },
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
