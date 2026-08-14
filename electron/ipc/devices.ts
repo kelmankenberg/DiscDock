@@ -3,6 +3,7 @@ import { DeviceWatcher } from '../devices/DeviceWatcher'
 import { ejectDevice } from '../devices/deviceEject'
 import type { DetectedDevice, IpcResult } from '../../shared/types'
 import { isNonEmptyString, isRecord } from './validation'
+import { log } from '../logging'
 
 let watcher: DeviceWatcher | null = null
 
@@ -33,9 +34,12 @@ export function registerDeviceIpc(): void {
     }
     if (typeof isOptical !== 'boolean') return { ok: false, error: { code: 'invalid_input', message: 'isOptical must be a boolean' } }
     try {
+      log.info('Device removal requested', { devicePath, isOptical })
       const message = await ejectDevice(devicePath, isOptical)
+      log.info('Device removal completed', { devicePath, isOptical })
       return { ok: true, data: { message } }
     } catch (err) {
+      log.error('Device removal failed', { devicePath, isOptical, error: err })
       return { ok: false, error: { code: 'eject_error', message: (err as Error).message } }
     }
   })

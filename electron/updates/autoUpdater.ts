@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import { getSettings } from '../settings/settingsStore'
 import type { IpcResult, UpdateStatus } from '../../shared/types'
+import { log } from '../logging'
 
 let win: BrowserWindow | null = null
 let lastStatus: UpdateStatus = { state: 'idle' }
@@ -27,7 +28,10 @@ export function initAutoUpdater(mainWindow: BrowserWindow): void {
     publish({ state: 'downloading', percent: Math.round(progress.percent) })
   )
   autoUpdater.on('update-downloaded', (info) => publish({ state: 'downloaded', version: info.version }))
-  autoUpdater.on('error', (err) => publish({ state: 'error', message: err.message }))
+  autoUpdater.on('error', (err) => {
+    log.error('Updater error', err)
+    publish({ state: 'error', message: err.message })
+  })
 
   if (isSupported() && getSettings().autoUpdateEnabled) {
     void autoUpdater.checkForUpdates().catch(() => undefined)
@@ -47,9 +51,11 @@ export function registerUpdateIpc(): void {
       return { ok: true, data: status }
     }
     try {
+      log.info('Update check requested')
       await autoUpdater.checkForUpdates()
       return { ok: true, data: lastStatus }
     } catch (err) {
+      log.error('Update check failed', err)
       return { ok: false, error: { code: 'update_error', message: (err as Error).message } }
     }
   })
@@ -62,9 +68,11 @@ export function registerUpdateIpc(): void {
       }
     }
     try {
+      log.info('Update download requested')
       await autoUpdater.downloadUpdate()
       return { ok: true, data: { started: true } }
     } catch (err) {
+      log.error('Update download failed', err)
       return { ok: false, error: { code: 'update_error', message: (err as Error).message } }
     }
   })

@@ -120,7 +120,7 @@ These are useful improvements, but should not delay the first release if the MVP
 ### P0.6 Logging and failure visibility
 
 - [~] Configure rotating local main-process logs under the documented user-data directory. `electron-log` now writes the main log under the app user-data `logs` directory; rotation and retention still need an explicit QA check.
-- [~] Log application startup, shutdown, migrations, scan lifecycle, per-job failures, device detection failures, backup/restore, exports, and updater errors. Startup, Electron-ready, and shutdown events are wired; operation-specific logging remains.
+- [~] Log application startup, shutdown, migrations, scan lifecycle, per-job failures, device detection failures, backup/restore, exports, and updater errors. Startup, Electron-ready, shutdown, scan, backup/restore, export, device-removal, and updater events are wired; migration and device-watch failure logging plus rotation QA remain.
 - [x] Add main-process handlers for uncaught exceptions and unhandled promise rejections.
 - [x] Add renderer error-boundary handling and a non-blocking user-visible error path.
 - [ ] Avoid silently swallowing failures except where the fallback and user impact are documented.

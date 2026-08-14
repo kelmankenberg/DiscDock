@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { exportCatalog } from '../export/exportService'
 import type { ExportFormat, ExportScope, IpcResult } from '../../shared/types'
 import { isNonEmptyString, isPositiveInteger, isRecord, isTrustedRendererEvent } from './validation'
+import { log } from '../logging'
 
 export function registerExportIpc(): void {
   ipcMain.handle('export:run', (event, payload: unknown): IpcResult<{ fileCount: number }> => {
@@ -29,9 +30,12 @@ export function registerExportIpc(): void {
     const validScope: ExportScope = scope.type === 'media' ? { type: 'media', mediaId: scope.mediaId as number } : { type: 'all' }
 
     try {
+      log.info('Export started', { format, scope: validScope, destinationPath })
       const fileCount = exportCatalog(validScope, format as ExportFormat, destinationPath)
+      log.info('Export completed', { format, fileCount, destinationPath })
       return { ok: true, data: { fileCount } }
     } catch (err) {
+      log.error('Export failed', { destinationPath, error: err })
       return { ok: false, error: { code: 'export_error', message: (err as Error).message } }
     }
   })

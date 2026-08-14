@@ -3,13 +3,16 @@ import path from 'node:path'
 import Database from 'better-sqlite3'
 import { app } from 'electron'
 import { CURRENT_SCHEMA_VERSION, getDb, closeDb } from '../db'
+import { log } from '../logging'
 
 function dbPath(): string {
   return path.join(app.getPath('userData'), 'discdock.sqlite3')
 }
 
 export async function backupNow(destinationPath: string): Promise<void> {
+  log.info('Backup started', { destinationPath })
   await getDb().backup(destinationPath)
+  log.info('Backup completed', { destinationPath })
 }
 
 function validateBackup(sourcePath: string): void {
@@ -39,6 +42,7 @@ function validateBackup(sourcePath: string): void {
  * first (FR-7.2) so a bad/incompatible restore file can't destroy existing data.
  */
 export async function restoreFromBackup(sourcePath: string): Promise<{ safetyBackupPath: string }> {
+  log.info('Restore started', { sourcePath })
   const current = dbPath()
   const temporary = `${current}.restore-${process.pid}-${Date.now()}`
   const displaced = `${current}.previous-${process.pid}-${Date.now()}`
@@ -52,6 +56,7 @@ export async function restoreFromBackup(sourcePath: string): Promise<{ safetyBac
     validateBackup(temporary)
   } catch (error) {
     fs.rmSync(temporary, { force: true })
+    log.error('Restore validation failed', { sourcePath, error })
     throw error
   }
 
@@ -72,8 +77,10 @@ export async function restoreFromBackup(sourcePath: string): Promise<{ safetyBac
     fs.rmSync(temporary, { force: true })
     if (fs.existsSync(displaced)) fs.renameSync(displaced, current)
     getDb()
+    log.error('Restore failed and was rolled back', { sourcePath, error })
     throw error
   }
 
+  log.info('Restore completed', { sourcePath, safetyBackupPath })
   return { safetyBackupPath }
 }

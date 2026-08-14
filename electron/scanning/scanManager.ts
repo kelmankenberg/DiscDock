@@ -15,6 +15,7 @@ import {
 } from '../db/scanRepository'
 import { getSettings } from '../settings/settingsStore'
 import type { AudioCdMetadata, HashMode, ScanProgress } from '../../shared/types'
+import { log } from '../logging'
 
 interface ActiveJob {
   cancelled: boolean
@@ -43,6 +44,7 @@ function maxConcurrentScans(): number {
 function pumpQueue(): void {
   while (activeJobs.size < maxConcurrentScans() && queue.length > 0) {
     const next = queue.shift() as QueuedJob
+    log.info('Scan started', { jobId: next.jobId, mediaItemId: next.mediaItemId, hashMode: next.hashMode })
     markScanJobRunning(next.jobId)
     win?.webContents.send('scan:started', { jobId: next.jobId, mediaItemId: next.mediaItemId })
     void runScan(next.jobId, next.mediaItemId, next.rootPath, next.hashMode)
@@ -53,6 +55,7 @@ export function cancelScan(jobId: number): boolean {
   const job = activeJobs.get(jobId)
   if (job) {
     job.cancelled = true
+    log.info('Scan cancellation requested', { jobId })
     return true
   }
 
@@ -67,6 +70,7 @@ export function cancelScan(jobId: number): boolean {
     filesUnchanged: 0,
     errorCount: 0
   })
+  log.info('Queued scan cancelled', { jobId })
   win?.webContents.send('scan:cancelled', { jobId })
   return true
 }
@@ -241,6 +245,7 @@ async function runScan(jobId: number, mediaItemId: number, rootPath: string, has
     const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
     finalizeScanJob(jobId, status, counts)
     if (status === 'completed') {
+      log.info('Scan completed', { jobId, mediaItemId, counts })
       markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0)
     }
 
@@ -250,9 +255,11 @@ async function runScan(jobId: number, mediaItemId: number, rootPath: string, has
         new Notification({ title: 'DiscDock', body: `Scan completed: ${filesAdded} added, ${filesModified} modified, ${filesRemoved} removed` }).show()
       }
     } else {
+      log.info('Scan incomplete', { jobId, mediaItemId, counts })
       win?.webContents.send('scan:cancelled', { jobId })
     }
   } catch (err) {
+    log.error('Scan failed', { jobId, mediaItemId, error: (err as Error).message })
     finalizeScanJob(jobId, 'failed', { filesAdded, filesRemoved: 0, filesModified, filesUnchanged, errorCount })
     win?.webContents.send('scan:failed', { jobId, error: (err as Error).message })
     if (settings.notifications.scanFailed) {
