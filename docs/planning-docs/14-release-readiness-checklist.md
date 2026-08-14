@@ -82,9 +82,9 @@ These are useful improvements, but should not delay the first release if the MVP
 ### P0.3 Database, backup, restore, and migration safety
 
 - [ ] Create an automatic safety backup before migrations, not only before restore.
-- [~] Validate a restore source before replacing the live database: readable SQLite file, expected schema, compatible migration state, and required tables. Integrity, DiscDock schema identity, and supported-version checks are now performed before replacement.
-- [~] Restore through a temporary destination and atomic rename rather than copying directly over the active database. The restore now stages and swaps the database file.
-- [~] Define rollback behavior if reopening or migrating the restored database fails. The live database is restored from the displaced file when reopening fails; failure-path integration coverage remains.
+- [x] Validate a restore source before replacing the live database: readable SQLite file, expected schema, compatible migration state, and required tables. Integrity, DiscDock schema identity, and supported-version checks are now performed before replacement and invalid restore behavior is integration-tested.
+- [x] Restore through a temporary destination and atomic rename rather than copying directly over the active database. The restore now stages and swaps the database file, with valid-restore coverage.
+- [~] Define rollback behavior if reopening or migrating the restored database fails. The live database is restored from the displaced file when reopening fails; simulated reopen/migration failure coverage remains.
 - [ ] Ensure WAL and SHM sidecars are handled safely for both backup and restore.
 - [ ] Provide a clear recovery path to the generated pre-restore backup.
 - [ ] Test upgrades from every supported prior schema version, including populated FTS data and user annotations.

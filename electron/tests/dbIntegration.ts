@@ -16,6 +16,7 @@ moduleLoader._load = (request, parent, isMain) => {
 const { closeDb, CURRENT_SCHEMA_VERSION, getDb } = require('../db') as typeof import('../db')
 const { setTagsForMedia, getTagsForMedia } = require('../db/tagRepository') as typeof import('../db/tagRepository')
 const { createCollection, addMemberToCollection, getCollectionMembers } = require('../db/collectionRepository') as typeof import('../db/collectionRepository')
+const { backupNow, restoreFromBackup } = require('../backup/backupService') as typeof import('../backup/backupService')
 
 async function main(): Promise<void> {
   const db = getDb()
@@ -42,6 +43,19 @@ async function main(): Promise<void> {
   addMemberToCollection(collection.id, mediaId)
   assert.equal(getCollectionMembers(collection.id)[0]?.id, mediaId)
   assert.throws(() => db.prepare('INSERT INTO collection_media_item (collection_id, media_item_id) VALUES (?, ?)').run(collection.id, 999999))
+
+  const backupPath = path.join(userDataPath, 'catalog-backup.sqlite3')
+  await backupNow(backupPath)
+  db.prepare("INSERT INTO media_item (label, media_type) VALUES ('Only In Current', 'other')").run()
+  const restoreResult = await restoreFromBackup(backupPath)
+  assert.ok(fs.existsSync(restoreResult.safetyBackupPath))
+  assert.equal((getDb().prepare("SELECT COUNT(*) AS count FROM media_item WHERE label = 'Only In Current'").get() as { count: number }).count, 0)
+  assert.equal((getDb().prepare('SELECT COUNT(*) AS count FROM media_item').get() as { count: number }).count, 1)
+
+  const invalidBackupPath = path.join(userDataPath, 'invalid.sqlite3')
+  fs.writeFileSync(invalidBackupPath, 'not a sqlite database')
+  await assert.rejects(() => restoreFromBackup(invalidBackupPath), /not a database|file is not a database/i)
+  assert.equal((getDb().prepare('SELECT COUNT(*) AS count FROM media_item').get() as { count: number }).count, 1)
   console.log('Database integration checks passed')
 }
 
