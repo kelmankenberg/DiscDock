@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, Notification } from 'electron'
 import { backupNow, restoreFromBackup } from '../backup/backupService'
 import type { IpcResult } from '../../shared/types'
 import { isNonEmptyString, isRecord, isTrustedRendererEvent } from './validation'
@@ -12,6 +12,7 @@ export function registerBackupIpc(): void {
     }
     try {
       await backupNow(destinationPath)
+      new Notification({ title: 'DiscDock', body: 'Backup completed.' }).show()
       return { ok: true, data: { ok: true } }
     } catch (err) {
       return { ok: false, error: { code: 'backup_error', message: (err as Error).message } }
@@ -28,6 +29,7 @@ export function registerBackupIpc(): void {
       }
       try {
         const result = await restoreFromBackup(sourcePath)
+        new Notification({ title: 'DiscDock', body: 'Catalog restore completed.' }).show()
         return { ok: true, data: result }
       } catch (err) {
         return { ok: false, error: { code: 'restore_error', message: (err as Error).message } }

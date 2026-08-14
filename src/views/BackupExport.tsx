@@ -5,6 +5,7 @@ import HelpButton from '../components/HelpButton'
 
 export default function BackupExport(): JSX.Element {
   const [status, setStatus] = useState<string | null>(null)
+  const [operation, setOperation] = useState<'backup' | 'restore' | 'export' | null>(null)
   const [busy, setBusy] = useState(false)
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
   const [scope, setScope] = useState<'all' | 'media'>('all')
@@ -21,9 +22,11 @@ export default function BackupExport(): JSX.Element {
     void window.discdock.dialogs.pickSaveFile(`discdock-backup-${Date.now()}.sqlite3`).then((pick) => {
       if (!pick.ok || !pick.data.path) return
       setBusy(true)
+      setOperation('backup')
       setStatus(null)
       void window.discdock.backup.run(pick.data.path).then((result) => {
         setBusy(false)
+        setOperation(null)
         setStatus(result.ok ? `Backup saved to ${pick.data.path}` : `Backup failed: ${result.error.message}`)
       })
     })
@@ -39,9 +42,11 @@ export default function BackupExport(): JSX.Element {
       if (!confirmed) return
 
       setBusy(true)
+      setOperation('restore')
       setStatus(null)
       void window.discdock.backup.restore(pick.data.path!).then((result) => {
         setBusy(false)
+        setOperation(null)
         setStatus(
           result.ok
             ? `Restored successfully. Your previous data was saved to ${result.data.safetyBackupPath}`
@@ -56,10 +61,12 @@ export default function BackupExport(): JSX.Element {
     void window.discdock.dialogs.pickSaveFile(`discdock-catalog.${format}`).then((pick) => {
       if (!pick.ok || !pick.data.path) return
       setBusy(true)
+      setOperation('export')
       setStatus(null)
       const exportScope = scope === 'all' ? { type: 'all' as const } : { type: 'media' as const, mediaId: Number(selectedMediaId) }
       void window.discdock.export.run(exportScope, format, pick.data.path).then((result) => {
         setBusy(false)
+        setOperation(null)
         setStatus(result.ok ? `Exported ${result.data.fileCount} files to ${pick.data.path}` : `Export failed: ${result.error.message}`)
       })
     })
@@ -83,7 +90,7 @@ export default function BackupExport(): JSX.Element {
             Restore from Backup
           </button>
         </div>
-        {busy && <p className="backup-export-view__status">Working…</p>}
+        {busy && <p className="backup-export-view__status">{operation === 'backup' ? 'Creating backup…' : operation === 'restore' ? 'Restoring catalog…' : 'Exporting catalog…'}</p>}
         {status && <p className="backup-export-view__status">{status}</p>}
       </section>
 

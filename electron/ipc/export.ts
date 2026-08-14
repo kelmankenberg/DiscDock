@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, Notification } from 'electron'
 import { exportCatalog } from '../export/exportService'
 import type { ExportFormat, ExportScope, IpcResult } from '../../shared/types'
 import { isNonEmptyString, isPositiveInteger, isRecord, isTrustedRendererEvent } from './validation'
@@ -33,6 +33,7 @@ export function registerExportIpc(): void {
       log.info('Export started', { format, scope: validScope, destinationPath })
       const fileCount = exportCatalog(validScope, format as ExportFormat, destinationPath)
       log.info('Export completed', { format, fileCount, destinationPath })
+      new Notification({ title: 'DiscDock', body: `Export completed: ${fileCount} files.` }).show()
       return { ok: true, data: { fileCount } }
     } catch (err) {
       log.error('Export failed', { destinationPath, error: err })

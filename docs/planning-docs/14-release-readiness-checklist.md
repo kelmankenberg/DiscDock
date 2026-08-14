@@ -41,7 +41,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [ ] Filtered search-result export
 - [ ] Directory aggregate statistics
 - [ ] udisks2 event-driven device watching
-- [ ] Background progress and cancellation for export
+- [~] Background progress and cancellation for export. Backup, restore, and export now show operation-specific status and emit completion notifications; background execution, progress percentages, and safe cancellation remain.
 
 ### Explicitly outside the initial-release gate
 
