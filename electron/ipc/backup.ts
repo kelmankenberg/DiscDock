@@ -1,11 +1,12 @@
 import { ipcMain } from 'electron'
 import { backupNow, restoreFromBackup } from '../backup/backupService'
 import type { IpcResult } from '../../shared/types'
+import { isNonEmptyString, isRecord } from './validation'
 
 export function registerBackupIpc(): void {
   ipcMain.handle('backup:run', async (_event, payload: unknown): Promise<IpcResult<{ ok: true }>> => {
-    const destinationPath = (payload as { destinationPath?: unknown })?.destinationPath
-    if (typeof destinationPath !== 'string' || !destinationPath.trim()) {
+    const destinationPath = isRecord(payload) ? payload.destinationPath : undefined
+    if (!isNonEmptyString(destinationPath)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A destinationPath is required' } }
     }
     try {
@@ -19,8 +20,8 @@ export function registerBackupIpc(): void {
   ipcMain.handle(
     'backup:restore',
     async (_event, payload: unknown): Promise<IpcResult<{ safetyBackupPath: string }>> => {
-      const sourcePath = (payload as { sourcePath?: unknown })?.sourcePath
-      if (typeof sourcePath !== 'string' || !sourcePath.trim()) {
+      const sourcePath = isRecord(payload) ? payload.sourcePath : undefined
+      if (!isNonEmptyString(sourcePath)) {
         return { ok: false, error: { code: 'invalid_input', message: 'A sourcePath is required' } }
       }
       try {
