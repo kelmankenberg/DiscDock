@@ -1,5 +1,7 @@
 import { ipcMain } from 'electron'
 import { getDb } from '../db'
+import { countMediaNeedingVerification } from '../db/mediaRepository'
+import { getSettings } from '../settings/settingsStore'
 import type { DashboardSummary, IpcResult } from '../../shared/types'
 
 export function registerDashboardIpc(): void {
@@ -16,13 +18,9 @@ export function registerDashboardIpc(): void {
       )
       .get() as { count: number; total: number }
 
-    const { count: mediaNeedingVerification } = db
-      .prepare(
-        `SELECT COUNT(*) as count FROM media_item
-         WHERE status = 'active'
-           AND (last_verified_at IS NULL OR last_verified_at < datetime('now', '-12 months'))`
-      )
-      .get() as { count: number }
+    const mediaNeedingVerification = countMediaNeedingVerification(
+      getSettings().verificationThresholdMonths
+    )
 
     return {
       ok: true,

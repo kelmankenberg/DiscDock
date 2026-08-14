@@ -11,6 +11,8 @@ const HASH_MODES: { value: HashMode; label: string }[] = [
 export default function Settings(): JSX.Element {
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [saved, setSaved] = useState(false)
+  const [newMediaType, setNewMediaType] = useState('')
+  const [newFieldName, setNewFieldName] = useState('')
 
   useEffect(() => {
     void window.discdock.settings.get().then((result) => {
@@ -27,6 +29,20 @@ export default function Settings(): JSX.Element {
         setTimeout(() => setSaved(false), 1500)
       }
     })
+  }
+
+  const addMediaType = (): void => {
+    const value = newMediaType.trim()
+    if (!value || settings.customMediaTypes.includes(value)) return
+    save({ customMediaTypes: [...settings.customMediaTypes, value] })
+    setNewMediaType('')
+  }
+
+  const addFieldName = (): void => {
+    const value = newFieldName.trim()
+    if (!value || settings.customFieldNames.includes(value)) return
+    save({ customFieldNames: [...settings.customFieldNames, value] })
+    setNewFieldName('')
   }
 
   if (!settings) return <div className="settings-view">Loading…</div>
@@ -82,6 +98,72 @@ export default function Settings(): JSX.Element {
       </section>
 
       <section className="settings-section">
+        <h2>Custom Media Types</h2>
+        <p>Add media types that are not included in the built-in list.</p>
+        <div className="settings-list-editor">
+          <input
+            type="text"
+            value={newMediaType}
+            placeholder="e.g. Blu-ray"
+            onChange={(e) => setNewMediaType(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') addMediaType()
+            }}
+          />
+          <button type="button" className="button button--small" onClick={addMediaType}>
+            Add
+          </button>
+        </div>
+        <ul className="settings-list-editor__items">
+          {settings.customMediaTypes.map((mediaType) => (
+            <li key={mediaType}>
+              <span>{mediaType}</span>
+              <button
+                type="button"
+                className="button button--small button--danger"
+                onClick={() => save({ customMediaTypes: settings.customMediaTypes.filter((value) => value !== mediaType) })}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="settings-section">
+        <h2>Custom Fields</h2>
+        <p>Define metadata fields that can be filled in on each media item.</p>
+        <div className="settings-list-editor">
+          <input
+            type="text"
+            value={newFieldName}
+            placeholder="e.g. Purchase Date"
+            onChange={(e) => setNewFieldName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') addFieldName()
+            }}
+          />
+          <button type="button" className="button button--small" onClick={addFieldName}>
+            Add
+          </button>
+        </div>
+        <ul className="settings-list-editor__items">
+          {settings.customFieldNames.map((fieldName) => (
+            <li key={fieldName}>
+              <span>{fieldName}</span>
+              <button
+                type="button"
+                className="button button--small button--danger"
+                onClick={() => save({ customFieldNames: settings.customFieldNames.filter((value) => value !== fieldName) })}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="settings-section">
         <h2>Notifications</h2>
         <label className="settings-checkbox">
           <input
@@ -112,6 +194,19 @@ export default function Settings(): JSX.Element {
             }
           />
           Remind me about media needing re-verification
+        </label>
+        <label className="settings-months-field">
+          Flag media as needing verification after (months)
+          <input
+            type="number"
+            min={1}
+            max={120}
+            value={settings.verificationThresholdMonths}
+            onChange={(e) => {
+              const months = Number(e.target.value)
+              if (Number.isFinite(months) && months >= 1) save({ verificationThresholdMonths: Math.trunc(months) })
+            }}
+          />
         </label>
       </section>
 

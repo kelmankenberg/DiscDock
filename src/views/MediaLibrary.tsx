@@ -1,5 +1,16 @@
-import { useEffect, useState } from 'react'
-import { Scan, CircleX, Archive, Trash2, Eject as EjectIcon, Disc3, Usb } from 'lucide-react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import {
+  Scan,
+  CircleX,
+  Archive,
+  Trash2,
+  Eject as EjectIcon,
+  Disc3,
+  Usb,
+  Pencil,
+  MoreVertical,
+  AlertTriangle
+} from 'lucide-react'
 import { MEDIA_TYPES } from '../../shared/types'
 import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
 import './MediaLibrary.css'
@@ -16,13 +27,14 @@ function mediaTypeLabel(mediaType: MediaType): string {
   return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
 }
 
-type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt' | 'tags'
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt' | 'tags' | 'notes'
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: 'label', label: 'Label' },
   { key: 'mediaType', label: 'Type' },
   { key: 'physicalLocation', label: 'Location' },
   { key: 'tags', label: 'Tags' },
+  { key: 'notes', label: 'Notes' },
   { key: 'status', label: 'Status' },
   { key: 'lastScannedAt', label: 'Last Scanned' }
 ]
@@ -36,6 +48,7 @@ interface ActiveScan {
 export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
   const [items, setItems] = useState<MediaItem[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [editingItemId, setEditingItemId] = useState<number | null>(null)
   const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
   const [error, setError] = useState<string | null>(null)
   const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
@@ -62,6 +75,18 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   const [tagFilter, setTagFilter] = useState<string>('')
   const [editingTagsId, setEditingTagsId] = useState<number | null>(null)
   const [editingTagsValue, setEditingTagsValue] = useState('')
+  const [customMediaTypes, setCustomMediaTypes] = useState<string[]>([])
+  const [verificationThresholdMonths, setVerificationThresholdMonths] = useState(12)
+
+  const needsVerification = (item: MediaItem): boolean => {
+    if (item.status !== 'active') return false
+    if (!item.lastVerifiedAt) return true
+    const verifiedAt = new Date(`${item.lastVerifiedAt.replace(' ', 'T')}Z`)
+    if (Number.isNaN(verifiedAt.getTime())) return true
+    const cutoff = new Date()
+    cutoff.setMonth(cutoff.getMonth() - verificationThresholdMonths)
+    return verifiedAt < cutoff
+  }
 
   const knownLocations = Array.from(
     new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
@@ -83,6 +108,8 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
         return item.physicalLocation ?? ''
       case 'lastScannedAt':
         return item.lastScannedAt ?? ''
+      case 'notes':
+        return item.notes ?? ''
       case 'tags':
         return (tagsByMedia[item.id] ?? []).join(', ')
       default:
@@ -119,6 +146,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   }
 
   const handleAddDetectedDevice = (device: DetectedDevice): void => {
+    setEditingItemId(null)
     setShowForm(true)
     handleUseDevice(device)
   }
@@ -147,6 +175,28 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     setLastClickedIndex(index)
   }
 
+  const handleRowClick = (event: React.MouseEvent<HTMLTableRowElement>, item: MediaItem, index: number): void => {
+    const target = event.target as HTMLElement
+    if (target.closest('button, input, select, textarea, a')) return
+
+    if (event.shiftKey && lastClickedIndex !== null) {
+      const [start, end] = [lastClickedIndex, index].sort((a, b) => a - b)
+      const rangeIds = sortedItems.slice(start, end + 1).map((i) => i.id)
+      setSelectedIds((prev) => (event.ctrlKey || event.metaKey ? new Set([...prev, ...rangeIds]) : new Set(rangeIds)))
+    } else if (event.ctrlKey || event.metaKey) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(item.id)) next.delete(item.id)
+        else next.add(item.id)
+        return next
+      })
+      setLastClickedIndex(index)
+    } else {
+      setSelectedIds((prev) => (prev.size === 1 && prev.has(item.id) ? new Set() : new Set([item.id])))
+      setLastClickedIndex(index)
+    }
+  }
+
   const handleSelectAll = (): void => {
     setSelectedIds((prev) =>
       prev.size === sortedItems.length ? new Set() : new Set(sortedItems.map((i) => i.id))
@@ -157,6 +207,75 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     setSelectedIds(new Set())
     setLastClickedIndex(null)
   }
+
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; itemId: number } | null>(null)
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
+  const menuRef = useRef<HTMLUListElement>(null)
+
+  useLayoutEffect(() => {
+    setMenuPos(contextMenu ? { x: contextMenu.x, y: contextMenu.y } : null)
+  }, [contextMenu])
+
+  useLayoutEffect(() => {
+    const el = menuRef.current
+    if (!el || !menuPos) return
+    const rect = el.getBoundingClientRect()
+    const margin = 8
+    let { x, y } = menuPos
+    if (rect.bottom > window.innerHeight - margin) {
+      y = Math.max(margin, window.innerHeight - margin - rect.height)
+    }
+    if (rect.right > window.innerWidth - margin) {
+      x = Math.max(margin, window.innerWidth - margin - rect.width)
+    }
+    if (x !== menuPos.x || y !== menuPos.y) setMenuPos({ x, y })
+  }, [menuPos])
+
+  const handleRowContextMenu = (
+    event: React.MouseEvent<HTMLTableRowElement>,
+    item: MediaItem,
+    index: number
+  ): void => {
+    event.preventDefault()
+    if (!selectedIds.has(item.id)) {
+      setSelectedIds(new Set([item.id]))
+      setLastClickedIndex(index)
+    }
+    setContextMenu({ x: event.clientX, y: event.clientY, itemId: item.id })
+  }
+
+  const openMenuFromButton = (
+    event: React.MouseEvent<HTMLButtonElement>,
+    item: MediaItem,
+    index: number
+  ): void => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    if (!selectedIds.has(item.id)) {
+      setSelectedIds(new Set([item.id]))
+      setLastClickedIndex(index)
+    }
+    setContextMenu((prev) =>
+      prev?.itemId === item.id ? null : { x: rect.right - 170, y: rect.bottom + 4, itemId: item.id }
+    )
+  }
+
+  useEffect(() => {
+    if (!contextMenu) return
+    const close = (): void => setContextMenu(null)
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') close()
+    }
+    window.addEventListener('click', close)
+    window.addEventListener('resize', close)
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('click', close)
+      window.removeEventListener('resize', close)
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [contextMenu])
 
   const handleBatchSetLocation = (): void => {
     const value = batchLocationValue.trim() || null
@@ -199,6 +318,15 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   }
 
   useEffect(loadItems, [])
+
+  useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) {
+        setCustomMediaTypes(result.data.customMediaTypes)
+        setVerificationThresholdMonths(result.data.verificationThresholdMonths)
+      }
+    })
+  }, [])
 
   useEffect(() => {
     void window.discdock.devices.list().then((result) => {
@@ -262,9 +390,60 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     }
   }, [])
 
+  const closeForm = (): void => {
+    setShowForm(false)
+    setEditingItemId(null)
+    setForm(EMPTY_FORM)
+    setDeviceMountPoint(null)
+    setError(null)
+  }
+
+  const handleStartAdd = (): void => {
+    setEditingItemId(null)
+    setForm(EMPTY_FORM)
+    setError(null)
+    setShowForm(true)
+  }
+
+  const handleStartEdit = (item: MediaItem): void => {
+    setEditingItemId(item.id)
+    setForm({
+      label: item.label,
+      mediaType: item.mediaType,
+      capacityBytes: item.capacityBytes,
+      physicalLocation: item.physicalLocation,
+      notes: item.notes,
+      deviceFingerprint: item.deviceFingerprint
+    })
+    setError(null)
+    setDeviceMountPoint(null)
+    setShowForm(true)
+  }
+
   const handleSubmit = (event: React.FormEvent): void => {
     event.preventDefault()
     setError(null)
+
+    if (editingItemId !== null) {
+      void window.discdock.media
+        .update(editingItemId, {
+          label: form.label,
+          mediaType: form.mediaType,
+          capacityBytes: form.capacityBytes,
+          physicalLocation: form.physicalLocation,
+          notes: form.notes
+        })
+        .then((result) => {
+          if (result.ok) {
+            closeForm()
+            loadItems()
+          } else {
+            setError(result.error.message)
+          }
+        })
+      return
+    }
+
     void window.discdock.media.create(form).then((result) => {
       if (result.ok) {
         setForm(EMPTY_FORM)
@@ -370,7 +549,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     <div className="media-library">
       <div className="media-library__header">
         <h1>Media Library</h1>
-        <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
+        <button type="button" className="button button--primary" onClick={handleStartAdd}>
           Add Media
         </button>
       </div>
@@ -398,9 +577,10 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
 
       {showForm && (
         <form className="media-form" onSubmit={handleSubmit}>
+          <h2 className="media-form__title">{editingItemId !== null ? 'Edit Media' : 'Add Media'}</h2>
           {error && <div className="media-form__error">{error}</div>}
 
-          {devices.length > 0 && (
+          {editingItemId === null && devices.length > 0 && (
             <div className="detected-devices-picker">
               <span className="detected-devices-picker__label">Detected media (click to fill in the form):</span>
               <div className="detected-devices-picker__list">
@@ -434,7 +614,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
               value={form.mediaType}
               onChange={(e) => setForm({ ...form, mediaType: e.target.value as MediaType })}
             >
-              {MEDIA_TYPES.map((t) => (
+              {[...MEDIA_TYPES, ...customMediaTypes.map((value) => ({ value, label: value }))].map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
                 </option>
@@ -467,14 +647,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
             <button type="submit" className="button button--primary">
               Save
             </button>
-            <button
-              type="button"
-              className="button"
-              onClick={() => {
-                setShowForm(false)
-                setDeviceMountPoint(null)
-              }}
-            >
+            <button type="button" className="button" onClick={closeForm}>
               Cancel
             </button>
           </div>
@@ -583,7 +756,12 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                 .filter(Boolean)
                 .join(' ')
               return (
-                <tr key={item.id} className={rowClasses}>
+                <tr
+                  key={item.id}
+                  className={rowClasses}
+                  onClick={(e) => handleRowClick(e, item, index)}
+                  onContextMenu={(e) => handleRowContextMenu(e, item, index)}
+                >
                   <td>
                     <input
                       type="checkbox"
@@ -643,8 +821,19 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                       </button>
                     )}
                   </td>
+                  <td className="media-table__notes" title={item.notes ?? undefined}>
+                    {item.notes ?? ''}
+                  </td>
                   <td>
                     <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+                    {needsVerification(item) && (
+                      <span
+                        className="verify-badge"
+                        title={`Not verified in the last ${verificationThresholdMonths} months`}
+                      >
+                        <AlertTriangle size={12} aria-hidden="true" /> Verify
+                      </span>
+                    )}
                   </td>
                   <td>
                     {scan ? (
@@ -656,65 +845,19 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                     )}
                   </td>
                   <td className="media-table__actions">
-                    {scan ? (
-                      <button
-                        type="button"
-                        className="button button--small button--icon-only"
-                        title="Cancel scan"
-                        aria-label="Cancel scan"
-                        onClick={() => handleCancelScan(item.id)}
-                      >
-                        <CircleX size={16} aria-hidden="true" />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="button button--small button--icon-only"
-                        title="Scan"
-                        aria-label="Scan"
-                        onClick={() => handleScan(item.id)}
-                      >
-                        <Scan size={16} aria-hidden="true" />
-                      </button>
-                    )}
-                    {item.status === 'active' && !scan && (
-                      <button
-                        type="button"
-                        className="button button--small button--icon-only"
-                        title="Retire"
-                        aria-label="Retire"
-                        onClick={() => handleRetire(item.id)}
-                      >
-                        <Archive size={16} aria-hidden="true" />
-                      </button>
-                    )}
                     <button
                       type="button"
-                      className="button button--small button--icon-only button--danger"
-                      title="Delete"
-                      aria-label="Delete"
-                      onClick={() => handleDelete(item.id)}
+                      className="button button--small button--icon-only"
+                      title="More actions"
+                      aria-label={`More actions for ${item.label}`}
+                      aria-haspopup="menu"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openMenuFromButton(e, item, index)
+                      }}
                     >
-                      <Trash2 size={16} aria-hidden="true" />
+                      <MoreVertical size={16} aria-hidden="true" />
                     </button>
-                    {presentDevice && (
-                      <button
-                        type="button"
-                        className="button button--small button--icon-only"
-                        disabled={ejectingIds.has(item.id)}
-                        title={
-                          ejectingIds.has(item.id)
-                            ? 'Ejecting…'
-                            : presentDevice.isOptical
-                              ? 'Eject'
-                              : 'Safely Remove'
-                        }
-                        aria-label={presentDevice.isOptical ? 'Eject' : 'Safely Remove'}
-                        onClick={() => handleEject(item, presentDevice)}
-                      >
-                        <EjectIcon size={16} aria-hidden="true" />
-                      </button>
-                    )}
                   </td>
                 </tr>
               )
@@ -723,6 +866,100 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
           </table>
         </>
       )}
+
+      {contextMenu &&
+        (() => {
+          const item = items.find((i) => i.id === contextMenu.itemId)
+          if (!item) return null
+          const scan = scansByMedia[item.id]
+          const presentDevice = findDeviceForItem(item)
+          return (
+            <ul
+              className="media-context-menu"
+              ref={menuRef}
+              style={{ top: menuPos?.y ?? contextMenu.y, left: menuPos?.x ?? contextMenu.x }}
+              onClick={(e) => e.stopPropagation()}
+              role="menu"
+            >
+              <li>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setContextMenu(null)
+                    handleStartEdit(item)
+                  }}
+                >
+                  <Pencil size={14} aria-hidden="true" /> Edit
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setContextMenu(null)
+                    if (scan) handleCancelScan(item.id)
+                    else handleScan(item.id)
+                  }}
+                >
+                  {scan ? (
+                    <>
+                      <CircleX size={14} aria-hidden="true" /> Cancel Scan
+                    </>
+                  ) : (
+                    <>
+                      <Scan size={14} aria-hidden="true" /> Scan
+                    </>
+                  )}
+                </button>
+              </li>
+              {item.status === 'active' && !scan && (
+                <li>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setContextMenu(null)
+                      handleRetire(item.id)
+                    }}
+                  >
+                    <Archive size={14} aria-hidden="true" /> Retire
+                  </button>
+                </li>
+              )}
+              <li>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="media-context-menu__danger"
+                  onClick={() => {
+                    setContextMenu(null)
+                    handleDelete(item.id)
+                  }}
+                >
+                  <Trash2 size={14} aria-hidden="true" /> Delete
+                </button>
+              </li>
+              {presentDevice && (
+                <li>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={ejectingIds.has(item.id)}
+                    onClick={() => {
+                      setContextMenu(null)
+                      handleEject(item, presentDevice)
+                    }}
+                  >
+                    <EjectIcon size={14} aria-hidden="true" />{' '}
+                    {presentDevice.isOptical ? 'Eject' : 'Safely Remove'}
+                  </button>
+                </li>
+              )}
+            </ul>
+          )
+        })()}
     </div>
   )
 }

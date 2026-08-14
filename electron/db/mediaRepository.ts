@@ -92,6 +92,18 @@ export function updateMediaItem(id: number, patch: Partial<MediaItemInput>): Med
   return updated
 }
 
+export function countMediaNeedingVerification(thresholdMonths: number): number {
+  const months = Number.isFinite(thresholdMonths) ? Math.max(1, Math.trunc(thresholdMonths)) : 12
+  const { count } = getDb()
+    .prepare(
+      `SELECT COUNT(*) as count FROM media_item
+       WHERE status = 'active'
+         AND (last_verified_at IS NULL OR last_verified_at < datetime('now', ?))`
+    )
+    .get(`-${months} months`) as { count: number }
+  return count
+}
+
 export function retireMediaItem(id: number): MediaItem {
   getDb().prepare("UPDATE media_item SET status = 'retired' WHERE id = ?").run(id)
   const updated = getMediaItem(id)

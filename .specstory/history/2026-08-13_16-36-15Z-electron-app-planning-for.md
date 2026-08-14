@@ -44031,14 +44031,72 @@ _**User (2026-08-14 13:11:45Z)**_
 
 _**Agent (copilot/auto)**_
 
+<think><details><summary>Thought Process</summary>
+Now add the IPC handler for `scan:errors` in `electron/ipc/scan.ts`:   
+
+Now let's find the `backup` section to add the new top-level sections after it:   
+
+Confirmed: `deleteMediaItem` never cleaned up child rows, and since better-sqlite3 enforces foreign keys by default in this setup, deletion of any media item with tags/custom-fields/collection-membership/scan-history now throws. Fixing it to cascade properly within a transaction. 
+
+Now let me update `deleteMediaItem` to cascade delete all related rows in a transaction: 
+
+Now let's look at the container filter dropdown and datalist sections for pattern reference, plus check `preload.d.ts` for the tags API typing. 
+
+Now add the editing handler functions near `saveEditingLocation`: 
+
+Now add the Tags column to `COLUMNS`/`sortValue`, the filter dropdown UI, the datalist, table header, and table cell. 
+
+Now let's check `type` files and build. 
+
+Now let's build the Collections view. Let's check the current placeholder and App.tsx routing, plus preload types for collections.  
+
+Now let's check MediaLibrary.css for existing style classes I can reuse for consistency (media-table, batch-actions, etc.), and PlaceholderView for style baseline. 
+
+Now let's build the Collections view. I'll follow existing patterns (own `formatBytes`, similar table/form styling).
+</details></think>
+
+_**Agent (copilot/auto)**_
+
 Understood — I'll work through Phase 2 systematically: Tags, Collections, Media health (error viewer + verification list), CSV/JSON export, and custom media types/fields. Let's start with **Tags**. 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 175 to 196
+
+**Input:**
+
+- endLine: `200`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `175`
+
+**Result:**
+
+```
+  kind: string
+  isDirectory: boolean
+  sizeBytes: number
+  modifiedAtSrc: string | null
+}
+
+export type Theme = 'light' | 'dark' | 'system'
+
+export interface NotificationSettings {
+  scanCompleted: boolean
+  scanFailed: boolean
+  verificationReminders: boolean
+}
+
+export interface AppSettings {
+  defaultHashMode: HashMode
+  excludePatterns: string[]
+  followSymlinks: boolean
+  theme: Theme
+  notifications: NotificationSettings
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44091,18 +44149,66 @@ export interface CustomFieldValue {
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `export type MediaType` (`**/shared/types.ts`), 1 result
+
+**Input:**
+
+- includePattern: `shared/types.ts`
+- isRegexp: `false`
+- query: `export type MediaType`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "export type MediaType"
+
+shared/types.ts
+19:export type MediaType =
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `types.ts`, lines 19 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/home/kel/dev/DiscDock/shared/types.ts`
+- startLine: `19`
+
+**Result:**
+
+```
+export type MediaType =
+  | 'cd'
+  | 'dvd'
+  | 'bluray'
+  | 'usb_drive'
+  | 'external_hdd'
+  | 'external_ssd'
+  | 'sd_card'
+  | 'network_share'
+  | 'other'
+
+export const MEDIA_TYPES: { value: MediaType; label: string }[] = [
+  { value: 'cd', label: 'CD' },
+  { value: 'dvd', label: 'DVD' },
+  { value: 'bluray', label: 'Blu-ray' },
+  { value: 'usb_drive', label: 'USB Flash Drive' },
+  { value: 'external_hdd', label: 'External HDD' },
+  { value: 'external_ssd', label: 'External SSD' },
+  { value: 'sd_card', label: 'SD Card' },
+  { value: 'network_share', label: 'Network Share' },
+  { value: 'other', label: 'Other' }
+]
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44187,10 +44293,41 @@ Now let's update the settings store with the new fields, and add the migration f
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `settingsStore.ts`, lines 1 to 20
+
+**Input:**
+
+- endLine: `20`
+- filePath: `/home/kel/dev/DiscDock/electron/settings/settingsStore.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app } from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
+import type { AppSettings } from '../../shared/types'
+
+const DEFAULT_SETTINGS: AppSettings = {
+  defaultHashMode: 'none',
+  excludePatterns: ['**/.Trash-*', '**/System Volume Information', '**/.DS_Store'],
+  followSymlinks: false,
+  theme: 'system',
+  notifications: {
+    scanCompleted: true,
+    scanFailed: true,
+    verificationReminders: true
+  }
+}
+
+let cached: AppSettings | null = null
+
+function settingsPath(): string {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44221,18 +44358,69 @@ Now let's add the migration for the custom fields table:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `version: 2` (`**/electron/db/index.ts`), 1 result
+
+**Input:**
+
+- includePattern: `electron/db/index.ts`
+- isRegexp: `false`
+- query: `version: 2`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "version: 2"
+
+electron/db/index.ts
+105:    version: 2,
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `index.ts`, lines 100 to 125
+
+**Input:**
+
+- endLine: `125`
+- filePath: `/home/kel/dev/DiscDock/electron/db/index.ts`
+- startLine: `100`
+
+**Result:**
+
+```
+        PRIMARY KEY (collection_id, media_item_id)
+      );
+    `
+  },
+  {
+    version: 2,
+    sql: `
+      -- Keep the file_record_fts external-content index in sync with file_record writes.
+      CREATE TRIGGER IF NOT EXISTS file_record_ai AFTER INSERT ON file_record BEGIN
+        INSERT INTO file_record_fts(rowid, name, path) VALUES (new.id, new.name, new.path);
+      END;
+      CREATE TRIGGER IF NOT EXISTS file_record_ad AFTER DELETE ON file_record BEGIN
+        INSERT INTO file_record_fts(file_record_fts, rowid, name, path) VALUES('delete', old.id, old.name, old.path);
+      END;
+      CREATE TRIGGER IF NOT EXISTS file_record_au AFTER UPDATE ON file_record BEGIN
+        INSERT INTO file_record_fts(file_record_fts, rowid, name, path) VALUES('delete', old.id, old.name, old.path);
+        INSERT INTO file_record_fts(rowid, name, path) VALUES (new.id, new.name, new.path);
+      END;
+    `
+  }
+]
+
+function runMigrations(database: Database.Database): void {
+  database.pragma('journal_mode = WAL')
+  database.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY)')
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44264,10 +44452,82 @@ Now the tag repository:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `tagRepository.ts`
+
+**Input:**
+
+- content:
+
+```
+import { getDb } from './index'
+
+export function listAllTagNames(): string[] {
+  const rows = getDb().prepare('SELECT name FROM tag ORDER BY name').all() as { name: string }[]
+  return rows.map((r) => r.name)
+}
+
+export function getTagsForAllMedia(): Record<number, string[]> {
+  const rows = getDb()
+    .prepare(
+      `SELECT mit.media_item_id as mediaItemId, t.name as name
+       FROM media_item_tag mit JOIN tag t ON t.id = mit.tag_id
+       ORDER BY t.name`
+    )
+    .all() as { mediaItemId: number; name: string }[]
+
+  const map: Record<number, string[]> = {}
+  for (const row of rows) {
+    if (!map[row.mediaItemId]) map[row.mediaItemId] = []
+    map[row.mediaItemId].push(row.name)
+  }
+  return map
+}
+
+export function getTagsForMedia(mediaItemId: number): string[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT t.name as name FROM tag t
+       JOIN media_item_tag mit ON mit.tag_id = t.id
+       WHERE mit.media_item_id = ? ORDER BY t.name`
+    )
+    .all(mediaItemId) as { name: string }[]
+  return rows.map((r) => r.name)
+}
+
+/** Replaces the full set of tags for a media item with the given list (creating new tags as needed). */
+export function setTagsForMedia(mediaItemId: number, tagNames: string[]): string[] {
+  const db = getDb()
+  const normalized = Array.from(new Set(tagNames.map((n) => n.trim()).filter(Boolean)))
+
+  const apply = db.transaction(() => {
+    db.prepare('DELETE FROM media_item_tag WHERE media_item_id = ?').run(mediaItemId)
+    for (const name of normalized) {
+      db.prepare('INSERT OR IGNORE INTO tag (name) VALUES (?)').run(name)
+      const tag = db.prepare('SELECT id FROM tag WHERE name = ?').get(name) as { id: number }
+      db.prepare('INSERT OR IGNORE INTO media_item_tag (media_item_id, tag_id) VALUES (?, ?)').run(
+        mediaItemId,
+        tag.id
+      )
+    }
+  })
+  apply()
+
+  return getTagsForMedia(mediaItemId)
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/db/tagRepository.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/db/tagRepository.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44343,10 +44603,49 @@ Now the IPC handler for tags:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `tags.ts`
+
+**Input:**
+
+- content:
+
+```
+import { ipcMain } from 'electron'
+import { getTagsForAllMedia, listAllTagNames, setTagsForMedia } from '../db/tagRepository'
+import type { IpcResult } from '../../shared/types'
+
+export function registerTagsIpc(): void {
+  ipcMain.handle('tags:list', (): IpcResult<string[]> => {
+    return { ok: true, data: listAllTagNames() }
+  })
+
+  ipcMain.handle('tags:allForMedia', (): IpcResult<Record<number, string[]>> => {
+    return { ok: true, data: getTagsForAllMedia() }
+  })
+
+  ipcMain.handle('tags:setForMedia', (_event, payload: unknown): IpcResult<string[]> => {
+    const { mediaId, tagNames } = (payload ?? {}) as { mediaId?: unknown; tagNames?: unknown }
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    const names = Array.isArray(tagNames) ? tagNames.filter((n): n is string => typeof n === 'string') : []
+    return { ok: true, data: setTagsForMedia(mediaId, names) }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/tags.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/tags.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44389,10 +44688,137 @@ Now let's create the collection repository:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `collectionRepository.ts`
+
+**Input:**
+
+- content:
+
+```
+import { getDb } from './index'
+import type { Collection, CollectionInput, MediaItem } from '../../shared/types'
+
+interface CollectionRow {
+  id: number
+  name: string
+  description: string | null
+}
+
+interface MediaItemRow {
+  id: number
+  label: string
+  media_type: string
+  device_fingerprint: string | null
+  capacity_bytes: number | null
+  physical_location: string | null
+  notes: string | null
+  status: string
+  created_at: string
+  last_scanned_at: string | null
+  last_verified_at: string | null
+}
+
+function toMediaItem(row: MediaItemRow): MediaItem {
+  return {
+    id: row.id,
+    label: row.label,
+    mediaType: row.media_type,
+    deviceFingerprint: row.device_fingerprint,
+    capacityBytes: row.capacity_bytes,
+    physicalLocation: row.physical_location,
+    notes: row.notes,
+    status: row.status as MediaItem['status'],
+    createdAt: row.created_at,
+    lastScannedAt: row.last_scanned_at,
+    lastVerifiedAt: row.last_verified_at
+  }
+}
+
+function withStats(db: ReturnType<typeof getDb>, row: CollectionRow): Collection {
+  const stats = db
+    .prepare(
+      `SELECT COUNT(DISTINCT cmi.media_item_id) as memberCount,
+              COALESCE(SUM(f.total_size), 0) as totalSize,
+              COALESCE(SUM(f.total_files), 0) as totalFiles
+       FROM collection_media_item cmi
+       LEFT JOIN (
+         SELECT media_item_id, SUM(size_bytes) as total_size, COUNT(*) as total_files
+         FROM file_record WHERE is_directory = 0 GROUP BY media_item_id
+       ) f ON f.media_item_id = cmi.media_item_id
+       WHERE cmi.collection_id = ?`
+    )
+    .get(row.id) as { memberCount: number; totalSize: number; totalFiles: number }
+
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    memberCount: stats.memberCount,
+    totalSizeBytes: stats.totalSize,
+    totalFiles: stats.totalFiles
+  }
+}
+
+export function listCollections(): Collection[] {
+  const db = getDb()
+  const rows = db.prepare('SELECT id, name, description FROM collection ORDER BY name').all() as CollectionRow[]
+  return rows.map((row) => withStats(db, row))
+}
+
+export function createCollection(input: CollectionInput): Collection {
+  const db = getDb()
+  const result = db
+    .prepare('INSERT INTO collection (name, description) VALUES (?, ?)')
+    .run(input.name, input.description)
+  const row = db
+    .prepare('SELECT id, name, description FROM collection WHERE id = ?')
+    .get(Number(result.lastInsertRowid)) as CollectionRow
+  return withStats(db, row)
+}
+
+export function deleteCollection(id: number): void {
+  const db = getDb()
+  db.prepare('DELETE FROM collection_media_item WHERE collection_id = ?').run(id)
+  db.prepare('DELETE FROM collection WHERE id = ?').run(id)
+}
+
+export function getCollectionMembers(collectionId: number): MediaItem[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT mi.* FROM media_item mi
+       JOIN collection_media_item cmi ON cmi.media_item_id = mi.id
+       WHERE cmi.collection_id = ?
+       ORDER BY mi.label`
+    )
+    .all(collectionId) as MediaItemRow[]
+  return rows.map(toMediaItem)
+}
+
+export function addMemberToCollection(collectionId: number, mediaItemId: number): void {
+  getDb()
+    .prepare('INSERT OR IGNORE INTO collection_media_item (collection_id, media_item_id) VALUES (?, ?)')
+    .run(collectionId, mediaItemId)
+}
+
+export function removeMemberFromCollection(collectionId: number, mediaItemId: number): void {
+  getDb()
+    .prepare('DELETE FROM collection_media_item WHERE collection_id = ? AND media_item_id = ?')
+    .run(collectionId, mediaItemId)
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/db/collectionRepository.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/db/collectionRepository.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44523,10 +44949,90 @@ Now the IPC handler for collections:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `collections.ts`
+
+**Input:**
+
+- content:
+
+```
+import { ipcMain } from 'electron'
+import {
+  addMemberToCollection,
+  createCollection,
+  deleteCollection,
+  getCollectionMembers,
+  listCollections,
+  removeMemberFromCollection
+} from '../db/collectionRepository'
+import type { Collection, CollectionInput, IpcResult, MediaItem } from '../../shared/types'
+
+export function registerCollectionsIpc(): void {
+  ipcMain.handle('collections:list', (): IpcResult<Collection[]> => {
+    return { ok: true, data: listCollections() }
+  })
+
+  ipcMain.handle('collections:create', (_event, payload: unknown): IpcResult<Collection> => {
+    const { name, description } = (payload ?? {}) as { name?: unknown; description?: unknown }
+    if (typeof name !== 'string' || !name.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A name is required' } }
+    }
+    const input: CollectionInput = {
+      name: name.trim(),
+      description: typeof description === 'string' && description.trim() ? description.trim() : null
+    }
+    return { ok: true, data: createCollection(input) }
+  })
+
+  ipcMain.handle('collections:delete', (_event, payload: unknown): IpcResult<{ deleted: true }> => {
+    const id = (payload as { id?: unknown })?.id
+    if (typeof id !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric id is required' } }
+    }
+    deleteCollection(id)
+    return { ok: true, data: { deleted: true } }
+  })
+
+  ipcMain.handle('collections:members', (_event, payload: unknown): IpcResult<MediaItem[]> => {
+    const collectionId = (payload as { collectionId?: unknown })?.collectionId
+    if (typeof collectionId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric collectionId is required' } }
+    }
+    return { ok: true, data: getCollectionMembers(collectionId) }
+  })
+
+  ipcMain.handle('collections:addMember', (_event, payload: unknown): IpcResult<{ ok: true }> => {
+    const { collectionId, mediaId } = (payload ?? {}) as { collectionId?: unknown; mediaId?: unknown }
+    if (typeof collectionId !== 'number' || typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric collectionId and mediaId are required' } }
+    }
+    addMemberToCollection(collectionId, mediaId)
+    return { ok: true, data: { ok: true } }
+  })
+
+  ipcMain.handle('collections:removeMember', (_event, payload: unknown): IpcResult<{ ok: true }> => {
+    const { collectionId, mediaId } = (payload ?? {}) as { collectionId?: unknown; mediaId?: unknown }
+    if (typeof collectionId !== 'number' || typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric collectionId and mediaId are required' } }
+    }
+    removeMemberFromCollection(collectionId, mediaId)
+    return { ok: true, data: { ok: true } }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/collections.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/collections.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44618,26 +45124,81 @@ Now let's add the scan-errors query, custom-field repository, and export service
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `scanRepository.ts`, lines 1 to 10
+
+**Input:**
+
+- endLine: `10`
+- filePath: `/home/kel/dev/DiscDock/electron/db/scanRepository.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { getDb } from './index'
+import type { HashMode, ScanJob, ScanStatus } from '../../shared/types'
+
+interface ScanJobRow {
+  id: number
+  media_item_id: number
+  status: string
+  hash_mode: string
+  started_at: string
+  completed_at: string | null
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `export function recordScanError` (`**/electron/db/scanRepository.ts`), 1 result
+
+**Input:**
+
+- includePattern: `electron/db/scanRepository.ts`
+- isRegexp: `false`
+- query: `export function recordScanError`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "export function recordScanError"
+
+electron/db/scanRepository.ts
+79:export function recordScanError(scanJobId: number, path: string, errorType: string, message: string): void {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `scanRepository.ts`, lines 79 to 86
+
+**Input:**
+
+- endLine: `86`
+- filePath: `/home/kel/dev/DiscDock/electron/db/scanRepository.ts`
+- startLine: `79`
+
+**Result:**
+
+```
+export function recordScanError(scanJobId: number, path: string, errorType: string, message: string): void {
+  getDb()
+    .prepare('INSERT INTO scan_error (scan_job_id, path, error_type, message) VALUES (?, ?, ?, ?)')
+    .run(scanJobId, path, errorType, message)
+}
+
+export function markMediaScanned(mediaItemId: number, verified: boolean): void {
+  const db = getDb()
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44691,10 +45252,64 @@ Now add the IPC handler for `scan:errors` in `scan.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `scan.ts`
+
+**Input:**
+
+- endLine: `50`
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/scan.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { ipcMain } from 'electron'
+import { cancelScan, startScan } from '../scanning/scanManager'
+import { listScanJobsForMedia } from '../db/scanRepository'
+import { getSettings } from '../settings/settingsStore'
+import type { HashMode, IpcResult, ScanJob } from '../../shared/types'
+
+export function registerScanIpc(): void {
+  ipcMain.handle('scan:start', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
+    const { mediaId, rootPath, hashMode } = (payload ?? {}) as {
+      mediaId?: unknown
+      rootPath?: unknown
+      hashMode?: unknown
+    }
+
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    if (typeof rootPath !== 'string' || !rootPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A rootPath is required' } }
+    }
+    const validModes: HashMode[] = ['none', 'quick', 'full']
+    const mode = validModes.includes(hashMode as HashMode) ? (hashMode as HashMode) : getSettings().defaultHashMode
+
+    const jobId = startScan(mediaId, rootPath, mode)
+    return { ok: true, data: { jobId } }
+  })
+
+  ipcMain.handle('scan:cancel', (_event, payload: unknown): IpcResult<{ cancelled: boolean }> => {
+    const jobId = (payload as { jobId?: unknown })?.jobId
+    if (typeof jobId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric jobId is required' } }
+    }
+    return { ok: true, data: { cancelled: cancelScan(jobId) } }
+  })
+
+  ipcMain.handle('scan:history', (_event, payload: unknown): IpcResult<ScanJob[]> => {
+    const mediaId = (payload as { mediaId?: unknown })?.mediaId
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    return { ok: true, data: listScanJobsForMedia(mediaId) }
+  })
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44751,10 +45366,52 @@ Now the custom-fields repository:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `customFieldRepository.ts`
+
+**Input:**
+
+- content:
+
+```
+import { getDb } from './index'
+import type { CustomFieldValue } from '../../shared/types'
+
+export function getCustomFieldsForMedia(mediaItemId: number): CustomFieldValue[] {
+  const rows = getDb()
+    .prepare('SELECT field_name as fieldName, field_value as fieldValue FROM media_item_custom_field WHERE media_item_id = ?')
+    .all(mediaItemId) as CustomFieldValue[]
+  return rows
+}
+
+export function setCustomFieldForMedia(mediaItemId: number, fieldName: string, fieldValue: string | null): void {
+  const db = getDb()
+  if (fieldValue === null || fieldValue.trim() === '') {
+    db.prepare('DELETE FROM media_item_custom_field WHERE media_item_id = ? AND field_name = ?').run(
+      mediaItemId,
+      fieldName
+    )
+    return
+  }
+  db.prepare(
+    `INSERT INTO media_item_custom_field (media_item_id, field_name, field_value)
+     VALUES (@mediaItemId, @fieldName, @fieldValue)
+     ON CONFLICT(media_item_id, field_name) DO UPDATE SET field_value = excluded.field_value`
+  ).run({ mediaItemId, fieldName, fieldValue })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/db/customFieldRepository.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/db/customFieldRepository.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44800,10 +45457,95 @@ Now the export service (CSV/JSON):
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `exportService.ts`
+
+**Input:**
+
+- content:
+
+```
+import fs from 'node:fs'
+import { getDb } from '../db/index'
+import type { ExportFormat, ExportScope } from '../../shared/types'
+
+interface ExportRow {
+  media_label: string
+  path: string
+  name: string
+  extension: string | null
+  kind: string
+  size_bytes: number
+  modified_at_src: string | null
+  hash_value: string | null
+}
+
+function fetchRows(scope: ExportScope): ExportRow[] {
+  const db = getDb()
+  const base = `SELECT mi.label as media_label, fr.path, fr.name, fr.extension, fr.kind, fr.size_bytes,
+                       fr.modified_at_src, fr.hash_value
+                FROM file_record fr JOIN media_item mi ON mi.id = fr.media_item_id
+                WHERE fr.is_directory = 0`
+
+  if (scope.type === 'media') {
+    return db.prepare(`${base} AND fr.media_item_id = ? ORDER BY mi.label, fr.path`).all(scope.mediaId) as ExportRow[]
+  }
+  return db.prepare(`${base} ORDER BY mi.label, fr.path`).all() as ExportRow[]
+}
+
+function toCsv(rows: ExportRow[]): string {
+  const headers = ['Media', 'Path', 'Name', 'Extension', 'Kind', 'Size (bytes)', 'Modified', 'Hash']
+  const escape = (value: string | number | null): string => {
+    const str = value === null || value === undefined ? '' : String(value)
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+  }
+  const lines = [headers.join(',')]
+  for (const row of rows) {
+    lines.push(
+      [row.media_label, row.path, row.name, row.extension, row.kind, row.size_bytes, row.modified_at_src, row.hash_value]
+        .map(escape)
+        .join(',')
+    )
+  }
+  return lines.join('\n')
+}
+
+function toJson(rows: ExportRow[]): string {
+  return JSON.stringify(
+    rows.map((r) => ({
+      media: r.media_label,
+      path: r.path,
+      name: r.name,
+      extension: r.extension,
+      kind: r.kind,
+      sizeBytes: r.size_bytes,
+      modifiedAtSrc: r.modified_at_src,
+      hash: r.hash_value
+    })),
+    null,
+    2
+  )
+}
+
+export function exportCatalog(scope: ExportScope, format: ExportFormat, destinationPath: string): number {
+  const rows = fetchRows(scope)
+  const content = format === 'csv' ? toCsv(rows) : toJson(rows)
+  fs.writeFileSync(destinationPath, content, 'utf-8')
+  return rows.length
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/export/exportService.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/export/exportService.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -44900,10 +45642,60 @@ Now the export IPC handler:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `export.ts`
+
+**Input:**
+
+- content:
+
+```
+import { ipcMain } from 'electron'
+import { exportCatalog } from '../export/exportService'
+import type { ExportFormat, ExportScope, IpcResult } from '../../shared/types'
+
+export function registerExportIpc(): void {
+  ipcMain.handle('export:run', (_event, payload: unknown): IpcResult<{ fileCount: number }> => {
+    const { scope, format, destinationPath } = (payload ?? {}) as {
+      scope?: unknown
+      format?: unknown
+      destinationPath?: unknown
+    }
+
+    if (typeof destinationPath !== 'string' || !destinationPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A destinationPath is required' } }
+    }
+    if (format !== 'json' && format !== 'csv') {
+      return { ok: false, error: { code: 'invalid_input', message: 'format must be "json" or "csv"' } }
+    }
+
+    const scopeObj = scope as ExportScope
+    const validScope: ExportScope =
+      scopeObj && scopeObj.type === 'media' && typeof scopeObj.mediaId === 'number'
+        ? { type: 'media', mediaId: scopeObj.mediaId }
+        : { type: 'all' }
+
+    try {
+      const fileCount = exportCatalog(validScope, format as ExportFormat, destinationPath)
+      return { ok: true, data: { fileCount } }
+    } catch (err) {
+      return { ok: false, error: { code: 'export_error', message: (err as Error).message } }
+    }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/export.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/export.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45002,10 +45794,53 @@ Now the custom-fields IPC handler:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `customFields.ts`
+
+**Input:**
+
+- content:
+
+```
+import { ipcMain } from 'electron'
+import { getCustomFieldsForMedia, setCustomFieldForMedia } from '../db/customFieldRepository'
+import type { CustomFieldValue, IpcResult } from '../../shared/types'
+
+export function registerCustomFieldsIpc(): void {
+  ipcMain.handle('customFields:getForMedia', (_event, payload: unknown): IpcResult<CustomFieldValue[]> => {
+    const mediaId = (payload as { mediaId?: unknown })?.mediaId
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    return { ok: true, data: getCustomFieldsForMedia(mediaId) }
+  })
+
+  ipcMain.handle('customFields:setForMedia', (_event, payload: unknown): IpcResult<{ ok: true }> => {
+    const { mediaId, fieldName, fieldValue } = (payload ?? {}) as {
+      mediaId?: unknown
+      fieldName?: unknown
+      fieldValue?: unknown
+    }
+    if (typeof mediaId !== 'number' || typeof fieldName !== 'string' || !fieldName.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId and fieldName are required' } }
+    }
+    setCustomFieldForMedia(mediaId, fieldName, typeof fieldValue === 'string' ? fieldValue : null)
+    return { ok: true, data: { ok: true } }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/customFields.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/ipc/customFields.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45052,10 +45887,71 @@ Now let's wire everything into `main.ts`:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `main.ts`, lines 1 to 50
+
+**Input:**
+
+- endLine: `50`
+- filePath: `/home/kel/dev/DiscDock/electron/main.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { createMainWindow } from './window/createWindow'
+import { registerWindowControlIpc } from './ipc/windowControls'
+import { registerDashboardIpc } from './ipc/dashboard'
+import { registerMediaIpc } from './ipc/media'
+import { registerDeviceIpc, startDeviceWatcher, stopDeviceWatcher } from './ipc/devices'
+import { registerScanIpc } from './ipc/scan'
+import { registerDialogIpc } from './ipc/dialogs'
+import { registerSearchIpc } from './ipc/search'
+import { registerDuplicatesIpc } from './ipc/duplicates'
+import { registerFilesIpc } from './ipc/files'
+import { registerSettingsIpc } from './ipc/settings'
+import { registerBackupIpc } from './ipc/backup'
+import { initScanManager } from './scanning/scanManager'
+import { getDb, closeDb } from './db'
+import type { IpcResult } from '../shared/types'
+
+let mainWindow: BrowserWindow | null = null
+
+function registerAppIpc(): void {
+  ipcMain.handle('app:getVersion', (): IpcResult<string> => {
+    return { ok: true, data: app.getVersion() }
+  })
+}
+
+app.whenReady().then(() => {
+  getDb() // initialize database + run migrations before the window is shown
+
+  mainWindow = createMainWindow()
+  registerWindowControlIpc(mainWindow)
+  registerDashboardIpc()
+  registerMediaIpc()
+  registerDeviceIpc()
+  registerAppIpc()
+  registerScanIpc()
+  registerDialogIpc(mainWindow)
+  registerSearchIpc()
+  registerDuplicatesIpc()
+  registerFilesIpc()
+  registerSettingsIpc()
+  registerBackupIpc()
+  initScanManager(mainWindow)
+  startDeviceWatcher(mainWindow)
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      mainWindow = createMainWindow()
+      registerWindowControlIpc(mainWindow)
+    }
+  })
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45090,10 +45986,41 @@ Now let's update `preload.ts` to expose all the new APIs:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 1 to 20
+
+**Input:**
+
+- endLine: `20`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { contextBridge, ipcRenderer } from 'electron'
+import type {
+  AppSettings,
+  DashboardSummary,
+  DetectedDevice,
+  DuplicateReport,
+  DuplicateReportFilters,
+  FileEntry,
+  HashMode,
+  IpcResult,
+  MediaItem,
+  MediaItemInput,
+  ScanJob,
+  ScanProgress,
+  SearchFilters,
+  SearchResultPage,
+  WindowState
+} from '../shared/types'
+
+const api = {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45124,10 +46051,25 @@ Collection,
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `history: (mediaId` (`**/electron/preload.ts`), 1 result
+
+**Input:**
+
+- includePattern: `electron/preload.ts`
+- isRegexp: `false`
+- query: `history: (mediaId`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "history: (mediaId"
+
+electron/preload.ts
+79:    history: (mediaId: number): Promise<IpcResult<ScanJob[]>> =>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45158,10 +46100,47 @@ Collection,
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 75 to 100
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `75`
+
+**Result:**
+
+```
+    start: (mediaId: number, rootPath: string, hashMode?: HashMode): Promise<IpcResult<{ jobId: number }>> =>
+      ipcRenderer.invoke('scan:start', { mediaId, rootPath, hashMode }),
+    cancel: (jobId: number): Promise<IpcResult<{ cancelled: boolean }>> =>
+      ipcRenderer.invoke('scan:cancel', { jobId }),
+    history: (mediaId: number): Promise<IpcResult<ScanJob[]>> =>
+      ipcRenderer.invoke('scan:history', { mediaId }),
+    onProgress: (callback: (progress: ScanProgress) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, progress: ScanProgress): void => callback(progress)
+      ipcRenderer.on('scan:progress', listener)
+      return () => ipcRenderer.removeListener('scan:progress', listener)
+    },
+    onCompleted: (callback: (payload: { jobId: number }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number }): void => callback(payload)
+      ipcRenderer.on('scan:completed', listener)
+      return () => ipcRenderer.removeListener('scan:completed', listener)
+    },
+    onFailed: (callback: (payload: { jobId: number; error: string }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number; error: string }): void =>
+        callback(payload)
+      ipcRenderer.on('scan:failed', listener)
+      return () => ipcRenderer.removeListener('scan:failed', listener)
+    },
+    onCancelled: (callback: (payload: { jobId: number }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number }): void => callback(payload)
+      ipcRenderer.on('scan:cancelled', listener)
+      return () => ipcRenderer.removeListener('scan:cancelled', listener)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45184,18 +46163,57 @@ Now let's find the  section to add the new top-level sections after it:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `backup: {` (`**/electron/preload.ts`), 1 result
+
+**Input:**
+
+- includePattern: `electron/preload.ts`
+- isRegexp: `false`
+- query: `backup: {`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "backup: {"
+
+electron/preload.ts
+128:  backup: {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `preload.ts`, lines 126 to 139
+
+**Input:**
+
+- endLine: `140`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `126`
+
+**Result:**
+
+```
+      ipcRenderer.invoke('settings:update', patch)
+  },
+  backup: {
+    run: (destinationPath: string): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('backup:run', { destinationPath }),
+    restore: (sourcePath: string): Promise<IpcResult<{ safetyBackupPath: string }>> =>
+      ipcRenderer.invoke('backup:restore', { sourcePath })
+  }
+}
+
+contextBridge.exposeInMainWorld('discdock', api)
+
+export type DiscDockApi = typeof api
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45282,10 +46300,85 @@ Let's check for errors across all the backend changes before moving to the rende
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `tagRepository.ts`, `collectionRepository.ts`, `customFieldRepository.ts`, `scanRepository.ts`, `exportService.ts`, `tags.ts`, `collections.ts`, `export.ts`, `customFields.ts`, `scan.ts`, `main.ts`, `preload.ts`, `settingsStore.ts`, `index.ts`, `types.ts`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/electron/db/tagRepository.ts",
+  "/home/kel/dev/DiscDock/electron/db/collectionRepository.ts",
+  "/home/kel/dev/DiscDock/electron/db/customFieldRepository.ts",
+  "/home/kel/dev/DiscDock/electron/db/scanRepository.ts",
+  "/home/kel/dev/DiscDock/electron/export/exportService.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/tags.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/collections.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/export.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/customFields.ts",
+  "/home/kel/dev/DiscDock/electron/ipc/scan.ts",
+  "/home/kel/dev/DiscDock/electron/main.ts",
+  "/home/kel/dev/DiscDock/electron/preload.ts",
+  "/home/kel/dev/DiscDock/electron/settings/settingsStore.ts",
+  "/home/kel/dev/DiscDock/electron/db/index.ts",
+  "/home/kel/dev/DiscDock/shared/types.ts"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/electron/db/tagRepository.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/db/collectionRepository.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/db/customFieldRepository.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/db/scanRepository.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/export/exportService.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/tags.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/collections.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/export.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/customFields.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/ipc/scan.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/main.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/preload.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/settings/settingsStore.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/db/index.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/shared/types.ts">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45298,6 +46391,21 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm run build:electron 2>&1 | tail -60`
+
+Compile electron main process to catch type errors from the backend changes early
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:electron 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build:electron 2>&1 | tail -60` (terminal ID=fe94e18a-1c5a-4372-8506-93dc5dc95787). This is the output of running that command instead:
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45306,6 +46414,36 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm run build:renderer 2>&1 | tail -60`
+
+Build renderer to confirm shared type changes don't break existing components
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:renderer 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build:renderer 2>&1 | tail -60` (terminal ID=ae7b9a88-59d5-450f-ae06-0a9c1917440a). This is the output of running that command instead:
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 1813 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-DIit3s4N.css   11.61 kB │ gzip:  2.49 kB
+dist/assets/index-BCwz2woJ.js   234.40 kB │ gzip: 71.90 kB
+
+✓ built in 231ms
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45319,6 +46457,86 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-phase2.js << 'EOF'
 const \{ app \} = require...`
+
+Test tags, collections, custom fields, and export logic end-to-end against the real database
+
+```bash
+cat > /home/kel/dev/DiscDock/test-phase2.js << 'EOF'
+const { app } = require('electron')
+app.whenReady().then(async () => {
+  const { getDb } = require('./dist-electron/electron/db')
+  getDb() // run migrations (adds migration 3 custom fields table)
+
+  const { createMediaItem, deleteMediaItem } = require('./dist-electron/electron/db/mediaRepository')
+  const { setTagsForMedia, getTagsForMedia, getTagsForAllMedia, listAllTagNames } = require('./dist-electron/electron/db/tagRepository')
+  const { createCollection, addMemberToCollection, getCollectionMembers, listCollections, deleteCollection } = require('./dist-electron/electron/db/collectionRepository')
+  const { getCustomFieldsForMedia, setCustomFieldForMedia } = require('./dist-electron/electron/db/customFieldRepository')
+  const { exportCatalog } = require('./dist-electron/electron/export/exportService')
+
+  const m1 = createMediaItem({ label: 'P2 Test Disc 1', mediaType: 'cd', capacityBytes: null, physicalLocation: null, notes: null })
+  const m2 = createMediaItem({ label: 'P2 Test Disc 2', mediaType: 'dvd', capacityBytes: null, physicalLocation: null, notes: null })
+
+  // Tags
+  setTagsForMedia(m1.id, ['Games', 'Retro'])
+  setTagsForMedia(m2.id, ['Games'])
+  console.log('Tags for m1:', getTagsForMedia(m1.id))
+  console.log('All tag names:', listAllTagNames())
+  console.log('All-media tag map:', JSON.stringify(getTagsForAllMedia()))
+
+  // Collections
+  const col = createCollection({ name: 'P2 Test Collection', description: 'desc' })
+  addMemberToCollection(col.id, m1.id)
+  addMemberToCollection(col.id, m2.id)
+  const members = getCollectionMembers(col.id)
+  console.log('Collection members:', members.map(m => m.label))
+  console.log('Collections list (with stats):', JSON.stringify(listCollections().find(c => c.id === col.id)))
+
+  // Custom fields
+  setCustomFieldForMedia(m1.id, 'Purchase Date', '2010-05-01')
+  console.log('Custom fields for m1:', JSON.stringify(getCustomFieldsForMedia(m1.id)))
+  setCustomFieldForMedia(m1.id, 'Purchase Date', null) // delete
+  console.log('Custom fields after clear:', JSON.stringify(getCustomFieldsForMedia(m1.id)))
+
+  // Export
+  const os = require('os')
+  const path = require('path')
+  const outPath = path.join(os.tmpdir(), 'discdock-test-export.json')
+  const count = exportCatalog({ type: 'media', mediaId: m1.id }, 'json', outPath)
+  console.log('Exported file count for m1 (should be 0, no scan yet):', count)
+
+  // Cleanup
+  deleteCollection(col.id)
+  deleteMediaItem(m1.id)
+  deleteMediaItem(m2.id)
+  console.log('Cleanup complete')
+
+  app.quit()
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-phase2.js --no-sandbox 2>&1
+rm -f test-phase2.js
+```
+
+**Result:**
+
+```
+Note: This terminal execution was moved to the background using the ID 66b3f622-0073-4cfc-9a01-bb6263f7da99
+Note: The command produced no new output for an extended period and was moved to background terminal ID 66b3f622-0073-4cfc-9a01-bb6263f7da99; the process is still running and has not been killed. You will be automatically notified on your next turn when it completes.
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="66b3f622-0073-4cfc-9a01-bb6263f7da99" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="66b3f622-0073-4cfc-9a01-bb6263f7da99" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+  3. Producing no output for an extended period does not mean the command failed — call get_terminal_output with id="66b3f622-0073-4cfc-9a01-bb6263f7da99" to continue polling. Only call kill_terminal if the command is genuinely hung and you need to retry with a different approach.
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  cat > /home/kel/dev/DiscDock/test-phase2.js << 'EOF'
+const { app } = require('electron')
+app.whenReady().then(async () => {
+  const { getDb } = require('./dist-electron/electron/db')
+  getDb() // run migrations (adds migration 3 custom fields table)
+
+  const { createMediaItem, deleteMediaItem } = require('./dist-electron/electron/db/mediaRepository')
+  c
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45327,144 +46545,572 @@ Found a real bug: deleting a media item now fails with a foreign key constraint 
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `deleteMediaItem` (`**/electron/db/mediaRepository.ts`), 1 result
+
+**Input:**
+
+- includePattern: `electron/db/mediaRepository.ts`
+- isRegexp: `false`
+- query: `deleteMediaItem`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "deleteMediaItem"
+
+electron/db/mediaRepository.ts
+102:export function deleteMediaItem(id: number): void {
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `mediaRepository.ts`
+
+**Input:**
+
+- endLine: `130`
+- filePath: `/home/kel/dev/DiscDock/electron/db/mediaRepository.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { getDb } from './index'
+import type { MediaItem, MediaItemInput } from '../../shared/types'
+
+interface MediaItemRow {
+  id: number
+  label: string
+  media_type: string
+  device_fingerprint: string | null
+  capacity_bytes: number | null
+  physical_location: string | null
+  notes: string | null
+  status: string
+  created_at: string
+  last_scanned_at: string | null
+  last_verified_at: string | null
+}
+
+function toMediaItem(row: MediaItemRow): MediaItem {
+  return {
+    id: row.id,
+    label: row.label,
+    mediaType: row.media_type as MediaItem['mediaType'],
+    deviceFingerprint: row.device_fingerprint,
+    capacityBytes: row.capacity_bytes,
+    physicalLocation: row.physical_location,
+    notes: row.notes,
+    status: row.status as MediaItem['status'],
+    createdAt: row.created_at,
+    lastScannedAt: row.last_scanned_at,
+    lastVerifiedAt: row.last_verified_at
+  }
+}
+
+export function listMediaItems(): MediaItem[] {
+  const rows = getDb()
+    .prepare('SELECT * FROM media_item ORDER BY created_at DESC')
+    .all() as MediaItemRow[]
+  return rows.map(toMediaItem)
+}
+
+export function getMediaItem(id: number): MediaItem | null {
+  const row = getDb().prepare('SELECT * FROM media_item WHERE id = ?').get(id) as
+    | MediaItemRow
+    | undefined
+  return row ? toMediaItem(row) : null
+}
+
+export function createMediaItem(input: MediaItemInput): MediaItem {
+  const result = getDb()
+    .prepare(
+      `INSERT INTO media_item (label, media_type, capacity_bytes, physical_location, notes, device_fingerprint)
+       VALUES (@label, @mediaType, @capacityBytes, @physicalLocation, @notes, @deviceFingerprint)`
+    )
+    .run({
+      label: input.label,
+      mediaType: input.mediaType,
+      capacityBytes: input.capacityBytes,
+      physicalLocation: input.physicalLocation,
+      notes: input.notes,
+      deviceFingerprint: input.deviceFingerprint ?? null
+    })
+
+  const created = getMediaItem(Number(result.lastInsertRowid))
+  if (!created) throw new Error('Failed to load newly
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `media_item_id|REFERENCES|CASCADE` (`**/electron/db/index.ts`), 15 results
+
+**Input:**
+
+- includePattern: `electron/db/index.ts`
+- isRegexp: `false`
+- query: `media_item_id|REFERENCES|CASCADE`
+
+**Result:**
+
+```
+Found 15 matches in 1 file for "media_item_id|REFERENCES|CASCADE"
+
+electron/db/index.ts
+35:        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+46:      CREATE INDEX IF NOT EXISTS idx_scan_job_media_item ON scan_job(media_item_id);
+50:        scan_job_id INTEGER NOT NULL REFERENCES scan_job(id),
+58:        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+59:        parent_folder_id INTEGER REFERENCES file_record(id),
+70:        last_seen_scan_id INTEGER REFERENCES scan_job(id)
+72:      CREATE INDEX IF NOT EXISTS idx_file_record_media_item ON file_record(media_item_id);
+86:        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+87:        tag_id INTEGER NOT NULL REFERENCES tag(id),
+88:        PRIMARY KEY (media_item_id, tag_id)
+98:        collection_id INTEGER NOT NULL REFERENCES collection(id),
+99:        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+100:        PRIMARY KEY (collection_id, media_item_id)
+124:        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+127:        PRIMARY KEY (media_item_id, field_name)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for regex `foreign_keys|deleteMediaItem` (`**/electron/**`), 3 results
+
+**Input:**
+
+- includePattern: `electron/**`
+- isRegexp: `true`
+- query: `foreign_keys|deleteMediaItem`
+
+**Result:**
+
+```
+Found 3 matches in 2 files for "foreign_keys|deleteMediaItem"
+
+electron/db/mediaRepository.ts
+102:export function deleteMediaItem(id: number): void {
+
+electron/ipc/media.ts
+4:  deleteMediaItem,
+118:      deleteMediaItem(id)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `index.ts`, lines 1 to 30
+
+**Input:**
+
+- endLine: `30`
+- filePath: `/home/kel/dev/DiscDock/electron/db/index.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import Database from 'better-sqlite3'
+import { app } from 'electron'
+import path from 'node:path'
+import fs from 'node:fs'
+
+let db: Database.Database | null = null
+
+const MIGRATIONS: { version: number; sql: string }[] = [
+  {
+    version: 1,
+    sql: `
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        version INTEGER PRIMARY KEY
+      );
+
+      CREATE TABLE IF NOT EXISTS media_item (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        label TEXT NOT NULL,
+        media_type TEXT NOT NULL,
+        device_fingerprint TEXT,
+        capacity_bytes INTEGER,
+        physical_location TEXT,
+        notes TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        last_scanned_at TEXT,
+        last_verified_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_media_item_type ON media_item(media_type);
+      CREATE INDEX IF NOT EXISTS idx_media_item_status ON media_item(status);
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for regex `pragma|PRAGMA` (`**/electron/db/index.ts`), 1 result
+
+**Input:**
+
+- includePattern: `electron/db/index.ts`
+- isRegexp: `true`
+- query: `pragma|PRAGMA`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "pragma|PRAGMA"
+
+electron/db/index.ts
+134:  database.pragma('journal_mode = WAL')
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
 If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search,**/.dart_tool]).
 Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- includePattern: `electron/**`
+- isRegexp: `true`
+- query: `foreign_keys`
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `index.ts`, lines 100 to 160
+
+**Input:**
+
+- endLine: `160`
+- filePath: `/home/kel/dev/DiscDock/electron/db/index.ts`
+- startLine: `100`
+
+**Result:**
+
+```
+        PRIMARY KEY (collection_id, media_item_id)
+      );
+    `
+  },
+  {
+    version: 2,
+    sql: `
+      -- Keep the file_record_fts external-content index in sync with file_record writes.
+      CREATE TRIGGER IF NOT EXISTS file_record_ai AFTER INSERT ON file_record BEGIN
+        INSERT INTO file_record_fts(rowid, name, path) VALUES (new.id, new.name, new.path);
+      END;
+      CREATE TRIGGER IF NOT EXISTS file_record_ad AFTER DELETE ON file_record BEGIN
+        INSERT INTO file_record_fts(file_record_fts, rowid, name, path) VALUES('delete', old.id, old.name, old.path);
+      END;
+      CREATE TRIGGER IF NOT EXISTS file_record_au AFTER UPDATE ON file_record BEGIN
+        INSERT INTO file_record_fts(file_record_fts, rowid, name, path) VALUES('delete', old.id, old.name, old.path);
+        INSERT INTO file_record_fts(rowid, name, path) VALUES (new.id, new.name, new.path);
+      END;
+    `
+  },
+  {
+    version: 3,
+    sql: `
+      CREATE TABLE IF NOT EXISTS media_item_custom_field (
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        field_name TEXT NOT NULL,
+        field_value TEXT,
+        PRIMARY KEY (media_item_id, field_name)
+      );
+    `
+  }
+]
+
+function runMigrations(database: Database.Database): void {
+  database.pragma('journal_mode = WAL')
+  database.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY)')
+
+  const appliedVersions = new Set(
+    (database.prepare('SELECT version FROM schema_migrations').all() as { version: number }[]).map(
+      (row) => row.version
+    )
+  )
+
+  for (const migration of MIGRATIONS) {
+    if (appliedVersions.has(migration.version)) continue
+    const applyMigration = database.transaction(() => {
+      database.exec(migration.sql)
+      database
+        .prepare('INSERT INTO schema_migrations (version) VALUES (?)')
+        .run(migration.version)
+    })
+    applyMigration()
+  }
+}
+
+export function getDb(): Database.Database {
+  if (db) return db
+
+  const userDataDir = app.getPa
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
 If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search,**/.dart_tool]).
 Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- includePattern: `electron/**`
+- isRegexp: `false`
+- query: `foreign_keys`
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `index.ts`, lines 155 to 172
+
+**Input:**
+
+- endLine: `200`
+- filePath: `/home/kel/dev/DiscDock/electron/db/index.ts`
+- startLine: `155`
+
+**Result:**
+
+```
+export function getDb(): Database.Database {
+  if (db) return db
+
+  const userDataDir = app.getPath('userData')
+  fs.mkdirSync(userDataDir, { recursive: true })
+  const dbPath = path.join(userDataDir, 'discdock.sqlite3')
+
+  db = new Database(dbPath)
+  runMigrations(db)
+
+  return db
+}
+
+export function closeDb(): void {
+  db?.close()
+  db = null
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for regex `foreign_keys|pragma", "isRegexp": true, "includePattern": "**/*.ts`, 1 result
+
+**Input:**
+
+- isRegexp: `true`
+- query: `foreign_keys|pragma", "isRegexp": true, "includePattern": "**/*.ts`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "foreign_keys|pragma", "isRegexp": true, "includePattern": "**/*.ts"
+
+.specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+45357:Searched for regex `foreign_keys|deleteMediaItem` (`**/electron/**`), 3 results
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
 If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search,**/.dart_tool]).
 Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- includePattern: `**/*.ts`
+- isRegexp: `false`
+- query: `foreign_keys`
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for regex `DELETE FROM (file_record|scan_job|scan_error)` (`**/electron/**`), 1 result
+
+**Input:**
+
+- includePattern: `electron/**`
+- isRegexp: `true`
+- query: `DELETE FROM (file_record|scan_job|scan_error)`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "DELETE FROM (file_record|scan_job|scan_error)"
+
+electron/db/scanRepository.ts
+178:    .prepare('DELETE FROM file_record WHERE media_item_id = ? AND (last_seen_scan_id IS NULL OR last_seen_scan_id != ?)')
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for regex `foreign_keys|pragma\(` (`**/*.ts`), 1 result
+
+**Input:**
+
+- includePattern: `**/*.ts`
+- isRegexp: `true`
+- query: `foreign_keys|pragma\(`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "foreign_keys|pragma\("
+
+electron/db/index.ts
+134:  database.pragma('journal_mode = WAL')
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `media.ts`, lines 95 to 125
+
+**Input:**
+
+- endLine: `130`
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/media.ts`
+- startLine: `95`
+
+**Result:**
+
+```
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      const partial =
+        patch && typeof patch === 'object' ? (patch as Partial<MediaItemInput>) : {}
+      return { ok: true, data: updateMediaItem(id, partial) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:retire', (_event, payload: unknown): IpcResult<MediaItem> => {
+    try {
+      const id = (payload as { id?: unknown })?.id
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      return { ok: true, data: retireMediaItem(id) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:delete', (_event, payload: unknown): IpcResult<{ deleted: true }> => {
+    try {
+      const id = (payload as { id?: unknown })?.id
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      deleteMediaItem(id)
+      return { ok: true, data: { deleted: true } }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for regex `foreign_keys`, 2 results
+
+**Input:**
+
+- includePattern: `**`
+- isRegexp: `true`
+- query: `foreign_keys`
+
+**Result:**
+
+```
+Found 2 matches in 1 file for "foreign_keys"
+
+.specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+45357:Searched for regex `foreign_keys|deleteMediaItem` (`**/electron/**`), 3 results
+45417:Searched for regex `foreign_keys|pragma", "isRegexp": true, "includePattern": "**/*.ts`, 1 result
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for regex `pragma` (`**/electron/**`), 1 result
+
+**Input:**
+
+- includePattern: `electron/**`
+- isRegexp: `true`
+- query: `pragma`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "pragma"
+
+electron/db/index.ts
+134:  database.pragma('journal_mode = WAL')
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45473,10 +47119,61 @@ Confirmed:  never cleaned up child rows, and since better-sqlite3 enforces forei
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `scanRepository.ts`, lines 1 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/home/kel/dev/DiscDock/electron/db/scanRepository.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { getDb } from './index'
+import type { HashMode, ScanErrorEntry, ScanJob, ScanStatus } from '../../shared/types'
+
+interface ScanJobRow {
+  id: number
+  media_item_id: number
+  status: string
+  hash_mode: string
+  started_at: string
+  completed_at: string | null
+  files_added: number
+  files_removed: number
+  files_modified: number
+  files_unchanged: number
+  error_count: number
+}
+
+function toScanJob(row: ScanJobRow): ScanJob {
+  return {
+    id: row.id,
+    mediaItemId: row.media_item_id,
+    status: row.status as ScanStatus,
+    hashMode: row.hash_mode as HashMode,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    filesAdded: row.files_added,
+    filesRemoved: row.files_removed,
+    filesModified: row.files_modified,
+    filesUnchanged: row.files_unchanged,
+    errorCount: row.error_count
+  }
+}
+
+export function createScanJob(mediaItemId: number, hashMode: HashMode): ScanJob {
+  const result = getDb()
+    .prepare(
+      `INSERT INTO scan_job (media_item_id, status, hash_mode) VALUES (?, 'running', ?)`
+    )
+    .run(mediaItemId, hashMode)
+  return getScanJob(Number(result.lastInsertRowid))!
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45623,6 +47320,21 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` npm run build:electron 2>&1 | tail -40`
+
+Rebuild electron main process with the cascade-delete fix
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:electron 2>&1 | tail -40
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build:electron 2>&1 | tail -40` (terminal ID=137237c8-85f7-4adc-af1a-958462de47dc). This is the output of running that command instead:
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45636,6 +47348,78 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-phase2b.js << 'EOF'
 const \{ app \} = requir...`
+
+Verify the cascade-delete fix works with tags, collection membership, custom fields, and scan history all present
+
+```bash
+cat > /home/kel/dev/DiscDock/test-phase2b.js << 'EOF'
+const { app } = require('electron')
+app.whenReady().then(async () => {
+  const { getDb } = require('./dist-electron/electron/db')
+  getDb()
+
+  const { createMediaItem, deleteMediaItem } = require('./dist-electron/electron/db/mediaRepository')
+  const { setTagsForMedia } = require('./dist-electron/electron/db/tagRepository')
+  const { createCollection, addMemberToCollection, deleteCollection } = require('./dist-electron/electron/db/collectionRepository')
+  const { setCustomFieldForMedia } = require('./dist-electron/electron/db/customFieldRepository')
+  const { createScanJob } = require('./dist-electron/electron/db/scanRepository')
+
+  const m1 = createMediaItem({ label: 'P2 Test Disc Cleanup', mediaType: 'cd', capacityBytes: null, physicalLocation: null, notes: null })
+  setTagsForMedia(m1.id, ['Games'])
+  const col = createCollection({ name: 'P2 Cleanup Collection', description: null })
+  addMemberToCollection(col.id, m1.id)
+  setCustomFieldForMedia(m1.id, 'Purchase Date', '2020-01-01')
+  createScanJob(m1.id, 'quick')
+
+  deleteMediaItem(m1.id)
+  console.log('deleteMediaItem with full related rows succeeded, no FK error')
+
+  deleteCollection(col.id)
+  console.log('Cleanup complete')
+  app.quit()
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-phase2b.js --no-sandbox 2>&1
+rm -f test-phase2b.js
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cat > /home/kel/dev/DiscDock/test-phase2b.js <<
+ 'EOF'
+const { app } = require('electron')
+app.whenReady().then(async () => {
+  const { getDb } = require('./dist-electron/electron/db')
+  getDb()
+
+  const { createMediaItem, deleteMediaItem } = require('./dist-electron/electron
+/db/mediaRepository')
+  const { setTagsForMedia } = require('./dist-electron/electron/db/tagRepository
+')
+  const { createCollection, addMemberToCollection, deleteCollection } = require(
+'./dist-electron/electron/db/collectionRepository')
+  const { setCustomFieldForMedia } = require('./dist-electron/electron/db/custom
+FieldRepository')
+  const { createScanJob } = require('./dist-electron/electron/db/scanRepository'
+)
+
+  const m1 = createMediaItem({ label: 'P2 Test Disc Cleanup', mediaType: 'cd', c
+apacityBytes: null, physicalLocation: null, notes: null })
+  setTagsForMedia(m1.id, ['Games'])
+  const col = createCollection({ name: 'P2 Cleanup Collection', description: nul
+l })
+  addMemberToCollection(col.id, m1.id)
+  setCustomFieldForMedia(m1.id, 'Purchase Date', '2020-01-01')
+  createScanJob(m1.id, 'quick')
+
+  deleteMediaItem(m1.id)
+  console.log('deleteMediaItem with full related rows succeeded, no FK error')
+
+rm -f test-phase2b.jsDock && npx electron test-phase2b.js --no-sandbox 2>&1
+deleteMediaItem with full related rows succeeded, no FK error
+Cleanup complete
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45649,6 +47433,43 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-cleanup-check.js << 'EOF'
 const \{ app \} = ...`
+
+Check for and remove any leftover test data from the earlier failed cleanup attempt
+
+```bash
+cat > /home/kel/dev/DiscDock/test-cleanup-check.js << 'EOF'
+const { app } = require('electron')
+app.whenReady().then(async () => {
+  const { getDb } = require('./dist-electron/electron/db')
+  const db = getDb()
+  const rows = db.prepare("SELECT id, label FROM media_item WHERE label LIKE 'P2 Test%'").all()
+  console.log('Leftover P2 test media items:', JSON.stringify(rows))
+  const cols = db.prepare("SELECT id, name FROM collection WHERE name LIKE 'P2%'").all()
+  console.log('Leftover P2 test collections:', JSON.stringify(cols))
+  if (rows.length) {
+    const { deleteMediaItem } = require('./dist-electron/electron/db/mediaRepository')
+    rows.forEach(r => deleteMediaItem(r.id))
+    console.log('Cleaned up leftover media items')
+  }
+  if (cols.length) {
+    const { deleteCollection } = require('./dist-electron/electron/db/collectionRepository')
+    cols.forEach(c => deleteCollection(c.id))
+    console.log('Cleaned up leftover collections')
+  }
+  app.quit()
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-cleanup-check.js --no-sandbox 2>&1
+rm -f test-cleanup-check.js
+```
+
+**Result:**
+
+```
+Leftover P2 test media items: [{"id":1,"label":"P2 Test Disc 1"},{"id":2,"label":"P2 Test Disc 2"}]
+Leftover P2 test collections: []
+Cleaned up leftover media items
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45661,6 +47482,35 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c shared/types.ts electron/db/index.ts electron/db/mediaRepository.ts el...`
+
+Check byte counts of all modified/new files to detect any truncation
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c shared/types.ts electron/db/index.ts electron/db/mediaRepository.ts electron/db/tagRepository.ts electron/db/collectionRepository.ts electron/db/customFieldRepository.ts electron/db/scanRepository.ts electron/export/exportService.ts electron/ipc/tags.ts electron/ipc/collections.ts electron/ipc/export.ts electron/ipc/customFields.ts electron/ipc/scan.ts electron/main.ts electron/preload.ts electron/settings/settingsStore.ts
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c shared/types.ts electron/db/index.ts electron/db/mediaRepository.ts electron/db/tagRepository.ts electron/db/collectionRepository.ts electron/db/customFieldRepository.ts electron/db/scanRepository.ts electron/export/exportService.ts electron/ipc/tags.ts electron/ipc/collections.ts electron/ipc/export.ts electron/ipc/customFields.ts electron/ipc/scan.ts electron/main.ts electron/preload.ts electron/settings/settingsStore.ts` (terminal ID=4630029a-ad7e-4d24-9075-fc1b589c926a). This is the output of running that command instead:
+ 4898 shared/types.ts
+ 5902 electron/db/index.ts
+ 4215 electron/db/mediaRepository.ts
+ 1881 electron/db/tagRepository.ts
+ 3542 electron/db/collectionRepository.ts
+ 1028 electron/db/customFieldRepository.ts
+ 5830 electron/db/scanRepository.ts
+ 2186 electron/export/exportService.ts
+  986 electron/ipc/tags.ts
+ 2841 electron/ipc/collections.ts
+ 1325 electron/ipc/export.ts
+ 1260 electron/ipc/customFields.ts
+ 2298 electron/ipc/scan.ts
+ 2178 electron/main.ts
+ 8396 electron/preload.ts
+ 1213 electron/settings/settingsStore.ts
+49979 total
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45673,6 +47523,47 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` git fetch origin 2>&1 && echo "---" && git log --oneline -1 && echo "---" &&...`
+
+Check git sync status against origin before committing
+
+```bash
+cd /home/kel/dev/DiscDock && git fetch origin 2>&1 && echo "---" && git log --oneline -1 && echo "---" && git log --oneline origin/main -1 && echo "---" && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git fetch origin 2>&1 && echo "---" && git log --oneline -1 && echo "---" && git log --oneline origin/main -1 && echo "---" && git status --short` (terminal ID=4309f1d6-193a-492f-9316-5e94d926ac18). This is the output of running that command instead:
+kel@kel-EQ-Mint:~/dev/DiscDock$  git fetch origin 2>&1 && echo "---" && git log
+--oneline -1 && echo "---" && git log --oneline origin/main -1 && echo "---" &&
+git status --short
+---
+4e573a3 (HEAD -> main, origin/main) Persist window size/position/maximized state
+ across sessions
+---
+4e573a3 (HEAD -> main, origin/main) Persist window size/position/maximized state
+ across sessions
+---
+ M .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+ M .specstory/statistics.json
+ M electron/db/index.ts
+ M electron/db/mediaRepository.ts
+ M electron/db/scanRepository.ts
+ M electron/ipc/scan.ts
+ M electron/main.ts
+ M electron/preload.ts
+ M electron/settings/settingsStore.ts
+ M shared/types.ts
+?? electron/db/collectionRepository.ts
+?? electron/db/customFieldRepository.ts
+?? electron/db/tagRepository.ts
+?? electron/export/
+?? electron/ipc/collections.ts
+?? electron/ipc/customFields.ts
+?? electron/ipc/export.ts
+?? electron/ipc/tags.ts
+?? test-phase2.js
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45681,6 +47572,36 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -f test-phase2.js && git add -A && git status --short`
+
+Remove leftover test script and stage all Phase 2 backend changes
+
+```bash
+cd /home/kel/dev/DiscDock && rm -f test-phase2.js && git add -A && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -f test-phase2.js && git add -A && git status --short` (terminal ID=8b079d61-e9b3-4ea5-b495-3b7f96cc92f2). This is the output of running that command instead:
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+A  electron/db/collectionRepository.ts
+A  electron/db/customFieldRepository.ts
+M  electron/db/index.ts
+M  electron/db/mediaRepository.ts
+M  electron/db/scanRepository.ts
+A  electron/db/tagRepository.ts
+A  electron/export/exportService.ts
+A  electron/ipc/collections.ts
+A  electron/ipc/customFields.ts
+A  electron/ipc/export.ts
+M  electron/ipc/scan.ts
+A  electron/ipc/tags.ts
+M  electron/main.ts
+M  electron/preload.ts
+M  electron/settings/settingsStore.ts
+M  shared/types.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45689,6 +47610,53 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` cd /home/kel/dev/DiscDock && git commit -m "Add Phase 2 backend: tags, colle...`
+
+Commit the Phase 2 backend work including the cascade-delete fix
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Add Phase 2 backend: tags, collections, scan errors, CSV/JSON export, custom media types/fields (migration v3)
+
+- shared/types.ts: Tag, Collection, CollectionInput, ScanErrorEntry, ExportScope/Format, CustomFieldValue types; MediaType relaxed to string with BUILTIN_MEDIA_TYPES constant
+- db migration v3: media_item_custom_field table
+- tagRepository, collectionRepository, customFieldRepository: new CRUD modules
+- scanRepository: getErrorsForMedia for media health/errors view
+- exportService: CSV/JSON catalog export
+- New IPC modules: tags, collections, export, customFields; scan:errors handler
+- preload.ts: expose tags/collections/export/customFields APIs
+- Fix: deleteMediaItem now cascades deletion of tags, collection membership, custom fields, file records, and scan history/errors to avoid FK constraint violations (found via direct DB testing during this batch)" 2>&1 | tail -20
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cd /home/kel/dev/DiscDock && git commit -m "Add
+ Phase 2 backend: tags, collections, scan errors, CSV/JSON export, custom media
+types/fields (migration v3)
+
+- shared/types.ts: Tag, Collection, CollectionInput, ScanErrorEntry, ExportScope
+/Format, CustomFieldValue types; MediaType relaxed to string with BUILTIN_MEDIA_
+TYPES constant
+- db migration v3: media_item_custom_field table
+- tagRepository, collectionRepository, customFieldRepository: new CRUD modules
+- scanRepository: getErrorsForMedia for media health/errors view
+- exportService: CSV/JSON catalog export
+- New IPC modules: tags, collections, export, customFields; scan:errors handler
+- preload.ts: expose tags/collections/export/customFields APIs
+- Fix: deleteMediaItem now cascades deletion of tags, collection membership, cus
+tom fields, file records, and scan history/errors to avoid FK constraint violati
+ons (found via direct DB testing during this batch)" 2>&1 | tail -20
+[main dd8782a] Add Phase 2 backend: tags, collections, scan errors, CSV/JSON exp
+ort, custom media types/fields (migration v3)
+ 18 files changed, 2993 insertions(+), 32 deletions(-)
+ create mode 100644 electron/db/collectionRepository.ts
+ create mode 100644 electron/db/customFieldRepository.ts
+ create mode 100644 electron/db/tagRepository.ts
+ create mode 100644 electron/export/exportService.ts
+ create mode 100644 electron/ipc/collections.ts
+ create mode 100644 electron/ipc/customFields.ts
+ create mode 100644 electron/ipc/export.ts
+ create mode 100644 electron/ipc/tags.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45697,6 +47665,20 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` git push origin main 2>&1 | tail -20`
+
+Push the Phase 2 backend commit to the remote
+
+```bash
+cd /home/kel/dev/DiscDock && git push origin main 2>&1 | tail -20
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git push origin main 2>&1 | tail -20` (terminal ID=b82c2110-cbee-46be-9bcd-004c78134eab). This is the output of running that command instead:
+To https://github.com/kelmankenberg/DiscDock.git
+   4e573a3..dd8782a  main -> main
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45705,18 +47687,139 @@ Backend committed and pushed. Now moving to renderer UI — starting with Tags i
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 1 to 100
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { Scan, CircleX, Archive, Trash2, Eject as EjectIcon, Disc3, Usb } from 'lucide-react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'label', label: 'Label' },
+  { key: 'mediaType', label: 'Type' },
+  { key: 'physicalLocation', label: 'Location' },
+  { key: 'status', label: 'Status' },
+  { key: 'lastScannedAt', label: 'Last Scanned' }
+]
+
+function sortValue(item: MediaItem, key: SortKey): string {
+  switch (key) {
+    case 'mediaType':
+      return mediaTypeLabel(item.mediaType)
+    case 'physicalLocation':
+      return item.physicalLocation ?? ''
+    case 'lastScannedAt':
+      return item.lastScannedAt ?? ''
+    default:
+      return item[key] ?? ''
+  }
+}
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [sortKey, setSortKey] = useState<SortKey>('label')
+  const [sortAsc, setSortAsc] = useState(true)
+
+  const handleSort = (key
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for regex `editingLocation|loadItems|useEffect|handleSaveLocation|physicalLocation` (`**/src/views/MediaLibrary.tsx`), 41 results
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `true`
+- query: `editingLocation|loadItems|useEffect|handleSaveLocation|physicalLocation`
+
+**Result:**
+
+```
+Found 41 matches in 1 file for "editingLocation|loadItems|useEffect|handleSaveLocation|physicalLocation"
+
+src/views/MediaLibrary.tsx
+1:import { useEffect, useState } from 'react'
+11:  physicalLocation: null,
+19:type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt'
+24:  { key: 'physicalLocation', label: 'Location' },
+33:    case 'physicalLocation':
+34:      return item.physicalLocation ?? ''
+70:  const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
+71:  const [editingLocationValue, setEditingLocationValue] = useState('')
+74:    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
+77:  const filteredItems = containerFilter ? items.filter((item) => item.physicalLocation === containerFilter) : items
+150:      Array.from(selectedIds).map((id) => window.discdock.media.update(id, { physicalLocation: value }))
+154:      loadItems()
+162:      loadItems()
+171:      loadItems()
+175:  const loadItems = (): void => {
+181:  useEffect(loadItems, [])
+183:  useEffect(() => {
+199:  useEffect(() => {
+230:      loadItems()
+252:        loadItems()
+274:      physicalLocation: null,
+283:      if (result.ok) loadItems()
+290:      if (result.ok) loadItems()
+316:  const startEditingLocation = (item: MediaItem): void => {
+317:    setEditingLocationId(item.id)
+318:    setEditingLocationValue(item.physicalLocation ?? '')
+321:  const saveEditingLocation = (id: number): void => {
+322:    const value = editingLocationValue.trim() || null
+323:    setEditingLocationId(null)
+324:    void window.discdock.media.update(id, { physicalLocation: value }).then((result) => {
+325:      if (result.ok) loadItems()
+409:              value={form.physicalLocation ?? ''}
+410:              onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
+543:                    {editingLocationId === item.id ? (
+549:                        value={editingLocationValue}
+550:                        onC
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45725,10 +47828,86 @@ Let me view the full relevant sections to add Tags properly.
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 175 to 340
+
+**Input:**
+
+- endLine: `340`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `175`
+
+**Result:**
+
+```
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+
+  useEffect(() => {
+    void window.discdock.devices.list().then((result) => {
+      if (result.ok) setDevices(result.data)
+    })
+    const unsubConnect = window.discdock.devices.onConnected((device) => {
+      setDevices((prev) => [...prev.filter((d) => d.devicePath !== device.devicePath), device])
+    })
+    const unsubDisconnect = window.discdock.devices.onDisconnected((devicePath) => {
+      setDevices((prev) => prev.filter((d) => d.devicePath !== devicePath))
+    })
+    return () => {
+      unsubConnect()
+      unsubDisconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    const unsubProgress = window.discdock.scan.onProgress((progress: ScanProgress) => {
+      setJobToMedia((current) => {
+        const mediaId = current[progress.jobId]
+        if (mediaId === undefined) return current
+        setScansByMedia((prevScans) => ({
+          ...prevScans,
+          [mediaId]: {
+            jobId: progress.jobId,
+            filesProcessed: progress.filesProcessed,
+            currentPath: progress.currentPath
+          }
+        }))
+        return current
+      })
+    })
+
+    const finishScan = (jobId: number): void => {
+      setJobToMedia((current) => {
+        const mediaId = current[jobId]
+        if (mediaId !== undefined) {
+          setScansByMedia((prevScans) => {
+            const next = { ...prevScans }
+            delete next[mediaId]
+            return next
+          })
+        }
+        const next = { ...current }
+        delete next[jobId]
+        return next
+      })
+      loadItems()
+    }
+
+    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
+    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
+
+    return () => {
+  
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45737,10 +47916,73 @@ Now let me view the table header/body sections and the container filter dropdown
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 460 to 646
+
+**Input:**
+
+- endLine: `660`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `460`
+
+**Result:**
+
+```
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+
+          {ejectMessage && <p className="media-library__eject-message">{ejectMessage}</p>}
+
+          {selectedIds.size > 0 && (
+            <div className="batch-actions">
+              <span className="batch-actions__count">{selectedIds.size} selected</span>
+              <input
+                type="text"
+                list="location-suggestions"
+                placeholder="Set container…"
+                value={batchLocationValue}
+                onChange={(e) => setBatchLocationValue(e.target.value)}
+              />
+              <button type="button" className="button button--small" onClick={handleBatchSetLocation}>
+                Apply Container
+              </button>
+              <button type="button" className="button button--small" onClick={handleBatchRetire}>
+                Retire Selected
+              </button>
+              <button type="button" className="button button--small button--danger" onClick={handleBatchDelete}>
+                Delete Selected
+              </button>
+              <button type="button" className="button button--small" onClick={clearSelection}>
+                Clear Selection
+              </button>
+            </div>
+          )}
+
+          <table className="media-table">
+          <thead>
+            <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size > 0 && selectedIds.size === sortedItems.length}
+                  onChange={handleSelectAll}
+                  aria-label="Select all"
+                />
+              </th>
+              {COLUMNS.map((col) => (
+                <th key={col.key}>
+                  <button type="button" className="media-table__sort-header" onClick={() => handleSort(col.key)}>
+                    {col.label}
+                    {sortKey === col.key ? (sortAsc ? ' ▲' : ' ▼') : ''}
+                  </button>
+        
+… (output truncated)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -45753,22 +47995,94 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` grep -n "location-suggestions\\|containerFilter\\|datalist" src/views/MediaLib...`
+
+Find the container filter dropdown and datalist markup
+
+```bash
+cd /home/kel/dev/DiscDock && grep -n "location-suggestions\|containerFilter\|datalist" src/views/MediaLibrary.tsx
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` grep -n "location-suggestions\|containerFilter\|datalist" src/views/MediaLibrary.tsx` (terminal ID=4e24a176-bcf5-40f0-be15-a5410beed564). This is the output of running that command instead:
+69:  const [containerFilter, setContainerFilter] = useState<string>('')
+77:  const filteredItems = containerFilter ? items.filter((item) => item.physica
+lLocation === containerFilter) : items
+408:              list="location-suggestions"
+413:            <datalist id="location-suggestions">
+417:            </datalist>
+454:                <select value={containerFilter} onChange={(e) => setContaine
+rFilter(e.target.value)}>
+473:                list="location-suggestions"
+547:                        list="location-suggestions"
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 440 to 460
+
+**Input:**
+
+- endLine: `460`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `440`
+
+**Result:**
+
+```
+          </div>
+        </form>
+      )}
+
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
+        </div>
+      ) : (
+        <>
+          {knownLocations.length > 0 && (
+            <div className="container-filter">
+              <label>
+                Container
+                <select value={containerFilter} onChange={(e) => setContainerFilter(e.target.value)}>
+                  <option value="">All containers</option>
+                  {knownLocations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `tags:` (`**/electron/preload.ts`), 4 results
+
+**Input:**
+
+- includePattern: `electron/preload.ts`
+- isRegexp: `false`
+- query: `tags:`
+
+**Result:**
+
+```
+Found 4 matches in 1 file for "tags:"
+
+electron/preload.ts
+134:  tags: {
+135:    list: (): Promise<IpcResult<string[]>> => ipcRenderer.invoke('tags:list'),
+136:    allForMedia: (): Promise<IpcResult<Record<number, string[]>>> => ipcRenderer.invoke('tags:allForMedia'),
+138:      ipcRenderer.invoke('tags:setForMedia', { mediaId, tagNames })
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -48513,18 +50827,69 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `sortValue` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `sortValue`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "sortValue"
+
+src/views/MediaLibrary.tsx
+79:    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `MediaLibrary.tsx`, lines 60 to 85
+
+**Input:**
+
+- endLine: `85`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `60`
+
+**Result:**
+
+```
+  const [tagsByMedia, setTagsByMedia] = useState<Record<number, string[]>>({})
+  const [allTagNames, setAllTagNames] = useState<string[]>([])
+  const [tagFilter, setTagFilter] = useState<string>('')
+  const [editingTagsId, setEditingTagsId] = useState<number | null>(null)
+  const [editingTagsValue, setEditingTagsValue] = useState('')
+
+  const knownLocations = Array.from(
+    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
+  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+
+  const containerFilteredItems = containerFilter
+    ? items.filter((item) => item.physicalLocation === containerFilter)
+    : items
+
+  const filteredItems = tagFilter
+    ? containerFilteredItems.filter((item) => (tagsByMedia[item.id] ?? []).includes(tagFilter))
+    : containerFilteredItems
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
+
+  const findDeviceForItem = (item: MediaItem): DetectedDevice | undefined =>
+    devices.find((d) => item.deviceFingerprint && (d.uuid ?? d.devicePath) === item.deviceFingerprint)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -49924,3 +52289,4586 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
 
 ```
 </details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `MediaLibrary.tsx`, lines 395 to 435
+
+**Input:**
+
+- endLine: `435`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `395`
+
+**Result:**
+
+```
+          ))}
+        </div>
+      )}
+
+      {showForm && (
+        <form className="media-form" onSubmit={handleSubmit}>
+          {error && <div className="media-form__error">{error}</div>}
+
+          {devices.length > 0 && (
+            <div className="detected-devices-picker">
+              <span className="detected-devices-picker__label">Detected media (click to fill in the form):</span>
+              <div className="detected-devices-picker__list">
+                {devices.map((device) => (
+                  <button
+                    type="button"
+                    key={device.devicePath}
+                    className="button button--small"
+                    onClick={() => handleUseDevice(device)}
+                  >
+                    {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />}{' '}
+                    {device.label ?? device.mountPoint.split('/').pop()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <label>
+            Label
+            <input
+              type="text"
+              value={form.label}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Media Type
+            <select
+              value={form.mediaType}
+              onChange={(e) => setForm({ ...form, mediaType: e.target.value as MediaType })}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `MediaLibrary.tsx`, lines 435 to 480
+
+**Input:**
+
+- endLine: `480`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `435`
+
+**Result:**
+
+```
+              onChange={(e) => setForm({ ...form, mediaType: e.target.value as MediaType })}
+            >
+              {MEDIA_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Container / Physical Location
+            <input
+              type="text"
+              list="location-suggestions"
+              value={form.physicalLocation ?? ''}
+              onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
+              placeholder="e.g. CD Spindle #2, Garage / Box 3"
+            />
+            <datalist id="location-suggestions">
+              {knownLocations.map((loc) => (
+                <option key={loc} value={loc} />
+              ))}
+            </datalist>
+          </label>
+          <label>
+            Notes
+            <textarea
+              value={form.notes ?? ''}
+              onChange={(e) => setForm({ ...form, notes: e.target.value || null })}
+            />
+          </label>
+          <div className="media-form__actions">
+            <button type="submit" className="button button--primary">
+              Save
+            </button>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setShowForm(false)
+                setDeviceMountPoint(null)
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's find the container-filter block to add a tag filter alongside, and add a `tag-suggestions` datalist plus the table cell for tags. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for text `container-filter` (`**/src/views/MediaLibrary.tsx`), 1 result
+
+**Input:**
+
+- includePattern: `src/views/MediaLibrary.tsx`
+- isRegexp: `false`
+- query: `container-filter`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "container-filter"
+
+src/views/MediaLibrary.tsx
+491:            <div className="container-filter">
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `MediaLibrary.tsx`, lines 487 to 505
+
+**Input:**
+
+- endLine: `505`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx`
+- startLine: `487`
+
+**Result:**
+
+```
+        </div>
+      ) : (
+        <>
+          {knownLocations.length > 0 && (
+            <div className="container-filter">
+              <label>
+                Container
+                <select value={containerFilter} onChange={(e) => setContainerFilter(e.target.value)}>
+                  <option value="">All containers</option>
+                  {knownLocations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 1-707 @@
+
+```
+import { useEffect, useState } from 'react'
+import { Scan, CircleX, Archive, Trash2, Eject as EjectIcon, Disc3, Usb } from 'lucide-react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt' | 'tags'
+
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'label', label: 'Label' },
+  { key: 'mediaType', label: 'Type' },
+  { key: 'physicalLocation', label: 'Location' },
+  { key: 'tags', label: 'Tags' },
+  { key: 'status', label: 'Status' },
+  { key: 'lastScannedAt', label: 'Last Scanned' }
+]
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [sortKey, setSortKey] = useState<SortKey>('label')
+  const [sortAsc, setSortAsc] = useState(true)
+
+  const handleSort = (key: SortKey): void => {
+    if (key === sortKey) {
+      setSortAsc((prev) => !prev)
+    } else {
+      setSortKey(key)
+      setSortAsc(true)
+    }
+  }
+
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
+  const [containerFilter, setContainerFilter] = useState<string>('')
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
+  const [editingLocationValue, setEditingLocationValue] = useState('')
+  const [tagsByMedia, setTagsByMedia] = useState<Record<number, string[]>>({})
+  const [allTagNames, setAllTagNames] = useState<string[]>([])
+  const [tagFilter, setTagFilter] = useState<string>('')
+  const [editingTagsId, setEditingTagsId] = useState<number | null>(null)
+  const [editingTagsValue, setEditingTagsValue] = useState('')
+
+  const knownLocations = Array.from(
+    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
+  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+
+  const containerFilteredItems = containerFilter
+    ? items.filter((item) => item.physicalLocation === containerFilter)
+    : items
+
+  const filteredItems = tagFilter
+    ? containerFilteredItems.filter((item) => (tagsByMedia[item.id] ?? []).includes(tagFilter))
+    : containerFilteredItems
+
+  const sortValue = (item: MediaItem, key: SortKey): string => {
+    switch (key) {
+      case 'mediaType':
+        return mediaTypeLabel(item.mediaType)
+      case 'physicalLocation':
+        return item.physicalLocation ?? ''
+      case 'lastScannedAt':
+        return item.lastScannedAt ?? ''
+      case 'tags':
+        return (tagsByMedia[item.id] ?? []).join(', ')
+      default:
+        return item[key] ?? ''
+    }
+  }
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
+
+  const findDeviceForItem = (item: MediaItem): DetectedDevice | undefined =>
+    devices.find((d) => item.deviceFingerprint && (d.uuid ?? d.devicePath) === item.deviceFingerprint)
+
+  const unregisteredDevices = devices.filter(
+    (d) => !items.some((item) => item.deviceFingerprint === (d.uuid ?? d.devicePath))
+  )
+
+  const [ejectingIds, setEjectingIds] = useState<Set<number>>(new Set())
+  const [ejectMessage, setEjectMessage] = useState<string | null>(null)
+
+  const handleEject = (item: MediaItem, device: DetectedDevice): void => {
+    setEjectingIds((prev) => new Set(prev).add(item.id))
+    setEjectMessage(null)
+    void window.discdock.devices.eject(device.devicePath, device.isOptical).then((result) => {
+      setEjectingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        return next
+      })
+      setEjectMessage(result.ok ? `${item.label}: ${result.data.message}` : `Eject failed: ${result.error.message}`)
+    })
+  }
+
+  const handleAddDetectedDevice = (device: DetectedDevice): void => {
+    setShowForm(true)
+    handleUseDevice(device)
+  }
+
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null)
+  const [batchLocationValue, setBatchLocationValue] = useState('')
+
+  const handleRowCheckboxClick = (
+    event: React.MouseEvent<HTMLInputElement>,
+    item: MediaItem,
+    index: number
+  ): void => {
+    if (event.shiftKey && lastClickedIndex !== null) {
+      const [start, end] = [lastClickedIndex, index].sort((a, b) => a - b)
+      const rangeIds = sortedItems.slice(start, end + 1).map((i) => i.id)
+      setSelectedIds((prev) => new Set([...prev, ...rangeIds]))
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(item.id)) next.delete(item.id)
+        else next.add(item.id)
+        return next
+      })
+    }
+    setLastClickedIndex(index)
+  }
+
+  const handleSelectAll = (): void => {
+    setSelectedIds((prev) =>
+      prev.size === sortedItems.length ? new Set() : new Set(sortedItems.map((i) => i.id))
+    )
+  }
+
+  const clearSelection = (): void => {
+    setSelectedIds(new Set())
+    setLastClickedIndex(null)
+  }
+
+  const handleBatchSetLocation = (): void => {
+    const value = batchLocationValue.trim() || null
+    void Promise.all(
+      Array.from(selectedIds).map((id) => window.discdock.media.update(id, { physicalLocation: value }))
+    ).then(() => {
+      setBatchLocationValue('')
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const handleBatchRetire = (): void => {
+    if (!window.confirm(`Retire ${selectedIds.size} selected media item(s)?`)) return
+    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.retire(id))).then(() => {
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const handleBatchDelete = (): void => {
+    if (!window.confirm(`Delete ${selectedIds.size} selected media item(s) and their catalogs? This cannot be undone.`))
+      return
+    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.delete(id))).then(() => {
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+    void window.discdock.tags.allForMedia().then((result) => {
+      if (result.ok) setTagsByMedia(result.data)
+    })
+    void window.discdock.tags.list().then((result) => {
+      if (result.ok) setAllTagNames(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+
+  useEffect(() => {
+    void window.discdock.devices.list().then((result) => {
+      if (result.ok) setDevices(result.data)
+    })
+    const unsubConnect = window.discdock.devices.onConnected((device) => {
+      setDevices((prev) => [...prev.filter((d) => d.devicePath !== device.devicePath), device])
+    })
+    const unsubDisconnect = window.discdock.devices.onDisconnected((devicePath) => {
+      setDevices((prev) => prev.filter((d) => d.devicePath !== devicePath))
+    })
+    return () => {
+      unsubConnect()
+      unsubDisconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    const unsubProgress = window.discdock.scan.onProgress((progress: ScanProgress) => {
+      setJobToMedia((current) => {
+        const mediaId = current[progress.jobId]
+        if (mediaId === undefined) return current
+        setScansByMedia((prevScans) => ({
+          ...prevScans,
+          [mediaId]: {
+            jobId: progress.jobId,
+            filesProcessed: progress.filesProcessed,
+            currentPath: progress.currentPath
+          }
+        }))
+        return current
+      })
+    })
+
+    const finishScan = (jobId: number): void => {
+      setJobToMedia((current) => {
+        const mediaId = current[jobId]
+        if (mediaId !== undefined) {
+          setScansByMedia((prevScans) => {
+            const next = { ...prevScans }
+            delete next[mediaId]
+            return next
+          })
+        }
+        const next = { ...current }
+        delete next[jobId]
+        return next
+      })
+      loadItems()
+    }
+
+    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
+    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
+
+    return () => {
+      unsubProgress()
+      unsubCompleted()
+      unsubFailed()
+      unsubCancelled()
+    }
+  }, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    setError(null)
+    void window.discdock.media.create(form).then((result) => {
+      if (result.ok) {
+        setForm(EMPTY_FORM)
+        setShowForm(false)
+        loadItems()
+
+        const mediaId = result.data.id
+        if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
+          if (deviceMountPoint) {
+            beginScanWithPath(mediaId, deviceMountPoint)
+          } else {
+            handleScan(mediaId)
+          }
+        }
+        setDeviceMountPoint(null)
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleUseDevice = (device: DetectedDevice): void => {
+    setForm({
+      label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
+      mediaType: device.isOptical ? 'dvd' : 'external_hdd',
+      capacityBytes: device.sizeBytes,
+      physicalLocation: null,
+      notes: null,
+      deviceFingerprint: device.uuid ?? device.devicePath
+    })
+    setDeviceMountPoint(device.mountPoint)
+  }
+
+  const handleRetire = (id: number): void => {
+    void window.discdock.media.retire(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const handleDelete = (id: number): void => {
+    if (!window.confirm('Delete this media item and its catalog? This cannot be undone.')) return
+    void window.discdock.media.delete(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const beginScanWithPath = (mediaId: number, rootPath: string): void => {
+    void window.discdock.scan.start(mediaId, rootPath).then((startResult) => {
+      if (startResult.ok) {
+        const jobId = startResult.data.jobId
+        setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+        setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
+      }
+    })
+  }
+
+  const handleScan = (mediaId: number): void => {
+    void window.discdock.dialogs.pickFolder().then((pickResult) => {
+      if (!pickResult.ok || !pickResult.data.path) return
+      beginScanWithPath(mediaId, pickResult.data.path)
+    })
+  }
+
+  const handleCancelScan = (mediaId: number): void => {
+    const scan = scansByMedia[mediaId]
+    if (scan) void window.discdock.scan.cancel(scan.jobId)
+  }
+
+  const startEditingLocation = (item: MediaItem): void => {
+    setEditingLocationId(item.id)
+    setEditingLocationValue(item.physicalLocation ?? '')
+  }
+
+  const saveEditingLocation = (id: number): void => {
+    const value = editingLocationValue.trim() || null
+    setEditingLocationId(null)
+    void window.discdock.media.update(id, { physicalLocation: value }).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const startEditingTags = (item: MediaItem): void => {
+    setEditingTagsId(item.id)
+    setEditingTagsValue((tagsByMedia[item.id] ?? []).join(', '))
+  }
+
+  const saveEditingTags = (id: number): void => {
+    const tagNames = Array.from(
+      new Set(
+        editingTagsValue
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      )
+    )
+    setEditingTagsId(null)
+    void window.discdock.tags.setForMedia(id, tagNames).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  return (
+    <div className="media-library">
+      <div className="media-library__header">
+        <h1>Media Library</h1>
+        <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
+          Add Media
+        </button>
+      </div>
+
+      {!showForm && unregisteredDevices.length > 0 && (
+        <div className="new-media-banner">
+          {unregisteredDevices.map((device) => (
+            <div key={device.devicePath} className="new-media-banner__item">
+              <span>
+                {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />} New
+                media detected: <strong>{device.label ?? device.mountPoint.split('/').pop()}</strong> — not yet
+                registered.
+              </span>
+              <button
+                type="button"
+                className="button button--small button--primary"
+                onClick={() => handleAddDetectedDevice(device)}
+              >
+                Add Media
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showForm && (
+        <form className="media-form" onSubmit={handleSubmit}>
+          {error && <div className="media-form__error">{error}</div>}
+
+          {devices.length > 0 && (
+            <div className="detected-devices-picker">
+              <span className="detected-devices-picker__label">Detected media (click to fill in the form):</span>
+              <div className="detected-devices-picker__list">
+                {devices.map((device) => (
+                  <button
+                    type="button"
+                    key={device.devicePath}
+                    className="button button--small"
+                    onClick={() => handleUseDevice(device)}
+                  >
+                    {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />}{' '}
+                    {device.label ?? device.mountPoint.split('/').pop()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <label>
+            Label
+            <input
+              type="text"
+              value={form.label}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Media Type
+            <select
+              value={form.mediaType}
+              onChange={(e) => setForm({ ...form, mediaType: e.target.value as MediaType })}
+            >
+              {MEDIA_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Container / Physical Location
+            <input
+              type="text"
+              list="location-suggestions"
+              value={form.physicalLocation ?? ''}
+              onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
+              placeholder="e.g. CD Spindle #2, Garage / Box 3"
+            />
+            <datalist id="location-suggestions">
+              {knownLocations.map((loc) => (
+                <option key={loc} value={loc} />
+              ))}
+            </datalist>
+          </label>
+          <label>
+            Notes
+            <textarea
+              value={form.notes ?? ''}
+              onChange={(e) => setForm({ ...form, notes: e.target.value || null })}
+            />
+          </label>
+          <div className="media-form__actions">
+            <button type="submit" className="button button--primary">
+              Save
+            </button>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setShowForm(false)
+                setDeviceMountPoint(null)
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
+        </div>
+      ) : (
+        <>
+          {knownLocations.length > 0 && (
+            <div className="container-filter">
+              <label>
+                Container
+                <select value={containerFilter} onChange={(e) => setContainerFilter(e.target.value)}>
+                  <option value="">All containers</option>
+                  {knownLocations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          {allTagNames.length > 0 && (
+            <div className="container-filter">
+              <label>
+                Tag
+                <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+                  <option value="">All tags</option>
+                  {allTagNames.map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          <datalist id="tag-suggestions">
+            {allTagNames.map((tag) => (
+              <option key={tag} value={tag} />
+            ))}
+          </datalist>
+
+          {ejectMessage && <p className="media-library__eject-message">{ejectMessage}</p>}
+
+          {selectedIds.size > 0 && (
+            <div className="batch-actions">
+              <span className="batch-actions__count">{selectedIds.size} selected</span>
+              <input
+                type="text"
+                list="location-suggestions"
+                placeholder="Set container…"
+                value={batchLocationValue}
+                onChange={(e) => setBatchLocationValue(e.target.value)}
+              />
+              <button type="button" className="button button--small" onClick={handleBatchSetLocation}>
+                Apply Container
+              </button>
+              <button type="button" className="button button--small" onClick={handleBatchRetire}>
+                Retire Selected
+              </button>
+              <button type="button" className="button button--small button--danger" onClick={handleBatchDelete}>
+                Delete Selected
+              </button>
+              <button type="button" className="button button--small" onClick={clearSelection}>
+                Clear Selection
+              </button>
+            </div>
+          )}
+
+          <table className="media-table">
+          <thead>
+            <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size > 0 && selectedIds.size === sortedItems.length}
+                  onChange={handleSelectAll}
+                  aria-label="Select all"
+                />
+              </th>
+              {COLUMNS.map((col) => (
+                <th key={col.key}>
+                  <button type="button" className="media-table__sort-header" onClick={() => handleSort(col.key)}>
+                    {col.label}
+                    {sortKey === col.key ? (sortAsc ? ' ▲' : ' ▼') : ''}
+                  </button>
+                </th>
+              ))}
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedItems.map((item, index) => {
+              const scan = scansByMedia[item.id]
+              const presentDevice = findDeviceForItem(item)
+              const rowClasses = [
+                selectedIds.has(item.id) ? 'media-table__row--selected' : '',
+                presentDevice ? 'media-table__row--present' : ''
+              ]
+                .filter(Boolean)
+                .join(' ')
+              return (
+                <tr key={item.id} className={rowClasses}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => {}}
+                      onClick={(e) => handleRowCheckboxClick(e, item, index)}
+                      aria-label={`Select ${item.label}`}
+                    />
+                  </td>
+                  <td>
+                    <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
+                      {item.label}
+                    </button>
+                  </td>
+                  <td>{mediaTypeLabel(item.mediaType)}</td>
+                  <td>
+                    {editingLocationId === item.id ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        list="location-suggestions"
+                        className="media-table__location-input"
+                        value={editingLocationValue}
+                        onChange={(e) => setEditingLocationValue(e.target.value)}
+                        onBlur={() => saveEditingLocation(item.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditingLocation(item.id)
+                          if (e.key === 'Escape') setEditingLocationId(null)
+                        }}
+                      />
+                    ) : (
+                      <button type="button" className="link-button" onClick={() => startEditingLocation(item)}>
+                        {item.physicalLocation ?? 'Set container…'}
+                      </button>
+                    )}
+                  </td>
+                  <td>
+                    <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+                  </td>
+                  <td>
+                    {scan ? (
+                      <span className="scan-progress">
+                        Scanning… {scan.filesProcessed} files
+                      </span>
+                    ) : (
+                      item.lastScannedAt ?? 'Never'
+                    )}
+                  </td>
+                  <td className="media-table__actions">
+                    {scan ? (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Cancel scan"
+                        aria-label="Cancel scan"
+                        onClick={() => handleCancelScan(item.id)}
+                      >
+                        <CircleX size={16} aria-hidden="true" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Scan"
+                        aria-label="Scan"
+                        onClick={() => handleScan(item.id)}
+                      >
+                        <Scan size={16} aria-hidden="true" />
+                      </button>
+                    )}
+                    {item.status === 'active' && !scan && (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Retire"
+                        aria-label="Retire"
+                        onClick={() => handleRetire(item.id)}
+                      >
+                        <Archive size={16} aria-hidden="true" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="button button--small button--icon-only button--danger"
+                      title="Delete"
+                      aria-label="Delete"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                    {presentDevice && (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        disabled={ejectingIds.has(item.id)}
+                        title={
+                          ejectingIds.has(item.id)
+                            ? 'Ejecting…'
+                            : presentDevice.isOptical
+                              ? 'Eject'
+                              : 'Safely Remove'
+                        }
+                        aria-label={presentDevice.isOptical ? 'Eject' : 'Safely Remove'}
+                        onClick={() => handleEject(item, presentDevice)}
+                      >
+                        <EjectIcon size={16} aria-hidden="true" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+          </table>
+        </>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now add the table cell for tags after the Location cell: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 1-730 @@
+
+```
+import { useEffect, useState } from 'react'
+import { Scan, CircleX, Archive, Trash2, Eject as EjectIcon, Disc3, Usb } from 'lucide-react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt' | 'tags'
+
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'label', label: 'Label' },
+  { key: 'mediaType', label: 'Type' },
+  { key: 'physicalLocation', label: 'Location' },
+  { key: 'tags', label: 'Tags' },
+  { key: 'status', label: 'Status' },
+  { key: 'lastScannedAt', label: 'Last Scanned' }
+]
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [sortKey, setSortKey] = useState<SortKey>('label')
+  const [sortAsc, setSortAsc] = useState(true)
+
+  const handleSort = (key: SortKey): void => {
+    if (key === sortKey) {
+      setSortAsc((prev) => !prev)
+    } else {
+      setSortKey(key)
+      setSortAsc(true)
+    }
+  }
+
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
+  const [containerFilter, setContainerFilter] = useState<string>('')
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
+  const [editingLocationValue, setEditingLocationValue] = useState('')
+  const [tagsByMedia, setTagsByMedia] = useState<Record<number, string[]>>({})
+  const [allTagNames, setAllTagNames] = useState<string[]>([])
+  const [tagFilter, setTagFilter] = useState<string>('')
+  const [editingTagsId, setEditingTagsId] = useState<number | null>(null)
+  const [editingTagsValue, setEditingTagsValue] = useState('')
+
+  const knownLocations = Array.from(
+    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
+  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+
+  const containerFilteredItems = containerFilter
+    ? items.filter((item) => item.physicalLocation === containerFilter)
+    : items
+
+  const filteredItems = tagFilter
+    ? containerFilteredItems.filter((item) => (tagsByMedia[item.id] ?? []).includes(tagFilter))
+    : containerFilteredItems
+
+  const sortValue = (item: MediaItem, key: SortKey): string => {
+    switch (key) {
+      case 'mediaType':
+        return mediaTypeLabel(item.mediaType)
+      case 'physicalLocation':
+        return item.physicalLocation ?? ''
+      case 'lastScannedAt':
+        return item.lastScannedAt ?? ''
+      case 'tags':
+        return (tagsByMedia[item.id] ?? []).join(', ')
+      default:
+        return item[key] ?? ''
+    }
+  }
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
+
+  const findDeviceForItem = (item: MediaItem): DetectedDevice | undefined =>
+    devices.find((d) => item.deviceFingerprint && (d.uuid ?? d.devicePath) === item.deviceFingerprint)
+
+  const unregisteredDevices = devices.filter(
+    (d) => !items.some((item) => item.deviceFingerprint === (d.uuid ?? d.devicePath))
+  )
+
+  const [ejectingIds, setEjectingIds] = useState<Set<number>>(new Set())
+  const [ejectMessage, setEjectMessage] = useState<string | null>(null)
+
+  const handleEject = (item: MediaItem, device: DetectedDevice): void => {
+    setEjectingIds((prev) => new Set(prev).add(item.id))
+    setEjectMessage(null)
+    void window.discdock.devices.eject(device.devicePath, device.isOptical).then((result) => {
+      setEjectingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        return next
+      })
+      setEjectMessage(result.ok ? `${item.label}: ${result.data.message}` : `Eject failed: ${result.error.message}`)
+    })
+  }
+
+  const handleAddDetectedDevice = (device: DetectedDevice): void => {
+    setShowForm(true)
+    handleUseDevice(device)
+  }
+
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null)
+  const [batchLocationValue, setBatchLocationValue] = useState('')
+
+  const handleRowCheckboxClick = (
+    event: React.MouseEvent<HTMLInputElement>,
+    item: MediaItem,
+    index: number
+  ): void => {
+    if (event.shiftKey && lastClickedIndex !== null) {
+      const [start, end] = [lastClickedIndex, index].sort((a, b) => a - b)
+      const rangeIds = sortedItems.slice(start, end + 1).map((i) => i.id)
+      setSelectedIds((prev) => new Set([...prev, ...rangeIds]))
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(item.id)) next.delete(item.id)
+        else next.add(item.id)
+        return next
+      })
+    }
+    setLastClickedIndex(index)
+  }
+
+  const handleSelectAll = (): void => {
+    setSelectedIds((prev) =>
+      prev.size === sortedItems.length ? new Set() : new Set(sortedItems.map((i) => i.id))
+    )
+  }
+
+  const clearSelection = (): void => {
+    setSelectedIds(new Set())
+    setLastClickedIndex(null)
+  }
+
+  const handleBatchSetLocation = (): void => {
+    const value = batchLocationValue.trim() || null
+    void Promise.all(
+      Array.from(selectedIds).map((id) => window.discdock.media.update(id, { physicalLocation: value }))
+    ).then(() => {
+      setBatchLocationValue('')
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const handleBatchRetire = (): void => {
+    if (!window.confirm(`Retire ${selectedIds.size} selected media item(s)?`)) return
+    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.retire(id))).then(() => {
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const handleBatchDelete = (): void => {
+    if (!window.confirm(`Delete ${selectedIds.size} selected media item(s) and their catalogs? This cannot be undone.`))
+      return
+    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.delete(id))).then(() => {
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+    void window.discdock.tags.allForMedia().then((result) => {
+      if (result.ok) setTagsByMedia(result.data)
+    })
+    void window.discdock.tags.list().then((result) => {
+      if (result.ok) setAllTagNames(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+
+  useEffect(() => {
+    void window.discdock.devices.list().then((result) => {
+      if (result.ok) setDevices(result.data)
+    })
+    const unsubConnect = window.discdock.devices.onConnected((device) => {
+      setDevices((prev) => [...prev.filter((d) => d.devicePath !== device.devicePath), device])
+    })
+    const unsubDisconnect = window.discdock.devices.onDisconnected((devicePath) => {
+      setDevices((prev) => prev.filter((d) => d.devicePath !== devicePath))
+    })
+    return () => {
+      unsubConnect()
+      unsubDisconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    const unsubProgress = window.discdock.scan.onProgress((progress: ScanProgress) => {
+      setJobToMedia((current) => {
+        const mediaId = current[progress.jobId]
+        if (mediaId === undefined) return current
+        setScansByMedia((prevScans) => ({
+          ...prevScans,
+          [mediaId]: {
+            jobId: progress.jobId,
+            filesProcessed: progress.filesProcessed,
+            currentPath: progress.currentPath
+          }
+        }))
+        return current
+      })
+    })
+
+    const finishScan = (jobId: number): void => {
+      setJobToMedia((current) => {
+        const mediaId = current[jobId]
+        if (mediaId !== undefined) {
+          setScansByMedia((prevScans) => {
+            const next = { ...prevScans }
+            delete next[mediaId]
+            return next
+          })
+        }
+        const next = { ...current }
+        delete next[jobId]
+        return next
+      })
+      loadItems()
+    }
+
+    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
+    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
+
+    return () => {
+      unsubProgress()
+      unsubCompleted()
+      unsubFailed()
+      unsubCancelled()
+    }
+  }, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    setError(null)
+    void window.discdock.media.create(form).then((result) => {
+      if (result.ok) {
+        setForm(EMPTY_FORM)
+        setShowForm(false)
+        loadItems()
+
+        const mediaId = result.data.id
+        if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
+          if (deviceMountPoint) {
+            beginScanWithPath(mediaId, deviceMountPoint)
+          } else {
+            handleScan(mediaId)
+          }
+        }
+        setDeviceMountPoint(null)
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleUseDevice = (device: DetectedDevice): void => {
+    setForm({
+      label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
+      mediaType: device.isOptical ? 'dvd' : 'external_hdd',
+      capacityBytes: device.sizeBytes,
+      physicalLocation: null,
+      notes: null,
+      deviceFingerprint: device.uuid ?? device.devicePath
+    })
+    setDeviceMountPoint(device.mountPoint)
+  }
+
+  const handleRetire = (id: number): void => {
+    void window.discdock.media.retire(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const handleDelete = (id: number): void => {
+    if (!window.confirm('Delete this media item and its catalog? This cannot be undone.')) return
+    void window.discdock.media.delete(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const beginScanWithPath = (mediaId: number, rootPath: string): void => {
+    void window.discdock.scan.start(mediaId, rootPath).then((startResult) => {
+      if (startResult.ok) {
+        const jobId = startResult.data.jobId
+        setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+        setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
+      }
+    })
+  }
+
+  const handleScan = (mediaId: number): void => {
+    void window.discdock.dialogs.pickFolder().then((pickResult) => {
+      if (!pickResult.ok || !pickResult.data.path) return
+      beginScanWithPath(mediaId, pickResult.data.path)
+    })
+  }
+
+  const handleCancelScan = (mediaId: number): void => {
+    const scan = scansByMedia[mediaId]
+    if (scan) void window.discdock.scan.cancel(scan.jobId)
+  }
+
+  const startEditingLocation = (item: MediaItem): void => {
+    setEditingLocationId(item.id)
+    setEditingLocationValue(item.physicalLocation ?? '')
+  }
+
+  const saveEditingLocation = (id: number): void => {
+    const value = editingLocationValue.trim() || null
+    setEditingLocationId(null)
+    void window.discdock.media.update(id, { physicalLocation: value }).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const startEditingTags = (item: MediaItem): void => {
+    setEditingTagsId(item.id)
+    setEditingTagsValue((tagsByMedia[item.id] ?? []).join(', '))
+  }
+
+  const saveEditingTags = (id: number): void => {
+    const tagNames = Array.from(
+      new Set(
+        editingTagsValue
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      )
+    )
+    setEditingTagsId(null)
+    void window.discdock.tags.setForMedia(id, tagNames).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  return (
+    <div className="media-library">
+      <div className="media-library__header">
+        <h1>Media Library</h1>
+        <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
+          Add Media
+        </button>
+      </div>
+
+      {!showForm && unregisteredDevices.length > 0 && (
+        <div className="new-media-banner">
+          {unregisteredDevices.map((device) => (
+            <div key={device.devicePath} className="new-media-banner__item">
+              <span>
+                {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />} New
+                media detected: <strong>{device.label ?? device.mountPoint.split('/').pop()}</strong> — not yet
+                registered.
+              </span>
+              <button
+                type="button"
+                className="button button--small button--primary"
+                onClick={() => handleAddDetectedDevice(device)}
+              >
+                Add Media
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showForm && (
+        <form className="media-form" onSubmit={handleSubmit}>
+          {error && <div className="media-form__error">{error}</div>}
+
+          {devices.length > 0 && (
+            <div className="detected-devices-picker">
+              <span className="detected-devices-picker__label">Detected media (click to fill in the form):</span>
+              <div className="detected-devices-picker__list">
+                {devices.map((device) => (
+                  <button
+                    type="button"
+                    key={device.devicePath}
+                    className="button button--small"
+                    onClick={() => handleUseDevice(device)}
+                  >
+                    {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />}{' '}
+                    {device.label ?? device.mountPoint.split('/').pop()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <label>
+            Label
+            <input
+              type="text"
+              value={form.label}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Media Type
+            <select
+              value={form.mediaType}
+              onChange={(e) => setForm({ ...form, mediaType: e.target.value as MediaType })}
+            >
+              {MEDIA_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Container / Physical Location
+            <input
+              type="text"
+              list="location-suggestions"
+              value={form.physicalLocation ?? ''}
+              onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
+              placeholder="e.g. CD Spindle #2, Garage / Box 3"
+            />
+            <datalist id="location-suggestions">
+              {knownLocations.map((loc) => (
+                <option key={loc} value={loc} />
+              ))}
+            </datalist>
+          </label>
+          <label>
+            Notes
+            <textarea
+              value={form.notes ?? ''}
+              onChange={(e) => setForm({ ...form, notes: e.target.value || null })}
+            />
+          </label>
+          <div className="media-form__actions">
+            <button type="submit" className="button button--primary">
+              Save
+            </button>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setShowForm(false)
+                setDeviceMountPoint(null)
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
+        </div>
+      ) : (
+        <>
+          {knownLocations.length > 0 && (
+            <div className="container-filter">
+              <label>
+                Container
+                <select value={containerFilter} onChange={(e) => setContainerFilter(e.target.value)}>
+                  <option value="">All containers</option>
+                  {knownLocations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          {allTagNames.length > 0 && (
+            <div className="container-filter">
+              <label>
+                Tag
+                <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+                  <option value="">All tags</option>
+                  {allTagNames.map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          <datalist id="tag-suggestions">
+            {allTagNames.map((tag) => (
+              <option key={tag} value={tag} />
+            ))}
+          </datalist>
+
+          {ejectMessage && <p className="media-library__eject-message">{ejectMessage}</p>}
+
+          {selectedIds.size > 0 && (
+            <div className="batch-actions">
+              <span className="batch-actions__count">{selectedIds.size} selected</span>
+              <input
+                type="text"
+                list="location-suggestions"
+                placeholder="Set container…"
+                value={batchLocationValue}
+                onChange={(e) => setBatchLocationValue(e.target.value)}
+              />
+              <button type="button" className="button button--small" onClick={handleBatchSetLocation}>
+                Apply Container
+              </button>
+              <button type="button" className="button button--small" onClick={handleBatchRetire}>
+                Retire Selected
+              </button>
+              <button type="button" className="button button--small button--danger" onClick={handleBatchDelete}>
+                Delete Selected
+              </button>
+              <button type="button" className="button button--small" onClick={clearSelection}>
+                Clear Selection
+              </button>
+            </div>
+          )}
+
+          <table className="media-table">
+          <thead>
+            <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size > 0 && selectedIds.size === sortedItems.length}
+                  onChange={handleSelectAll}
+                  aria-label="Select all"
+                />
+              </th>
+              {COLUMNS.map((col) => (
+                <th key={col.key}>
+                  <button type="button" className="media-table__sort-header" onClick={() => handleSort(col.key)}>
+                    {col.label}
+                    {sortKey === col.key ? (sortAsc ? ' ▲' : ' ▼') : ''}
+                  </button>
+                </th>
+              ))}
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedItems.map((item, index) => {
+              const scan = scansByMedia[item.id]
+              const presentDevice = findDeviceForItem(item)
+              const rowClasses = [
+                selectedIds.has(item.id) ? 'media-table__row--selected' : '',
+                presentDevice ? 'media-table__row--present' : ''
+              ]
+                .filter(Boolean)
+                .join(' ')
+              return (
+                <tr key={item.id} className={rowClasses}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => {}}
+                      onClick={(e) => handleRowCheckboxClick(e, item, index)}
+                      aria-label={`Select ${item.label}`}
+                    />
+                  </td>
+                  <td>
+                    <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
+                      {item.label}
+                    </button>
+                  </td>
+                  <td>{mediaTypeLabel(item.mediaType)}</td>
+                  <td>
+                    {editingLocationId === item.id ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        list="location-suggestions"
+                        className="media-table__location-input"
+                        value={editingLocationValue}
+                        onChange={(e) => setEditingLocationValue(e.target.value)}
+                        onBlur={() => saveEditingLocation(item.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditingLocation(item.id)
+                          if (e.key === 'Escape') setEditingLocationId(null)
+                        }}
+                      />
+                    ) : (
+                      <button type="button" className="link-button" onClick={() => startEditingLocation(item)}>
+                        {item.physicalLocation ?? 'Set container…'}
+                      </button>
+                    )}
+                  </td>
+                  <td>
+                    {editingTagsId === item.id ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        list="tag-suggestions"
+                        className="media-table__location-input"
+                        value={editingTagsValue}
+                        onChange={(e) => setEditingTagsValue(e.target.value)}
+                        onBlur={() => saveEditingTags(item.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditingTags(item.id)
+                          if (e.key === 'Escape') setEditingTagsId(null)
+                        }}
+                      />
+                    ) : (
+                      <button type="button" className="link-button" onClick={() => startEditingTags(item)}>
+                        {(tagsByMedia[item.id] ?? []).length > 0
+                          ? (tagsByMedia[item.id] ?? []).join(', ')
+                          : 'Add tags…'}
+                      </button>
+                    )}
+                  </td>
+                  <td>
+                    <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+                  </td>
+                  <td>
+                    {scan ? (
+                      <span className="scan-progress">
+                        Scanning… {scan.filesProcessed} files
+                      </span>
+                    ) : (
+                      item.lastScannedAt ?? 'Never'
+                    )}
+                  </td>
+                  <td className="media-table__actions">
+                    {scan ? (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Cancel scan"
+                        aria-label="Cancel scan"
+                        onClick={() => handleCancelScan(item.id)}
+                      >
+                        <CircleX size={16} aria-hidden="true" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Scan"
+                        aria-label="Scan"
+                        onClick={() => handleScan(item.id)}
+                      >
+                        <Scan size={16} aria-hidden="true" />
+                      </button>
+                    )}
+                    {item.status === 'active' && !scan && (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Retire"
+                        aria-label="Retire"
+                        onClick={() => handleRetire(item.id)}
+                      >
+                        <Archive size={16} aria-hidden="true" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="button button--small button--icon-only button--danger"
+                      title="Delete"
+                      aria-label="Delete"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                    {presentDevice && (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        disabled={ejectingIds.has(item.id)}
+                        title={
+                          ejectingIds.has(item.id)
+                            ? 'Ejecting…'
+                            : presentDevice.isOptical
+                              ? 'Eject'
+                              : 'Safely Remove'
+                        }
+                        aria-label={presentDevice.isOptical ? 'Eject' : 'Safely Remove'}
+                        onClick={() => handleEject(item, presentDevice)}
+                      >
+                        <EjectIcon size={16} aria-hidden="true" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+          </table>
+        </>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's check  files and build. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `MediaLibrary.tsx`, 2 problems found
+
+**Input:**
+
+- filePaths: `["/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx"]`
+
+**Result:**
+
+````
+<errors path="/home/kel/dev/DiscDock/src/views/MediaLibrary.tsx">
+This code at line 4
+```
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+```
+has the problem reported:
+<compileError>
+Cannot find module or type declarations for side-effect import of './MediaLibrary.css'.
+</compileError>
+At line 18
+has the problem reported:
+<compileError>
+Cannot find namespace 'JSX'.
+</compileError>
+
+</errors>
+````
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+These are pre-existing unrelated errors (CSS module typings, JSX namespace) — not caused by my edit. Let me verify by checking git diff doesn't touch those lines, and run the actual vite build to confirm no real compile issues. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:renderer 2>&1 | tail -60`
+
+Build renderer to verify the Tags UI changes compile and bundle correctly
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:renderer 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build:renderer 2>&1 | tail -60` (terminal ID=a8733f0f-ee5f-4197-8ffd-1cb68b3586b7). This is the output of running that command instead:
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 1813 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.39 kB
+dist/assets/index-DIit3s4N.css   11.61 kB │ gzip:  2.49 kB
+dist/assets/index-B8btY9D4.js   235.78 kB │ gzip: 72.20 kB
+
+✓ built in 234ms
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Builds cleanly (those `get_errors` warnings are pre-existing tsc-vs-vite config quirks, unrelated to this change — bundle size grew from 234.40kB to 235.78kB confirming the new code compiled in). Let's commit this Tags UI piece and move to Collections next. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` wc -c src/views/MediaLibrary.tsx && git status --short`
+
+Check file integrity and staged changes before committing Tags UI
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c src/views/MediaLibrary.tsx && git status --short
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c src/views/MediaLibrary.tsx && git status --short` (terminal ID=2f0c8b20-c737-4019-ab17-ac9f22da9557). This is the output of running that command instead:
+kel@kel-EQ-Mint:~/dev/DiscDock$  wc -c src/views/MediaLibrary.tsx && git status
+--short
+26592 src/views/MediaLibrary.tsx
+ M .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+ M .specstory/statistics.json
+ M src/views/MediaLibrary.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && git add -A && git commit -m "Add Tags UI to Med...`
+
+Commit and push the Tags UI feature
+
+```bash
+cd /home/kel/dev/DiscDock && git add -A && git commit -m "Add Tags UI to Media Library
+
+- Tags column with inline comma-separated editing (mirrors existing Container/Location editing pattern), datalist autocomplete of known tag names
+- Tag filter dropdown alongside existing Container filter
+- Sortable by Tags column" 2>&1 | tail -10 && git push origin main 2>&1 | tail -10
+```
+
+**Result:**
+
+```
+[main b1a3bc5] Add Tags UI to Media Library
+ 3 files changed, 4365 insertions(+), 20 deletions(-)
+To https://github.com/kelmankenberg/DiscDock.git
+   dd8782a..b1a3bc5  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's build the Collections view. Let's check the current placeholder and `App.tsx` routing, plus preload types for collections.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `Collections|PlaceholderView` (`**/src/**`), 5 results
+
+**Input:**
+
+- includePattern: `src/**`
+- isRegexp: `true`
+- query: `Collections|PlaceholderView`
+
+**Result:**
+
+```
+Found 5 matches in 3 files for "Collections|PlaceholderView"
+
+src/App.tsx
+11:import PlaceholderView from './views/PlaceholderView'
+80:        return <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
+
+src/components/Sidebar.tsx
+24:  { key: 'collections', label: 'Collections', icon: FolderOpen },
+
+src/views/PlaceholderView.tsx
+1:interface PlaceholderViewProps {
+5:export default function PlaceholderView({ title }: PlaceholderViewProps): JSX.Element {
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `App.tsx`
+
+**Input:**
+
+- endLine: `95`
+- filePath: `/home/kel/dev/DiscDock/src/App.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import TitleBar from './components/TitleBar'
+import Sidebar from './components/Sidebar'
+import Dashboard from './views/Dashboard'
+import MediaLibrary from './views/MediaLibrary'
+import MediaDetail from './views/MediaDetail'
+import Search from './views/Search'
+import Duplicates from './views/Duplicates'
+import BackupExport from './views/BackupExport'
+import SettingsView from './views/Settings'
+import PlaceholderView from './views/PlaceholderView'
+import { NAV_ITEMS } from './components/Sidebar'
+
+const VIEW_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.label])
+)
+
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'discdock:sidebar-collapsed'
+
+export default function App(): JSX.Element {
+  const [activeView, setActiveView] = useState('dashboard')
+  const [selectedMediaId, setSelectedMediaId] = useState<number | null>(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
+    () => localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true'
+  )
+
+  const toggleSidebarCollapsed = (): void => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(next))
+      return next
+    })
+  }
+
+  useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) document.documentElement.dataset.theme = result.data.theme
+    })
+  }, [])
+
+  // Global keyboard shortcuts: Ctrl+F -> Search, Ctrl+, -> Settings.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (!event.ctrlKey) return
+      if (event.key.toLowerCase() === 'f') {
+        event.preventDefault()
+        handleSelectNav('search')
+      } else if (event.key === ',') {
+        event.preventDefault()
+        handleSelectNav('settings')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  const h
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `preload.ts`, lines 100 to 160
+
+**Input:**
+
+- endLine: `160`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `100`
+
+**Result:**
+
+```
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number }): void => callback(payload)
+      ipcRenderer.on('scan:cancelled', listener)
+      return () => ipcRenderer.removeListener('scan:cancelled', listener)
+    }
+  },
+  dialogs: {
+    pickFolder: (): Promise<IpcResult<{ path: string | null }>> => ipcRenderer.invoke('dialog:pickFolder'),
+    pickSaveFile: (defaultName?: string): Promise<IpcResult<{ path: string | null }>> =>
+      ipcRenderer.invoke('dialog:pickSaveFile', { defaultName }),
+    pickOpenFile: (): Promise<IpcResult<{ path: string | null }>> => ipcRenderer.invoke('dialog:pickOpenFile')
+  },
+  search: {
+    query: (text: string, filters: SearchFilters, page: number): Promise<IpcResult<SearchResultPage>> =>
+      ipcRenderer.invoke('search:query', { text, filters, page })
+  },
+  duplicates: {
+    report: (filters: DuplicateReportFilters): Promise<IpcResult<DuplicateReport>> =>
+      ipcRenderer.invoke('duplicates:report', filters)
+  },
+  files: {
+    list: (mediaId: number, folderPath: string): Promise<IpcResult<FileEntry[]>> =>
+      ipcRenderer.invoke('files:list', { mediaId, folderPath })
+  },
+  settings: {
+    get: (): Promise<IpcResult<AppSettings>> => ipcRenderer.invoke('settings:get'),
+    update: (patch: Partial<AppSettings>): Promise<IpcResult<AppSettings>> =>
+      ipcRenderer.invoke('settings:update', patch)
+  },
+  backup: {
+    run: (destinationPath: string): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('backup:run', { destinationPath }),
+    restore: (sourcePath: string): Promise<IpcResult<{ safetyBackupPath: string }>> =>
+      ipcRenderer.invoke('backup:restore', { sourcePath })
+  },
+  tags: {
+    list: (): Promise<IpcResult<string[]>> => ipcRenderer.invoke('tags:list'),
+    allForMedia: (): Promise<IpcResult<Record<number, string[]>>> => ipcRenderer.invoke('tags:allForMedia'),
+    setForMedia: (mediaId: number, tagNames: string[]): Promise<IpcResult<string[]>> =>
+      ipcRenderer.invoke('tags:s
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's 
+
+Now let's check `MediaLibrary.css` for existing style classes I can reuse for consistency (media-table, batch-actions, etc.), and PlaceholderView 
+
+Now let's check `MediaLibrary.css` for existing style classes I can reuse for consistency (media-table, batch-actions, etc.), and PlaceholderView for style baseline. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `PlaceholderView.tsx`
+
+**Input:**
+
+- endLine: `20`
+- filePath: `/home/kel/dev/DiscDock/src/views/PlaceholderView.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+interface PlaceholderViewProps {
+  title: string
+}
+
+export default function PlaceholderView({ title }: PlaceholderViewProps): JSX.Element {
+  return (
+    <div className="placeholder-view">
+      <h1>{title}</h1>
+      <p>This section is planned but not yet implemented.</p>
+    </div>
+  )
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `MediaLibrary.css`
+
+**Input:**
+
+- endLine: `400`
+- filePath: `/home/kel/dev/DiscDock/src/views/MediaLibrary.css`
+- startLine: `1`
+
+**Result:**
+
+```
+.media-library__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.new-media-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.new-media-banner__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 2px solid var(--color-accent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  font-size: 13px;
+  animation: new-media-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes new-media-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-accent) 40%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-accent) 0%, transparent);
+  }
+}
+
+.media-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.media-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.detected-devices-picker {
+  padding: 10px;
+  border: 1px dashed var(--color-accent);
+  border-radius: 6px;
+}
+
+.detected-devices-picker__label {
+  display: block;
+  font-size: 12px;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+
+.detected-devices-picker__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.media-form input,
+.media-form select,
+.media-form textarea {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.media-form__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.media-form__error {
+  color: #e81123;
+  font-size: 13px;
+}
+
+.empty-state {
+  margin-top: 24px;
+  opacity: 0.7;
+}
+
+.media-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.media-table th,
+.media-table td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.media-
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `formatBytes|function formatSize` (`**/src/**`), 11 results
+
+**Input:**
+
+- includePattern: `src/**`
+- isRegexp: `true`
+- query: `formatBytes|function formatSize`
+
+**Result:**
+
+```
+Found 11 matches in 4 files for "formatBytes|function formatSize"
+
+src/views/Dashboard.tsx
+12:function formatBytes(bytes: number): string {
+166:          <span className="card__value">{formatBytes(summary.totalSizeBytes)}</span>
+210:                  <td>{device.sizeBytes ? formatBytes(device.sizeBytes) : '—'}</td>
+
+src/views/Duplicates.tsx
+5:function formatBytes(bytes: number): string {
+42:            files involved · {formatBytes(report.reclaimableBytes)} reclaimable if only one copy of each
+48:                <span>{formatBytes(group.sizeBytes)}</span>
+
+src/views/MediaDetail.tsx
+6:function formatBytes(bytes: number): string {
+80:          <p>Capacity: {item.capacityBytes ? formatBytes(item.capacityBytes) : 'Unknown'}</p>
+131:                    <td>{entry.isDirectory ? '—' : formatBytes(entry.sizeBytes)}</td>
+
+src/views/Search.tsx
+9:function formatBytes(bytes: number): string {
+121:                  <td>{formatBytes(result.sizeBytes)}</td>
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's build the Collections view. I'll follow existing patterns (own , similar table/form styling). 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `Collections.tsx`
+
+**Input:**
+
+- content:
+
+```
+import { useEffect, useState } from 'react'
+import { Trash2, Plus, X } from 'lucide-react'
+import type { Collection, MediaItem } from '../../shared/types'
+import './Collections.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  const value = bytes / 1024 ** exponent
+  return `${value.toFixed(exponent === 0 ? 0 : 1)} ${units[exponent]}`
+}
+
+export default function Collections(): JSX.Element {
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [members, setMembers] = useState<MediaItem[]>([])
+  const [allMedia, setAllMedia] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [addMediaId, setAddMediaId] = useState<string>('')
+
+  const loadCollections = (): void => {
+    void window.discdock.collections.list().then((result) => {
+      if (result.ok) setCollections(result.data)
+    })
+  }
+
+  useEffect(() => {
+    loadCollections()
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setAllMedia(result.data)
+    })
+  }, [])
+
+  const loadMembers = (collectionId: number): void => {
+    void window.discdock.collections.members(collectionId).then((result) => {
+      if (result.ok) setMembers(result.data)
+    })
+  }
+
+  useEffect(() => {
+    if (selectedId !== null) loadMembers(selectedId)
+  }, [selectedId])
+
+  const selectedCollection = collections.find((c) => c.id === selectedId) ?? null
+
+  const handleCreate = (event: React.FormEvent): void => {
+    event.preventDefault()
+    setError(null)
+    void window.discdock.collections.create({ name, description: description || null }).then((result) => {
+      if (result.ok) {
+        setName('')
+        setDescription('')
+        setShowForm(false)
+        loadCollections()
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleDelete = (id: number): void => {
+    if (!window.confirm('Delete this collection? Media items themselves will not be affected.')) return
+    void window.discdock.collections.delete(id).then((result) => {
+      if (result.ok) {
+        if (selectedId === id) setSelectedId(null)
+        loadCollections()
+      }
+    })
+  }
+
+  const handleAddMember = (): void => {
+    if (selectedId === null || !addMediaId) return
+    const mediaId = Number(addMediaId)
+    void window.discdock.collections.addMember(selectedId, mediaId).then((result) => {
+      if (result.ok) {
+        setAddMediaId('')
+        loadMembers(selectedId)
+        loadCollections()
+      }
+    })
+  }
+
+  const handleRemoveMember = (mediaId: number): void => {
+    if (selectedId === null) return
+    void window.discdock.collections.removeMember(selectedId, mediaId).then((result) => {
+      if (result.ok) {
+        loadMembers(selectedId)
+        loadCollections()
+      }
+    })
+  }
+
+  const availableMedia = allMedia.filter((m) => !members.some((mem) => mem.id === m.id))
+
+  return (
+    <div className="collections-view">
+      <div className="collections-view__header">
+        <h1>Collections</h1>
+        <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
+          <Plus size={16} aria-hidden="true" /> New Collection
+        </button>
+      </div>
+
+      {showForm && (
+        <form className="media-form" onSubmit={handleCreate}>
+          {error && <div className="media-form__error">{error}</div>}
+          <label>
+            Name
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+          </label>
+          <label>
+            Description
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+          </label>
+          <div className="media-form__actions">
+            <button type="submit" className="button button--primary">
+              Save
+            </button>
+            <button type="button" className="button" onClick={() => setShowForm(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {collections.length === 0 ? (
+        <div className="empty-state">
+          <p>No collections yet. Click "New Collection" to group related media items together.</p>
+        </div>
+      ) : (
+        <div className="collections-view__layout">
+          <ul className="collections-list">
+            {collections.map((collection) => (
+              <li key={collection.id}>
+                <button
+                  type="button"
+                  className={`collections-list__item${selectedId === collection.id ? ' collections-list__item--active' : ''}`}
+                  onClick={() => setSelectedId(collection.id)}
+                >
+                  <span className="collections-list__name">{collection.name}</span>
+                  <span className="collections-list__meta">
+                    {collection.memberCount} items · {formatBytes(collection.totalSizeBytes)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <div className="collections-detail">
+            {selectedCollection ? (
+              <>
+                <div className="collections-detail__header">
+                  <div>
+                    <h2>{selectedCollection.name}</h2>
+                    {selectedCollection.description && <p>{selectedCollection.description}</p>}
+                    <p className="collections-detail__stats">
+                      {selectedCollection.memberCount} items · {selectedCollection.totalFiles} files ·{' '}
+                      {formatBytes(selectedCollection.totalSizeBytes)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="button button--small button--danger"
+                    onClick={() => handleDelete(selectedCollection.id)}
+                  >
+                    <Trash2 size={16} aria-hidden="true" /> Delete Collection
+                  </button>
+                </div>
+
+                {availableMedia.length > 0 && (
+                  <div className="collections-detail__add-member">
+                    <select value={addMediaId} onChange={(e) => setAddMediaId(e.target.value)}>
+                      <option value="">Add media item…</option>
+                      {availableMedia.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" className="button button--small" onClick={handleAddMember} disabled={!addMediaId}>
+                      Add
+                    </button>
+                  </div>
+                )}
+
+                {members.length === 0 ? (
+                  <p className="empty-state">No media items in this collection yet.</p>
+                ) : (
+                  <table className="media-table">
+                    <thead>
+                      <tr>
+                        <th>Label</th>
+                        <th>Status</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {members.map((member) => (
+                        <tr key={member.id}>
+                          <td>{member.label}</td>
+                          <td>
+                            <span className={`status-badge status-badge--${member.status}`}>{member.status}</span>
+                          </td>
+                          <td className="media-table__actions">
+                            <button
+                              type="button"
+                              className="button button--small button--icon-only"
+                              title="Remove from collection"
+                              aria-label="Remove from collection"
+                              onClick={() => handleRemoveMember(member.id)}
+                            >
+                              <X size={16} aria-hidden="true" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </>
+            ) : (
+              <p className="empty-state">Select a collection to view its members.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/Collections.tsx`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/src/views/Collections.tsx
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Collections.tsx**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { useEffect, useState } from 'react'
+import { Trash2, Plus, X } from 'lucide-react'
+import type { Collection, MediaItem } from '../../shared/types'
+import './Collections.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  const value = bytes / 1024 ** exponent
+  return `${value.toFixed(exponent === 0 ? 0 : 1)} ${units[exponent]}`
+}
+
+export default function Collections(): JSX.Element {
+  const [collections, setCollections] = useState<Collection[]>([])
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [members, setMembers] = useState<MediaItem[]>([])
+  const [allMedia, setAllMedia] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [addMediaId, setAddMediaId] = useState<string>('')
+
+  const loadCollections = (): void => {
+    void window.discdock.collections.list().then((result) => {
+      if (result.ok) setCollections(result.data)
+    })
+  }
+
+  useEffect(() => {
+    loadCollections()
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setAllMedia(result.data)
+    })
+  }, [])
+
+  const loadMembers = (collectionId: number): void => {
+    void window.discdock.collections.members(collectionId).then((result) => {
+      if (result.ok) setMembers(result.data)
+    })
+  }
+
+  useEffect(() => {
+    if (selectedId !== null) loadMembers(selectedId)
+  }, [selectedId])
+
+  const selectedCollection = collections.find((c) => c.id === selectedId) ?? null
+
+  const handleCreate = (event: React.FormEvent): void => {
+    event.preventDefault()
+    setError(null)
+    void window.discdock.collections.create({ name, description: description || null }).then((result) => {
+      if (result.ok) {
+        setName('')
+        setDescription('')
+        setShowForm(false)
+        loadCollections()
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleDelete = (id: number): void => {
+    if (!window.confirm('Delete this collection? Media items themselves will not be affected.')) return
+    void window.discdock.collections.delete(id).then((result) => {
+      if (result.ok) {
+        if (selectedId === id) setSelectedId(null)
+        loadCollections()
+      }
+    })
+  }
+
+  const handleAddMember = (): void => {
+    if (selectedId === null || !addMediaId) return
+    const mediaId = Number(addMediaId)
+    void window.discdock.collections.addMember(selectedId, mediaId).then((result) => {
+      if (result.ok) {
+        setAddMediaId('')
+        loadMembers(selectedId)
+        loadCollections()
+      }
+    })
+  }
+
+  const handleRemoveMember = (mediaId: number): void => {
+    if (selectedId === null) return
+    void window.discdock.collections.removeMember(selectedId, mediaId).then((result) => {
+      if (result.ok) {
+        loadMembers(selectedId)
+        loadCollections()
+      }
+    })
+  }
+
+  const availableMedia = allMedia.filter((m) => !members.some((mem) => mem.id === m.id))
+
+  return (
+    <div className="collections-view">
+      <div className="collections-view__header">
+        <h1>Collections</h1>
+        <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
+          <Plus size={16} aria-hidden="true" /> New Collection
+        </button>
+      </div>
+
+      {showForm && (
+        <form className="media-form" onSubmit={handleCreate}>
+          {error && <div className="media-form__error">{error}</div>}
+          <label>
+            Name
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+          </label>
+          <label>
+            Description
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+          </label>
+          <div className="media-form__actions">
+            <button type="submit" className="button button--primary">
+              Save
+            </button>
+            <button type="button" className="button" onClick={() => setShowForm(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {collections.length === 0 ? (
+        <div className="empty-state">
+          <p>No collections yet. Click "New Collection" to group related media items together.</p>
+        </div>
+      ) : (
+        <div className="collections-view__layout">
+          <ul className="collections-list">
+            {collections.map((collection) => (
+              <li key={collection.id}>
+                <button
+                  type="button"
+                  className={`collections-list__item${selectedId === collection.id ? ' collections-list__item--active' : ''}`}
+                  onClick={() => setSelectedId(collection.id)}
+                >
+                  <span className="collections-list__name">{collection.name}</span>
+                  <span className="collections-list__meta">
+                    {collection.memberCount} items · {formatBytes(collection.totalSizeBytes)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <div className="collections-detail">
+            {selectedCollection ? (
+              <>
+                <div className="collections-detail__header">
+                  <div>
+                    <h2>{selectedCollection.name}</h2>
+                    {selectedCollection.description && <p>{selectedCollection.description}</p>}
+                    <p className="collections-detail__stats">
+                      {selectedCollection.memberCount} items · {selectedCollection.totalFiles} files ·{' '}
+                      {formatBytes(selectedCollection.totalSizeBytes)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="button button--small button--danger"
+                    onClick={() => handleDelete(selectedCollection.id)}
+                  >
+                    <Trash2 size={16} aria-hidden="true" /> Delete Collection
+                  </button>
+                </div>
+
+                {availableMedia.length > 0 && (
+                  <div className="collections-detail__add-member">
+                    <select value={addMediaId} onChange={(e) => setAddMediaId(e.target.value)}>
+                      <option value="">Add media item…</option>
+                      {availableMedia.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="button" className="button button--small" onClick={handleAddMember} disabled={!addMediaId}>
+                      Add
+                    </button>
+                  </div>
+                )}
+
+                {members.length === 0 ? (
+                  <p className="empty-state">No media items in this collection yet.</p>
+                ) : (
+                  <table className="media-table">
+                    <thead>
+                      <tr>
+                        <th>Label</th>
+                        <th>Status</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {members.map((member) => (
+                        <tr key={member.id}>
+                          <td>{member.label}</td>
+                          <td>
+                            <span className={`status-badge status-badge--${member.status}`}>{member.status}</span>
+                          </td>
+                          <td className="media-table__actions">
+                            <button
+                              type="button"
+                              className="button button--small button--icon-only"
+                              title="Remove from collection"
+                              aria-label="Remove from collection"
+                              onClick={() => handleRemoveMember(member.id)}
+                            >
+                              <X size={16} aria-hidden="true" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </>
+            ) : (
+              <p className="empty-state">Select a collection to view its members.</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Create File
+
+**Input:**
+
+- content:
+
+```
+.collections-view__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.collections-view__layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.collections-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.collections-list__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.collections-list__item:hover {
+  background: var(--color-sidebar-hover);
+}
+
+.collections-list__item--active {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+.collections-list__name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.collections-list__meta {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.collections-detail__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.collections-detail__stats {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.collections-detail__add-member {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.collections-detail__add-member select {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+  flex: 1;
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/src/views/Collections.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+> ❓ Continue to iterate? — Copilot has been working on this problem for a while. It can continue to iterate, or you can send a new message to refine your prompt. `Configure max requests`.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Implement export service* (6/8)
+</details></tool-use>
+
+---
+
+_**User (2026-08-14 13:32:19Z)**_
+
+@agent Continue: "Continue to iterate?"
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `Collections.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Collections.css**</summary>
+
+@@ lines 1-1 @@
+
+```
+.collections-view__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.collections-view__layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.collections-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.collections-list__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.collections-list__item:hover {
+  background: var(--color-sidebar-hover);
+}
+
+.collections-list__item--active {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+.collections-list__name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.collections-list__meta {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.collections-detail__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.collections-detail__stats {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.collections-detail__add-member {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.collections-detail__add-member select {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+  flex: 1;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Collections component and styles are in place. Wiring it into the app route now, then I'll run the renderer build immediately.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **App.tsx**</summary>
+
+@@ lines 1-98 @@
+
+```
+import { useEffect, useState } from 'react'
+import TitleBar from './components/TitleBar'
+import Sidebar from './components/Sidebar'
+import Dashboard from './views/Dashboard'
+import MediaLibrary from './views/MediaLibrary'
+import MediaDetail from './views/MediaDetail'
+import Search from './views/Search'
+import Duplicates from './views/Duplicates'
+import BackupExport from './views/BackupExport'
+import SettingsView from './views/Settings'
+import Collections from './views/Collections'
+import PlaceholderView from './views/PlaceholderView'
+import { NAV_ITEMS } from './components/Sidebar'
+
+const VIEW_TITLES: Record<string, string> = Object.fromEntries(
+  NAV_ITEMS.map((item) => [item.key, item.label])
+)
+
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'discdock:sidebar-collapsed'
+
+export default function App(): JSX.Element {
+  const [activeView, setActiveView] = useState('dashboard')
+  const [selectedMediaId, setSelectedMediaId] = useState<number | null>(null)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
+    () => localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true'
+  )
+
+  const toggleSidebarCollapsed = (): void => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(next))
+      return next
+    })
+  }
+
+  useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) document.documentElement.dataset.theme = result.data.theme
+    })
+  }, [])
+
+  // Global keyboard shortcuts: Ctrl+F -> Search, Ctrl+, -> Settings.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (!event.ctrlKey) return
+      if (event.key.toLowerCase() === 'f') {
+        event.preventDefault()
+        handleSelectNav('search')
+      } else if (event.key === ',') {
+        event.preventDefault()
+        handleSelectNav('settings')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
+  const handleSelectNav = (key: string): void => {
+    setSelectedMediaId(null)
+    setActiveView(key)
+  }
+
+  const renderView = (): JSX.Element => {
+    if (activeView === 'media-library' && selectedMediaId !== null) {
+      return <MediaDetail mediaId={selectedMediaId} onBack={() => setSelectedMediaId(null)} />
+    }
+    switch (activeView) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'media-library':
+        return <MediaLibrary onOpenDetail={setSelectedMediaId} />
+      case 'search':
+        return <Search />
+      case 'duplicates':
+        return <Duplicates />
+      case 'backup-export':
+        return <BackupExport />
+      case 'collections':
+        return <Collections />
+      case 'settings':
+        return <SettingsView />
+      default:
+        return <PlaceholderView title={VIEW_TITLES[activeView] ?? activeView} />
+    }
+  }
+
+  return (
+    <div className="app-shell">
+      <TitleBar sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebarCollapsed} />
+      <div className="app-body">
+        <Sidebar active={activeView} onSelect={handleSelectNav} collapsed={sidebarCollapsed} />
+        <main className="app-content">{renderView()}</main>
+      </div>
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:renderer 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Collections builds cleanly and is now routed from the sidebar. Next I’m adding the media health Errors tab and custom field values to Media Detail, since both use the same detail surface and backend APIs.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `MediaDetail.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `BackupExport.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Settings.tsx`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaDetail.tsx**</summary>
+
+@@ lines 1-260 @@
+
+```
+import { useEffect, useState } from 'react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { AppSettings, CustomFieldValue, FileEntry, MediaItem, ScanErrorEntry, ScanJob } from '../../shared/types'
+import './MediaDetail.css'
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+interface MediaDetailProps {
+  mediaId: number
+  onBack: () => void
+}
+
+type Tab = 'overview' | 'browse' | 'history' | 'errors'
+
+export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.Element {
+  const [item, setItem] = useState<MediaItem | null>(null)
+  const [tab, setTab] = useState<Tab>('overview')
+  const [folderPath, setFolderPath] = useState('')
+  const [entries, setEntries] = useState<FileEntry[]>([])
+  const [history, setHistory] = useState<ScanJob[]>([])
+  const [errors, setErrors] = useState<ScanErrorEntry[]>([])
+  const [customFields, setCustomFields] = useState<CustomFieldValue[]>([])
+  const [customFieldNames, setCustomFieldNames] = useState<string[]>([])
+
+  useEffect(() => {
+    void window.discdock.media.get(mediaId).then((result) => {
+      if (result.ok) setItem(result.data)
+    })
+  }, [mediaId])
+
+  useEffect(() => {
+    if (tab !== 'browse') return
+    void window.discdock.files.list(mediaId, folderPath).then((result) => {
+      if (result.ok) setEntries(result.data)
+    })
+  }, [mediaId, folderPath, tab])
+
+  useEffect(() => {
+    if (tab !== 'history') return
+    void window.discdock.scan.history(mediaId).then((result) => {
+      if (result.ok) setHistory(result.data)
+    })
+  }, [mediaId, tab])
+
+  useEffect(() => {
+    if (tab !== 'errors') return
+    void window.discdock.scan.errors(mediaId).then((result) => {
+      if (result.ok) setErrors(result.data)
+    })
+  }, [mediaId, tab])
+
+  useEffect(() => {
+    void Promise.all([window.discdock.settings.get(), window.discdock.customFields.getForMedia(mediaId)]).then(
+      ([settingsResult, fieldsResult]) => {
+        if (settingsResult.ok) setCustomFieldNames((settingsResult.data as AppSettings).customFieldNames)
+        if (fieldsResult.ok) setCustomFields(fieldsResult.data)
+      }
+    )
+  }, [mediaId])
+
+  const customFieldValue = (fieldName: string): string =>
+    customFields.find((field) => field.fieldName === fieldName)?.fieldValue ?? ''
+
+  const saveCustomField = (fieldName: string, value: string): void => {
+    void window.discdock.customFields.setForMedia(mediaId, fieldName, value || null).then((result) => {
+      if (result.ok) {
+        setCustomFields((current) => {
+          const next = current.filter((field) => field.fieldName !== fieldName)
+          if (value) next.push({ fieldName, fieldValue: value })
+          return next
+        })
+      }
+    })
+  }
+
+  if (!item) return <div className="media-detail">Loading…</div>
+
+  const mediaTypeLabel = MEDIA_TYPES.find((t) => t.value === item.mediaType)?.label ?? item.mediaType
+  const breadcrumbs = folderPath ? folderPath.split('/') : []
+
+  return (
+    <div className="media-detail">
+      <button type="button" className="button button--small media-detail__back" onClick={onBack}>
+        ← Back to Media Library
+      </button>
+
+      <div className="media-detail__header">
+        <h1>{item.label}</h1>
+        <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+      </div>
+      <p className="media-detail__subtitle">
+        {mediaTypeLabel} {item.physicalLocation ? `· ${item.physicalLocation}` : ''}
+      </p>
+
+      <div className="media-detail__tabs">
+        <button type="button" className={tab === 'overview' ? 'tab tab--active' : 'tab'} onClick={() => setTab('overview')}>
+          Overview
+        </button>
+        <button type="button" className={tab === 'browse' ? 'tab tab--active' : 'tab'} onClick={() => setTab('browse')}>
+          Browse
+        </button>
+        <button type="button" className={tab === 'history' ? 'tab tab--active' : 'tab'} onClick={() => setTab('history')}>
+          Scan History
+        </button>
+        <button type="button" className={tab === 'errors' ? 'tab tab--active' : 'tab'} onClick={() => setTab('errors')}>
+          Errors
+        </button>
+      </div>
+
+      {tab === 'overview' && (
+        <div className="media-detail__overview">
+          <p>Capacity: {item.capacityBytes ? formatBytes(item.capacityBytes) : 'Unknown'}</p>
+          <p>Last scanned: {item.lastScannedAt ?? 'Never'}</p>
+          <p>Last verified: {item.lastVerifiedAt ?? 'Never'}</p>
+          <p>Notes: {item.notes ?? '—'}</p>
+          {customFieldNames.length > 0 && (
+            <div className="media-detail__custom-fields">
+              <h2>Custom Fields</h2>
+              {customFieldNames.map((fieldName) => (
+                <label key={fieldName}>
+                  {fieldName}
+                  <input
+                    type="text"
+                    defaultValue={customFieldValue(fieldName)}
+                    onBlur={(event) => saveCustomField(fieldName, event.target.value.trim())}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === 'browse' && (
+        <div className="media-detail__browse">
+          <div className="breadcrumbs">
+            <button type="button" onClick={() => setFolderPath('')}>
+              Root
+            </button>
+            {breadcrumbs.map((segment, index) => {
+              const pathAtIndex = breadcrumbs.slice(0, index + 1).join('/')
+              return (
+                <span key={pathAtIndex}>
+                  {' / '}
+                  <button type="button" onClick={() => setFolderPath(pathAtIndex)}>
+                    {segment}
+                  </button>
+                </span>
+              )
+            })}
+          </div>
+
+          {entries.length === 0 ? (
+            <p className="media-detail__status">This folder is empty (or hasn't been scanned yet).</p>
+          ) : (
+            <table className="media-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Kind</th>
+                  <th>Size</th>
+                  <th>Modified</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <tr key={entry.path}>
+                    <td>
+                      {entry.isDirectory ? (
+                        <button type="button" className="link-button" onClick={() => setFolderPath(entry.path)}>
+                          📁 {entry.name}
+                        </button>
+                      ) : (
+                        entry.name
+                      )}
+                    </td>
+                    <td>{entry.isDirectory ? 'folder' : entry.kind}</td>
+                    <td>{entry.isDirectory ? '—' : formatBytes(entry.sizeBytes)}</td>
+                    <td>{entry.modifiedAtSrc ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === 'history' && (
+        <div className="media-detail__history">
+          {history.length === 0 ? (
+            <p className="media-detail__status">No scans yet.</p>
+          ) : (
+            <table className="media-table">
+              <thead>
+                <tr>
+                  <th>Started</th>
+                  <th>Status</th>
+                  <th>Hash Mode</th>
+                  <th>Added</th>
+                  <th>Modified</th>
+                  <th>Removed</th>
+                  <th>Errors</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((job) => (
+                  <tr key={job.id}>
+                    <td>{job.startedAt}</td>
+                    <td>{job.status}</td>
+                    <td>{job.hashMode}</td>
+                    <td>{job.filesAdded}</td>
+                    <td>{job.filesModified}</td>
+                    <td>{job.filesRemoved}</td>
+                    <td>{job.errorCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === 'errors' && (
+        <div className="media-detail__errors">
+          {errors.length === 0 ? (
+            <p className="media-detail__status">No scan errors recorded.</p>
+          ) : (
+            <table className="media-table">
+              <thead>
+                <tr>
+                  <th>Path</th>
+                  <th>Type</th>
+                  <th>Message</th>
+                  <th>Scan Started</th>
+                </tr>
+              </thead>
+              <tbody>
+                {errors.map((entry, index) => (
+                  <tr key={`${entry.path}-${entry.scanStartedAt}-${index}`}>
+                    <td>{entry.path}</td>
+                    <td>{entry.errorType}</td>
+                    <td>{entry.message}</td>
+                    <td>{entry.scanStartedAt}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Media Detail now has an Errors tab and editable custom fields. I’m adding the settings management controls next, then I’ll propagate custom media types into the main media form and dashboard registration flow.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.tsx**</summary>
+
+@@ lines 1-223 @@
+
+```
+import { useEffect, useState } from 'react'
+import type { AppSettings, HashMode, Theme } from '../../shared/types'
+import './Settings.css'
+
+const HASH_MODES: { value: HashMode; label: string }[] = [
+  { value: 'none', label: 'None (metadata only, fastest)' },
+  { value: 'quick', label: 'Quick (partial hash)' },
+  { value: 'full', label: 'Full (SHA-256, most accurate)' }
+]
+
+export default function Settings(): JSX.Element {
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [newMediaType, setNewMediaType] = useState('')
+  const [newFieldName, setNewFieldName] = useState('')
+
+  useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) setSettings(result.data)
+    })
+  }, [])
+
+  const save = (patch: Partial<AppSettings>): void => {
+    void window.discdock.settings.update(patch).then((result) => {
+      if (result.ok) {
+        setSettings(result.data)
+        if (patch.theme) document.documentElement.dataset.theme = result.data.theme
+        setSaved(true)
+        setTimeout(() => setSaved(false), 1500)
+      }
+    })
+  }
+
+  const addMediaType = (): void => {
+    const value = newMediaType.trim()
+    if (!value || settings.customMediaTypes.includes(value)) return
+    save({ customMediaTypes: [...settings.customMediaTypes, value] })
+    setNewMediaType('')
+  }
+
+  const addFieldName = (): void => {
+    const value = newFieldName.trim()
+    if (!value || settings.customFieldNames.includes(value)) return
+    save({ customFieldNames: [...settings.customFieldNames, value] })
+    setNewFieldName('')
+  }
+
+  if (!settings) return <div className="settings-view">Loading…</div>
+
+  return (
+    <div className="settings-view">
+      <h1>Settings</h1>
+      {saved && <p className="settings-view__saved">Saved</p>}
+
+      <section className="settings-section">
+        <h2>Scanning Defaults</h2>
+        <label>
+          Default hash mode
+          <select
+            value={settings.defaultHashMode}
+            onChange={(e) => save({ defaultHashMode: e.target.value as HashMode })}
+          >
+            {HASH_MODES.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Exclude patterns (one per line)
+          <textarea
+            value={settings.excludePatterns.join('\n')}
+            onChange={(e) => save({ excludePatterns: e.target.value.split('\n').filter(Boolean) })}
+            rows={4}
+          />
+        </label>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.followSymlinks}
+            onChange={(e) => save({ followSymlinks: e.target.checked })}
+          />
+          Follow symbolic links during scans
+        </label>
+      </section>
+
+      <section className="settings-section">
+        <h2>Appearance</h2>
+        <label>
+          Theme
+          <select value={settings.theme} onChange={(e) => save({ theme: e.target.value as Theme })}>
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+      </section>
+
+      <section className="settings-section">
+        <h2>Custom Media Types</h2>
+        <p>Add media types that are not included in the built-in list.</p>
+        <div className="settings-list-editor">
+          <input
+            type="text"
+            value={newMediaType}
+            placeholder="e.g. Blu-ray"
+            onChange={(e) => setNewMediaType(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') addMediaType()
+            }}
+          />
+          <button type="button" className="button button--small" onClick={addMediaType}>
+            Add
+          </button>
+        </div>
+        <ul className="settings-list-editor__items">
+          {settings.customMediaTypes.map((mediaType) => (
+            <li key={mediaType}>
+              <span>{mediaType}</span>
+              <button
+                type="button"
+                className="button button--small button--danger"
+                onClick={() => save({ customMediaTypes: settings.customMediaTypes.filter((value) => value !== mediaType) })}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="settings-section">
+        <h2>Custom Fields</h2>
+        <p>Define metadata fields that can be filled in on each media item.</p>
+        <div className="settings-list-editor">
+          <input
+            type="text"
+            value={newFieldName}
+            placeholder="e.g. Purchase Date"
+            onChange={(e) => setNewFieldName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') addFieldName()
+            }}
+          />
+          <button type="button" className="button button--small" onClick={addFieldName}>
+            Add
+          </button>
+        </div>
+        <ul className="settings-list-editor__items">
+          {settings.customFieldNames.map((fieldName) => (
+            <li key={fieldName}>
+              <span>{fieldName}</span>
+              <button
+                type="button"
+                className="button button--small button--danger"
+                onClick={() => save({ customFieldNames: settings.customFieldNames.filter((value) => value !== fieldName) })}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="settings-section">
+        <h2>Notifications</h2>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.notifications.scanCompleted}
+            onChange={(e) =>
+              save({ notifications: { ...settings.notifications, scanCompleted: e.target.checked } })
+            }
+          />
+          Notify when a scan completes
+        </label>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.notifications.scanFailed}
+            onChange={(e) =>
+              save({ notifications: { ...settings.notifications, scanFailed: e.target.checked } })
+            }
+          />
+          Notify when a scan fails
+        </label>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.notifications.verificationReminders}
+            onChange={(e) =>
+              save({ notifications: { ...settings.notifications, verificationReminders: e.target.checked } })
+            }
+          />
+          Remind me about media needing re-verification
+        </label>
+      </section>
+
+      <section className="settings-section">
+        <h2>Keyboard Shortcuts</h2>
+        <table className="shortcuts-table">
+          <tbody>
+            <tr>
+              <td>
+                <kbd>Ctrl</kbd> + <kbd>F</kbd>
+              </td>
+              <td>Open Search</td>
+            </tr>
+            <tr>
+              <td>
+                <kbd>Ctrl</kbd> + <kbd>,</kbd>
+              </td>
+              <td>Open Settings</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Settings.css`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 5 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.css**</summary>
+
+@@ lines 1-94 @@
+
+```
+.settings-view__saved {
+  color: var(--color-accent);
+  font-size: 13px;
+}
+
+.settings-section {
+  margin: 20px 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-section h2 {
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.settings-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  max-width: 420px;
+}
+
+.settings-section select,
+.settings-section textarea,
+.settings-list-editor input {
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.settings-section p {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.settings-list-editor {
+  display: flex;
+  gap: 8px;
+  max-width: 420px;
+}
+
+.settings-list-editor input {
+  flex: 1;
+}
+
+.settings-list-editor__items {
+  list-style: none;
+  padding: 0;
+  max-width: 420px;
+}
+
+.settings-list-editor__items li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13px;
+}
+
+.settings-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.shortcuts-table {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.shortcuts-table td {
+  padding: 6px 16px 6px 0;
+}
+
+.shortcuts-table kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-sidebar-hover);
+  font-family: inherit;
+  font-size: 12px;
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for regex `MEDIA_TYPES|mediaType|handleRegister|register` (`**/src/views/Dashboard.tsx`), 6 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 1-737 @@
+
+```
+import { useEffect, useState } from 'react'
+import { Scan, CircleX, Archive, Trash2, Eject as EjectIcon, Disc3, Usb } from 'lucide-react'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import './MediaLibrary.css'
+
+const EMPTY_FORM: MediaItemInput = {
+  label: '',
+  mediaType: 'other',
+  capacityBytes: null,
+  physicalLocation: null,
+  notes: null
+}
+
+function mediaTypeLabel(mediaType: MediaType): string {
+  return MEDIA_TYPES.find((t) => t.value === mediaType)?.label ?? mediaType
+}
+
+type SortKey = 'label' | 'mediaType' | 'physicalLocation' | 'status' | 'lastScannedAt' | 'tags'
+
+const COLUMNS: { key: SortKey; label: string }[] = [
+  { key: 'label', label: 'Label' },
+  { key: 'mediaType', label: 'Type' },
+  { key: 'physicalLocation', label: 'Location' },
+  { key: 'tags', label: 'Tags' },
+  { key: 'status', label: 'Status' },
+  { key: 'lastScannedAt', label: 'Last Scanned' }
+]
+
+interface ActiveScan {
+  jobId: number
+  filesProcessed: number
+  currentPath: string
+}
+
+export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+  const [items, setItems] = useState<MediaItem[]>([])
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
+  const [error, setError] = useState<string | null>(null)
+  const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
+  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [sortKey, setSortKey] = useState<SortKey>('label')
+  const [sortAsc, setSortAsc] = useState(true)
+
+  const handleSort = (key: SortKey): void => {
+    if (key === sortKey) {
+      setSortAsc((prev) => !prev)
+    } else {
+      setSortKey(key)
+      setSortAsc(true)
+    }
+  }
+
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [deviceMountPoint, setDeviceMountPoint] = useState<string | null>(null)
+  const [containerFilter, setContainerFilter] = useState<string>('')
+  const [editingLocationId, setEditingLocationId] = useState<number | null>(null)
+  const [editingLocationValue, setEditingLocationValue] = useState('')
+  const [tagsByMedia, setTagsByMedia] = useState<Record<number, string[]>>({})
+  const [allTagNames, setAllTagNames] = useState<string[]>([])
+  const [tagFilter, setTagFilter] = useState<string>('')
+  const [editingTagsId, setEditingTagsId] = useState<number | null>(null)
+  const [editingTagsValue, setEditingTagsValue] = useState('')
+  const [customMediaTypes, setCustomMediaTypes] = useState<string[]>([])
+
+  const knownLocations = Array.from(
+    new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
+  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
+
+  const containerFilteredItems = containerFilter
+    ? items.filter((item) => item.physicalLocation === containerFilter)
+    : items
+
+  const filteredItems = tagFilter
+    ? containerFilteredItems.filter((item) => (tagsByMedia[item.id] ?? []).includes(tagFilter))
+    : containerFilteredItems
+
+  const sortValue = (item: MediaItem, key: SortKey): string => {
+    switch (key) {
+      case 'mediaType':
+        return mediaTypeLabel(item.mediaType)
+      case 'physicalLocation':
+        return item.physicalLocation ?? ''
+      case 'lastScannedAt':
+        return item.lastScannedAt ?? ''
+      case 'tags':
+        return (tagsByMedia[item.id] ?? []).join(', ')
+      default:
+        return item[key] ?? ''
+    }
+  }
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const result = sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), undefined, { sensitivity: 'base' })
+    return sortAsc ? result : -result
+  })
+
+  const findDeviceForItem = (item: MediaItem): DetectedDevice | undefined =>
+    devices.find((d) => item.deviceFingerprint && (d.uuid ?? d.devicePath) === item.deviceFingerprint)
+
+  const unregisteredDevices = devices.filter(
+    (d) => !items.some((item) => item.deviceFingerprint === (d.uuid ?? d.devicePath))
+  )
+
+  const [ejectingIds, setEjectingIds] = useState<Set<number>>(new Set())
+  const [ejectMessage, setEjectMessage] = useState<string | null>(null)
+
+  const handleEject = (item: MediaItem, device: DetectedDevice): void => {
+    setEjectingIds((prev) => new Set(prev).add(item.id))
+    setEjectMessage(null)
+    void window.discdock.devices.eject(device.devicePath, device.isOptical).then((result) => {
+      setEjectingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(item.id)
+        return next
+      })
+      setEjectMessage(result.ok ? `${item.label}: ${result.data.message}` : `Eject failed: ${result.error.message}`)
+    })
+  }
+
+  const handleAddDetectedDevice = (device: DetectedDevice): void => {
+    setShowForm(true)
+    handleUseDevice(device)
+  }
+
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [lastClickedIndex, setLastClickedIndex] = useState<number | null>(null)
+  const [batchLocationValue, setBatchLocationValue] = useState('')
+
+  const handleRowCheckboxClick = (
+    event: React.MouseEvent<HTMLInputElement>,
+    item: MediaItem,
+    index: number
+  ): void => {
+    if (event.shiftKey && lastClickedIndex !== null) {
+      const [start, end] = [lastClickedIndex, index].sort((a, b) => a - b)
+      const rangeIds = sortedItems.slice(start, end + 1).map((i) => i.id)
+      setSelectedIds((prev) => new Set([...prev, ...rangeIds]))
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(item.id)) next.delete(item.id)
+        else next.add(item.id)
+        return next
+      })
+    }
+    setLastClickedIndex(index)
+  }
+
+  const handleSelectAll = (): void => {
+    setSelectedIds((prev) =>
+      prev.size === sortedItems.length ? new Set() : new Set(sortedItems.map((i) => i.id))
+    )
+  }
+
+  const clearSelection = (): void => {
+    setSelectedIds(new Set())
+    setLastClickedIndex(null)
+  }
+
+  const handleBatchSetLocation = (): void => {
+    const value = batchLocationValue.trim() || null
+    void Promise.all(
+      Array.from(selectedIds).map((id) => window.discdock.media.update(id, { physicalLocation: value }))
+    ).then(() => {
+      setBatchLocationValue('')
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const handleBatchRetire = (): void => {
+    if (!window.confirm(`Retire ${selectedIds.size} selected media item(s)?`)) return
+    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.retire(id))).then(() => {
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const handleBatchDelete = (): void => {
+    if (!window.confirm(`Delete ${selectedIds.size} selected media item(s) and their catalogs? This cannot be undone.`))
+      return
+    void Promise.all(Array.from(selectedIds).map((id) => window.discdock.media.delete(id))).then(() => {
+      clearSelection()
+      loadItems()
+    })
+  }
+
+  const loadItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setItems(result.data)
+    })
+    void window.discdock.tags.allForMedia().then((result) => {
+      if (result.ok) setTagsByMedia(result.data)
+    })
+    void window.discdock.tags.list().then((result) => {
+      if (result.ok) setAllTagNames(result.data)
+    })
+  }
+
+  useEffect(loadItems, [])
+
+  useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) setCustomMediaTypes(result.data.customMediaTypes)
+    })
+  }, [])
+
+  useEffect(() => {
+    void window.discdock.devices.list().then((result) => {
+      if (result.ok) setDevices(result.data)
+    })
+    const unsubConnect = window.discdock.devices.onConnected((device) => {
+      setDevices((prev) => [...prev.filter((d) => d.devicePath !== device.devicePath), device])
+    })
+    const unsubDisconnect = window.discdock.devices.onDisconnected((devicePath) => {
+      setDevices((prev) => prev.filter((d) => d.devicePath !== devicePath))
+    })
+    return () => {
+      unsubConnect()
+      unsubDisconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    const unsubProgress = window.discdock.scan.onProgress((progress: ScanProgress) => {
+      setJobToMedia((current) => {
+        const mediaId = current[progress.jobId]
+        if (mediaId === undefined) return current
+        setScansByMedia((prevScans) => ({
+          ...prevScans,
+          [mediaId]: {
+            jobId: progress.jobId,
+            filesProcessed: progress.filesProcessed,
+            currentPath: progress.currentPath
+          }
+        }))
+        return current
+      })
+    })
+
+    const finishScan = (jobId: number): void => {
+      setJobToMedia((current) => {
+        const mediaId = current[jobId]
+        if (mediaId !== undefined) {
+          setScansByMedia((prevScans) => {
+            const next = { ...prevScans }
+            delete next[mediaId]
+            return next
+          })
+        }
+        const next = { ...current }
+        delete next[jobId]
+        return next
+      })
+      loadItems()
+    }
+
+    const unsubCompleted = window.discdock.scan.onCompleted(({ jobId }) => finishScan(jobId))
+    const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
+    const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
+
+    return () => {
+      unsubProgress()
+      unsubCompleted()
+      unsubFailed()
+      unsubCancelled()
+    }
+  }, [])
+
+  const handleSubmit = (event: React.FormEvent): void => {
+    event.preventDefault()
+    setError(null)
+    void window.discdock.media.create(form).then((result) => {
+      if (result.ok) {
+        setForm(EMPTY_FORM)
+        setShowForm(false)
+        loadItems()
+
+        const mediaId = result.data.id
+        if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
+          if (deviceMountPoint) {
+            beginScanWithPath(mediaId, deviceMountPoint)
+          } else {
+            handleScan(mediaId)
+          }
+        }
+        setDeviceMountPoint(null)
+      } else {
+        setError(result.error.message)
+      }
+    })
+  }
+
+  const handleUseDevice = (device: DetectedDevice): void => {
+    setForm({
+      label: device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath,
+      mediaType: device.isOptical ? 'dvd' : 'external_hdd',
+      capacityBytes: device.sizeBytes,
+      physicalLocation: null,
+      notes: null,
+      deviceFingerprint: device.uuid ?? device.devicePath
+    })
+    setDeviceMountPoint(device.mountPoint)
+  }
+
+  const handleRetire = (id: number): void => {
+    void window.discdock.media.retire(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const handleDelete = (id: number): void => {
+    if (!window.confirm('Delete this media item and its catalog? This cannot be undone.')) return
+    void window.discdock.media.delete(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const beginScanWithPath = (mediaId: number, rootPath: string): void => {
+    void window.discdock.scan.start(mediaId, rootPath).then((startResult) => {
+      if (startResult.ok) {
+        const jobId = startResult.data.jobId
+        setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+        setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
+      }
+    })
+  }
+
+  const handleScan = (mediaId: number): void => {
+    void window.discdock.dialogs.pickFolder().then((pickResult) => {
+      if (!pickResult.ok || !pickResult.data.path) return
+      beginScanWithPath(mediaId, pickResult.data.path)
+    })
+  }
+
+  const handleCancelScan = (mediaId: number): void => {
+    const scan = scansByMedia[mediaId]
+    if (scan) void window.discdock.scan.cancel(scan.jobId)
+  }
+
+  const startEditingLocation = (item: MediaItem): void => {
+    setEditingLocationId(item.id)
+    setEditingLocationValue(item.physicalLocation ?? '')
+  }
+
+  const saveEditingLocation = (id: number): void => {
+    const value = editingLocationValue.trim() || null
+    setEditingLocationId(null)
+    void window.discdock.media.update(id, { physicalLocation: value }).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const startEditingTags = (item: MediaItem): void => {
+    setEditingTagsId(item.id)
+    setEditingTagsValue((tagsByMedia[item.id] ?? []).join(', '))
+  }
+
+  const saveEditingTags = (id: number): void => {
+    const tagNames = Array.from(
+      new Set(
+        editingTagsValue
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
+      )
+    )
+    setEditingTagsId(null)
+    void window.discdock.tags.setForMedia(id, tagNames).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  return (
+    <div className="media-library">
+      <div className="media-library__header">
+        <h1>Media Library</h1>
+        <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
+          Add Media
+        </button>
+      </div>
+
+      {!showForm && unregisteredDevices.length > 0 && (
+        <div className="new-media-banner">
+          {unregisteredDevices.map((device) => (
+            <div key={device.devicePath} className="new-media-banner__item">
+              <span>
+                {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />} New
+                media detected: <strong>{device.label ?? device.mountPoint.split('/').pop()}</strong> — not yet
+                registered.
+              </span>
+              <button
+                type="button"
+                className="button button--small button--primary"
+                onClick={() => handleAddDetectedDevice(device)}
+              >
+                Add Media
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showForm && (
+        <form className="media-form" onSubmit={handleSubmit}>
+          {error && <div className="media-form__error">{error}</div>}
+
+          {devices.length > 0 && (
+            <div className="detected-devices-picker">
+              <span className="detected-devices-picker__label">Detected media (click to fill in the form):</span>
+              <div className="detected-devices-picker__list">
+                {devices.map((device) => (
+                  <button
+                    type="button"
+                    key={device.devicePath}
+                    className="button button--small"
+                    onClick={() => handleUseDevice(device)}
+                  >
+                    {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />}{' '}
+                    {device.label ?? device.mountPoint.split('/').pop()}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <label>
+            Label
+            <input
+              type="text"
+              value={form.label}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
+              required
+            />
+          </label>
+          <label>
+            Media Type
+            <select
+              value={form.mediaType}
+              onChange={(e) => setForm({ ...form, mediaType: e.target.value as MediaType })}
+            >
+              {[...MEDIA_TYPES, ...customMediaTypes.map((value) => ({ value, label: value }))].map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Container / Physical Location
+            <input
+              type="text"
+              list="location-suggestions"
+              value={form.physicalLocation ?? ''}
+              onChange={(e) => setForm({ ...form, physicalLocation: e.target.value || null })}
+              placeholder="e.g. CD Spindle #2, Garage / Box 3"
+            />
+            <datalist id="location-suggestions">
+              {knownLocations.map((loc) => (
+                <option key={loc} value={loc} />
+              ))}
+            </datalist>
+          </label>
+          <label>
+            Notes
+            <textarea
+              value={form.notes ?? ''}
+              onChange={(e) => setForm({ ...form, notes: e.target.value || null })}
+            />
+          </label>
+          <div className="media-form__actions">
+            <button type="submit" className="button button--primary">
+              Save
+            </button>
+            <button
+              type="button"
+              className="button"
+              onClick={() => {
+                setShowForm(false)
+                setDeviceMountPoint(null)
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {items.length === 0 ? (
+        <div className="empty-state">
+          <p>No media registered yet. Click "Add Media" to catalog your first item.</p>
+        </div>
+      ) : (
+        <>
+          {knownLocations.length > 0 && (
+            <div className="container-filter">
+              <label>
+                Container
+                <select value={containerFilter} onChange={(e) => setContainerFilter(e.target.value)}>
+                  <option value="">All containers</option>
+                  {knownLocations.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {loc}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          {allTagNames.length > 0 && (
+            <div className="container-filter">
+              <label>
+                Tag
+                <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+                  <option value="">All tags</option>
+                  {allTagNames.map((tag) => (
+                    <option key={tag} value={tag}>
+                      {tag}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          <datalist id="tag-suggestions">
+            {allTagNames.map((tag) => (
+              <option key={tag} value={tag} />
+            ))}
+          </datalist>
+
+          {ejectMessage && <p className="media-library__eject-message">{ejectMessage}</p>}
+
+          {selectedIds.size > 0 && (
+            <div className="batch-actions">
+              <span className="batch-actions__count">{selectedIds.size} selected</span>
+              <input
+                type="text"
+                list="location-suggestions"
+                placeholder="Set container…"
+                value={batchLocationValue}
+                onChange={(e) => setBatchLocationValue(e.target.value)}
+              />
+              <button type="button" className="button button--small" onClick={handleBatchSetLocation}>
+                Apply Container
+              </button>
+              <button type="button" className="button button--small" onClick={handleBatchRetire}>
+                Retire Selected
+              </button>
+              <button type="button" className="button button--small button--danger" onClick={handleBatchDelete}>
+                Delete Selected
+              </button>
+              <button type="button" className="button button--small" onClick={clearSelection}>
+                Clear Selection
+              </button>
+            </div>
+          )}
+
+          <table className="media-table">
+          <thead>
+            <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size > 0 && selectedIds.size === sortedItems.length}
+                  onChange={handleSelectAll}
+                  aria-label="Select all"
+                />
+              </th>
+              {COLUMNS.map((col) => (
+                <th key={col.key}>
+                  <button type="button" className="media-table__sort-header" onClick={() => handleSort(col.key)}>
+                    {col.label}
+                    {sortKey === col.key ? (sortAsc ? ' ▲' : ' ▼') : ''}
+                  </button>
+                </th>
+              ))}
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedItems.map((item, index) => {
+              const scan = scansByMedia[item.id]
+              const presentDevice = findDeviceForItem(item)
+              const rowClasses = [
+                selectedIds.has(item.id) ? 'media-table__row--selected' : '',
+                presentDevice ? 'media-table__row--present' : ''
+              ]
+                .filter(Boolean)
+                .join(' ')
+              return (
+                <tr key={item.id} className={rowClasses}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => {}}
+                      onClick={(e) => handleRowCheckboxClick(e, item, index)}
+                      aria-label={`Select ${item.label}`}
+                    />
+                  </td>
+                  <td>
+                    <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
+                      {item.label}
+                    </button>
+                  </td>
+                  <td>{mediaTypeLabel(item.mediaType)}</td>
+                  <td>
+                    {editingLocationId === item.id ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        list="location-suggestions"
+                        className="media-table__location-input"
+                        value={editingLocationValue}
+                        onChange={(e) => setEditingLocationValue(e.target.value)}
+                        onBlur={() => saveEditingLocation(item.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditingLocation(item.id)
+                          if (e.key === 'Escape') setEditingLocationId(null)
+                        }}
+                      />
+                    ) : (
+                      <button type="button" className="link-button" onClick={() => startEditingLocation(item)}>
+                        {item.physicalLocation ?? 'Set container…'}
+                      </button>
+                    )}
+                  </td>
+                  <td>
+                    {editingTagsId === item.id ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        list="tag-suggestions"
+                        className="media-table__location-input"
+                        value={editingTagsValue}
+                        onChange={(e) => setEditingTagsValue(e.target.value)}
+                        onBlur={() => saveEditingTags(item.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEditingTags(item.id)
+                          if (e.key === 'Escape') setEditingTagsId(null)
+                        }}
+                      />
+                    ) : (
+                      <button type="button" className="link-button" onClick={() => startEditingTags(item)}>
+                        {(tagsByMedia[item.id] ?? []).length > 0
+                          ? (tagsByMedia[item.id] ?? []).join(', ')
+                          : 'Add tags…'}
+                      </button>
+                    )}
+                  </td>
+                  <td>
+                    <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+                  </td>
+                  <td>
+                    {scan ? (
+                      <span className="scan-progress">
+                        Scanning… {scan.filesProcessed} files
+                      </span>
+                    ) : (
+                      item.lastScannedAt ?? 'Never'
+                    )}
+                  </td>
+                  <td className="media-table__actions">
+                    {scan ? (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Cancel scan"
+                        aria-label="Cancel scan"
+                        onClick={() => handleCancelScan(item.id)}
+                      >
+                        <CircleX size={16} aria-hidden="true" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Scan"
+                        aria-label="Scan"
+                        onClick={() => handleScan(item.id)}
+                      >
+                        <Scan size={16} aria-hidden="true" />
+                      </button>
+                    )}
+                    {item.status === 'active' && !scan && (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        title="Retire"
+                        aria-label="Retire"
+                        onClick={() => handleRetire(item.id)}
+                      >
+                        <Archive size={16} aria-hidden="true" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="button button--small button--icon-only button--danger"
+                      title="Delete"
+                      aria-label="Delete"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash2 size={16} aria-hidden="true" />
+                    </button>
+                    {presentDevice && (
+                      <button
+                        type="button"
+                        className="button button--small button--icon-only"
+                        disabled={ejectingIds.has(item.id)}
+                        title={
+                          ejectingIds.has(item.id)
+                            ? 'Ejecting…'
+                            : presentDevice.isOptical
+                              ? 'Eject'
+                              : 'Safely Remove'
+                        }
+                        aria-label={presentDevice.isOptical ? 'Eject' : 'Safely Remove'}
+                        onClick={() => handleEject(item, presentDevice)}
+                      >
+                        <EjectIcon size={16} aria-hidden="true" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+          </table>
+        </>
+      )}
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Custom media types now appear in the Add Media selector, and Settings owns the definitions. I’m wiring catalog export into Backup / Export with all-media or single-media scope and JSON/CSV format selection.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **BackupExport.tsx**</summary>
+
+@@ lines 1-127 @@
+
+```
+import { useEffect, useState } from 'react'
+import type { ExportFormat, MediaItem } from '../../shared/types'
+import './BackupExport.css'
+
+export default function BackupExport(): JSX.Element {
+  const [status, setStatus] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
+  const [scope, setScope] = useState<'all' | 'media'>('all')
+  const [selectedMediaId, setSelectedMediaId] = useState('')
+  const [format, setFormat] = useState<ExportFormat>('csv')
+
+  useEffect(() => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setMediaItems(result.data)
+    })
+  }, [])
+
+  const handleBackup = (): void => {
+    void window.discdock.dialogs.pickSaveFile(`discdock-backup-${Date.now()}.sqlite3`).then((pick) => {
+      if (!pick.ok || !pick.data.path) return
+      setBusy(true)
+      setStatus(null)
+      void window.discdock.backup.run(pick.data.path).then((result) => {
+        setBusy(false)
+        setStatus(result.ok ? `Backup saved to ${pick.data.path}` : `Backup failed: ${result.error.message}`)
+      })
+    })
+  }
+
+  const handleRestore = (): void => {
+    void window.discdock.dialogs.pickOpenFile().then((pick) => {
+      if (!pick.ok || !pick.data.path) return
+      const confirmed = window.confirm(
+        'Restoring will replace your current catalog with the selected backup file. ' +
+          'A safety backup of your current data will be taken first. Continue?'
+      )
+      if (!confirmed) return
+
+      setBusy(true)
+      setStatus(null)
+      void window.discdock.backup.restore(pick.data.path!).then((result) => {
+        setBusy(false)
+        setStatus(
+          result.ok
+            ? `Restored successfully. Your previous data was saved to ${result.data.safetyBackupPath}`
+            : `Restore failed: ${result.error.message}`
+        )
+      })
+    })
+  }
+
+  const handleExport = (): void => {
+    if (scope === 'media' && !selectedMediaId) return
+    void window.discdock.dialogs.pickSaveFile(`discdock-catalog.${format}`).then((pick) => {
+      if (!pick.ok || !pick.data.path) return
+      setBusy(true)
+      setStatus(null)
+      const exportScope = scope === 'all' ? { type: 'all' as const } : { type: 'media' as const, mediaId: Number(selectedMediaId) }
+      void window.discdock.export.run(exportScope, format, pick.data.path).then((result) => {
+        setBusy(false)
+        setStatus(result.ok ? `Exported ${result.data.fileCount} files to ${pick.data.path}` : `Export failed: ${result.error.message}`)
+      })
+    })
+  }
+
+  return (
+    <div className="backup-export-view">
+      <h1>Backup / Export</h1>
+
+      <section className="settings-section">
+        <h2>Database Backup</h2>
+        <p className="backup-export-view__hint">
+          Back up your entire catalog (all media, files, tags, and scan history) to a single
+          portable file, or restore from a previous backup.
+        </p>
+        <div className="backup-export-view__actions">
+          <button type="button" className="button button--primary" disabled={busy} onClick={handleBackup}>
+            Backup Now
+          </button>
+          <button type="button" className="button" disabled={busy} onClick={handleRestore}>
+            Restore from Backup
+          </button>
+        </div>
+        {busy && <p className="backup-export-view__status">Working…</p>}
+        {status && <p className="backup-export-view__status">{status}</p>}
+      </section>
+
+      <section className="settings-section">
+        <h2>Catalog Export</h2>
+        <p className="backup-export-view__hint">Export cataloged files and their media metadata for use in spreadsheets or other tools.</p>
+        <div className="backup-export-view__export-controls">
+          <label>
+            Scope
+            <select value={scope} onChange={(e) => setScope(e.target.value as 'all' | 'media')}>
+              <option value="all">All media</option>
+              <option value="media">Single media item</option>
+            </select>
+          </label>
+          {scope === 'media' && (
+            <label>
+              Media item
+              <select value={selectedMediaId} onChange={(e) => setSelectedMediaId(e.target.value)}>
+                <option value="">Choose media…</option>
+                {mediaItems.map((item) => (
+                  <option key={item.id} value={item.id}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label>
+            Format
+            <select value={format} onChange={(e) => setFormat(e.target.value as ExportFormat)}>
+              <option value="csv">CSV</option>
+              <option value="json">JSON</option>
+            </select>
+          </label>
+          <button type="button" className="button button--primary" disabled={busy || (scope === 'media' && !selectedMediaId)} onClick={handleExport}>
+            Export Catalog
+          </button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+```
+</details></tool-use>
+
+---
+
+_**User (2026-08-14 14:13:18Z)**_
+
+are you stuck?
+
+---
+
+_**User (2026-08-14 14:24:40Z)**_
+
+you seem stuck. Where are you in phase 2 completion?

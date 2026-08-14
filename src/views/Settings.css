@@ -24,7 +24,8 @@
 }
 
 .settings-section select,
-.settings-section textarea {
+.settings-section textarea,
+.settings-list-editor input {
   padding: 6px 8px;
   border-radius: 4px;
   border: 1px solid var(--color-border);
@@ -34,10 +35,52 @@
   font-family: inherit;
 }
 
+.settings-section p {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+.settings-list-editor {
+  display: flex;
+  gap: 8px;
+  max-width: 420px;
+}
+
+.settings-list-editor input {
+  flex: 1;
+}
+
+.settings-list-editor__items {
+  list-style: none;
+  padding: 0;
+  max-width: 420px;
+}
+
+.settings-list-editor__items li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13px;
+}
+
 .settings-checkbox {
   flex-direction: row !important;
   align-items: center;
   gap: 8px !important;
+}
+
+.settings-months-field input {
+  width: 100px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+  font-family: inherit;
 }
 
 .shortcuts-table {

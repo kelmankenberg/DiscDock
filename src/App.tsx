@@ -8,6 +8,7 @@ import Search from './views/Search'
 import Duplicates from './views/Duplicates'
 import BackupExport from './views/BackupExport'
 import SettingsView from './views/Settings'
+import Collections from './views/Collections'
 import PlaceholderView from './views/PlaceholderView'
 import { NAV_ITEMS } from './components/Sidebar'
 
@@ -74,6 +75,8 @@ export default function App(): JSX.Element {
         return <Duplicates />
       case 'backup-export':
         return <BackupExport />
+      case 'collections':
+        return <Collections />
       case 'settings':
         return <SettingsView />
       default:

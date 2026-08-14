@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { MEDIA_TYPES } from '../../shared/types'
-import type { FileEntry, MediaItem, ScanJob } from '../../shared/types'
+import type { AppSettings, CustomFieldValue, FileEntry, MediaItem, ScanErrorEntry, ScanJob } from '../../shared/types'
 import './MediaDetail.css'
 
 function formatBytes(bytes: number): string {
@@ -15,7 +15,7 @@ interface MediaDetailProps {
   onBack: () => void
 }
 
-type Tab = 'overview' | 'browse' | 'history'
+type Tab = 'overview' | 'browse' | 'history' | 'errors'
 
 export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.Element {
   const [item, setItem] = useState<MediaItem | null>(null)
@@ -23,6 +23,9 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
   const [folderPath, setFolderPath] = useState('')
   const [entries, setEntries] = useState<FileEntry[]>([])
   const [history, setHistory] = useState<ScanJob[]>([])
+  const [errors, setErrors] = useState<ScanErrorEntry[]>([])
+  const [customFields, setCustomFields] = useState<CustomFieldValue[]>([])
+  const [customFieldNames, setCustomFieldNames] = useState<string[]>([])
 
   useEffect(() => {
     void window.discdock.media.get(mediaId).then((result) => {
@@ -43,6 +46,37 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
       if (result.ok) setHistory(result.data)
     })
   }, [mediaId, tab])
+
+  useEffect(() => {
+    if (tab !== 'errors') return
+    void window.discdock.scan.errors(mediaId).then((result) => {
+      if (result.ok) setErrors(result.data)
+    })
+  }, [mediaId, tab])
+
+  useEffect(() => {
+    void Promise.all([window.discdock.settings.get(), window.discdock.customFields.getForMedia(mediaId)]).then(
+      ([settingsResult, fieldsResult]) => {
+        if (settingsResult.ok) setCustomFieldNames((settingsResult.data as AppSettings).customFieldNames)
+        if (fieldsResult.ok) setCustomFields(fieldsResult.data)
+      }
+    )
+  }, [mediaId])
+
+  const customFieldValue = (fieldName: string): string =>
+    customFields.find((field) => field.fieldName === fieldName)?.fieldValue ?? ''
+
+  const saveCustomField = (fieldName: string, value: string): void => {
+    void window.discdock.customFields.setForMedia(mediaId, fieldName, value || null).then((result) => {
+      if (result.ok) {
+        setCustomFields((current) => {
+          const next = current.filter((field) => field.fieldName !== fieldName)
+          if (value) next.push({ fieldName, fieldValue: value })
+          return next
+        })
+      }
+    })
+  }
 
   if (!item) return <div className="media-detail">Loading…</div>
 
@@ -73,6 +107,9 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
         <button type="button" className={tab === 'history' ? 'tab tab--active' : 'tab'} onClick={() => setTab('history')}>
           Scan History
         </button>
+        <button type="button" className={tab === 'errors' ? 'tab tab--active' : 'tab'} onClick={() => setTab('errors')}>
+          Errors
+        </button>
       </div>
 
       {tab === 'overview' && (
@@ -81,6 +118,21 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
           <p>Last scanned: {item.lastScannedAt ?? 'Never'}</p>
           <p>Last verified: {item.lastVerifiedAt ?? 'Never'}</p>
           <p>Notes: {item.notes ?? '—'}</p>
+          {customFieldNames.length > 0 && (
+            <div className="media-detail__custom-fields">
+              <h2>Custom Fields</h2>
+              {customFieldNames.map((fieldName) => (
+                <label key={fieldName}>
+                  {fieldName}
+                  <input
+                    type="text"
+                    defaultValue={customFieldValue(fieldName)}
+                    onBlur={(event) => saveCustomField(fieldName, event.target.value.trim())}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -165,6 +217,35 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
                     <td>{job.filesModified}</td>
                     <td>{job.filesRemoved}</td>
                     <td>{job.errorCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === 'errors' && (
+        <div className="media-detail__errors">
+          {errors.length === 0 ? (
+            <p className="media-detail__status">No scan errors recorded.</p>
+          ) : (
+            <table className="media-table">
+              <thead>
+                <tr>
+                  <th>Path</th>
+                  <th>Type</th>
+                  <th>Message</th>
+                  <th>Scan Started</th>
+                </tr>
+              </thead>
+              <tbody>
+                {errors.map((entry, index) => (
+                  <tr key={`${entry.path}-${entry.scanStartedAt}-${index}`}>
+                    <td>{entry.path}</td>
+                    <td>{entry.errorType}</td>
+                    <td>{entry.message}</td>
+                    <td>{entry.scanStartedAt}</td>
                   </tr>
                 ))}
               </tbody>

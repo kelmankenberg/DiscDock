@@ -189,6 +189,7 @@ export interface AppSettings {
   notifications: NotificationSettings
   customMediaTypes: string[]
   customFieldNames: string[]
+  verificationThresholdMonths: number
 }
 
 export interface Tag {

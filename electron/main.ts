@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, Notification } from 'electron'
 import { createMainWindow } from './window/createWindow'
 import { registerWindowControlIpc } from './ipc/windowControls'
 import { registerDashboardIpc } from './ipc/dashboard'
@@ -16,10 +16,23 @@ import { registerCollectionsIpc } from './ipc/collections'
 import { registerExportIpc } from './ipc/export'
 import { registerCustomFieldsIpc } from './ipc/customFields'
 import { initScanManager } from './scanning/scanManager'
+import { countMediaNeedingVerification } from './db/mediaRepository'
+import { getSettings } from './settings/settingsStore'
 import { getDb, closeDb } from './db'
 import type { IpcResult } from '../shared/types'
 
 let mainWindow: BrowserWindow | null = null
+
+function showVerificationReminder(): void {
+  const settings = getSettings()
+  if (!settings.notifications.verificationReminders) return
+  const count = countMediaNeedingVerification(settings.verificationThresholdMonths)
+  if (count === 0) return
+  new Notification({
+    title: 'DiscDock',
+    body: `${count} media item${count === 1 ? '' : 's'} ${count === 1 ? 'has' : 'have'} not been verified in the last ${settings.verificationThresholdMonths} months.`
+  }).show()
+}
 
 function registerAppIpc(): void {
   ipcMain.handle('app:getVersion', (): IpcResult<string> => {
@@ -49,6 +62,8 @@ app.whenReady().then(() => {
   registerCustomFieldsIpc()
   initScanManager(mainWindow)
   startDeviceWatcher(mainWindow)
+
+  showVerificationReminder()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

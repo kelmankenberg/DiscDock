@@ -14,7 +14,8 @@ const DEFAULT_SETTINGS: AppSettings = {
     verificationReminders: true
   },
   customMediaTypes: [],
-  customFieldNames: []
+  customFieldNames: [],
+  verificationThresholdMonths: 12
 }
 
 let cached: AppSettings | null = null
