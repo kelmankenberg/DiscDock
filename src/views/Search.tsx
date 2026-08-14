@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { FILE_KINDS, MEDIA_TYPES } from '../../shared/types'
-import type { FileSearchResult, MediaType, FileKind, SearchFilters } from '../../shared/types'
+import type { FileSearchResult, MediaItem, MediaType, FileKind, SearchFilters } from '../../shared/types'
 import './Search.css'
 import HelpButton from '../components/HelpButton'
 
@@ -20,6 +20,12 @@ export default function Search(): JSX.Element {
   const [kind, setKind] = useState<FileKind | ''>('')
   const [tag, setTag] = useState('')
   const [tagNames, setTagNames] = useState<string[]>([])
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
+  const [mediaItemId, setMediaItemId] = useState('')
+  const [minSize, setMinSize] = useState('')
+  const [maxSize, setMaxSize] = useState('')
+  const [modifiedAfter, setModifiedAfter] = useState('')
+  const [modifiedBefore, setModifiedBefore] = useState('')
   const [results, setResults] = useState<FileSearchResult[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
@@ -31,11 +37,22 @@ export default function Search(): JSX.Element {
     })
   }, [])
 
+  useEffect(() => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setMediaItems(result.data)
+    })
+  }, [])
+
   const runSearch = (pageToLoad: number): void => {
     const filters: SearchFilters = {}
     if (mediaType) filters.mediaType = mediaType
     if (kind) filters.kind = kind
     if (tag) filters.tag = tag
+    if (mediaItemId) filters.mediaItemId = Number(mediaItemId)
+    if (minSize) filters.minSizeBytes = Number(minSize)
+    if (maxSize) filters.maxSizeBytes = Number(maxSize)
+    if (modifiedAfter) filters.modifiedAfter = modifiedAfter
+    if (modifiedBefore) filters.modifiedBefore = modifiedBefore
 
     setLoading(true)
     void window.discdock.search.query(text, filters, pageToLoad).then((result) => {
@@ -55,7 +72,7 @@ export default function Search(): JSX.Element {
     const timer = setTimeout(() => runSearch(0), DEBOUNCE_MS)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, mediaType, kind, tag])
+  }, [text, mediaType, kind, tag, mediaItemId, minSize, maxSize, modifiedAfter, modifiedBefore])
 
   const pageSize = 100
   const hasMore = (page + 1) * pageSize < total
@@ -100,6 +117,10 @@ export default function Search(): JSX.Element {
             </option>
           ))}
         </select>
+        <select value={mediaItemId} onChange={(e) => setMediaItemId(e.target.value)}>
+          <option value="">All media items</option>
+          {mediaItems.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+        </select>
         {tagNames.length > 0 && (
           <select value={tag} onChange={(e) => setTag(e.target.value)}>
             <option value="">All file tags</option>
@@ -110,6 +131,10 @@ export default function Search(): JSX.Element {
             ))}
           </select>
         )}
+        <input type="number" min="0" placeholder="Min bytes" value={minSize} onChange={(e) => setMinSize(e.target.value)} />
+        <input type="number" min="0" placeholder="Max bytes" value={maxSize} onChange={(e) => setMaxSize(e.target.value)} />
+        <label className="search-form__date">Modified after <input type="date" value={modifiedAfter} onChange={(e) => setModifiedAfter(e.target.value)} /></label>
+        <label className="search-form__date">Modified before <input type="date" value={modifiedBefore} onChange={(e) => setModifiedBefore(e.target.value)} /></label>
       </div>
 
       {loading ? (

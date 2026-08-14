@@ -161,6 +161,8 @@ export interface SearchFilters {
   kind?: FileKind
   minSizeBytes?: number
   maxSizeBytes?: number
+  modifiedAfter?: string
+  modifiedBefore?: string
   tag?: string
 }
 

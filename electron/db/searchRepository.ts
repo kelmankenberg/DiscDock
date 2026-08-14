@@ -68,6 +68,14 @@ export function searchFiles(text: string, filters: SearchFilters, page: number, 
     conditions.push('fr.size_bytes <= @maxSizeBytes')
     params.maxSizeBytes = filters.maxSizeBytes
   }
+  if (filters.modifiedAfter !== undefined) {
+    conditions.push('fr.modified_at_src >= @modifiedAfter')
+    params.modifiedAfter = filters.modifiedAfter
+  }
+  if (filters.modifiedBefore !== undefined) {
+    conditions.push("fr.modified_at_src < datetime(@modifiedBefore, '+1 day')")
+    params.modifiedBefore = filters.modifiedBefore
+  }
   if (filters.tag) {
     conditions.push(
       `EXISTS (SELECT 1 FROM file_tag ft JOIN tag t ON t.id = ft.tag_id

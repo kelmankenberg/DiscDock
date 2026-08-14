@@ -58,6 +58,10 @@ export function validateSearchFilters(value: unknown): SearchFilters | null {
     if (!isNonNegativeInteger(value.maxSizeBytes)) return null
     filters.maxSizeBytes = value.maxSizeBytes
   }
+  for (const key of ['modifiedAfter', 'modifiedBefore'] as const) {
+    if (value[key] !== undefined && (typeof value[key] !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value[key]))) return null
+    if (value[key] !== undefined) filters[key] = value[key]
+  }
   if (filters.minSizeBytes !== undefined && filters.maxSizeBytes !== undefined && filters.minSizeBytes > filters.maxSizeBytes) {
     return null
   }
