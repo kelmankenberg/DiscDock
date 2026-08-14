@@ -100,7 +100,7 @@ async function runAudioCdScan(jobId: number, mediaItemId: number, devicePath: st
     let metadataWarning: string | null = null
     if (discId) {
       try {
-        metadata = await fetchAudioCdMetadata(discId)
+        metadata = await fetchAudioCdMetadata(discId, toc.tracks.length)
         if (!metadata) metadataWarning = `This disc (${discId}) is not in the MusicBrainz database.`
       } catch (err) {
         metadataWarning = `Track titles unavailable: ${(err as Error).message}`

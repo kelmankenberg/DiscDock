@@ -168,11 +168,18 @@ export function computeDiscId(toc: AudioCdToc): string | null {
     .replace(/=/g, '-')
 }
 
+interface MusicBrainzMedium {
+  position?: number
+  'track-count'?: number
+  discs?: { id?: string }[]
+  tracks?: { position?: number; title?: string }[]
+}
+
 interface MusicBrainzRelease {
   id?: string
   title?: string
   'artist-credit'?: { name?: string }[]
-  media?: { position?: number; tracks?: { position?: number; title?: string }[] }[]
+  media?: MusicBrainzMedium[]
 }
 
 interface MusicBrainzResponse {
@@ -198,24 +205,58 @@ async function musicBrainzGet(url: string): Promise<unknown | null> {
   throw new Error('MusicBrainz is rate limiting requests — try scanning again in a moment.')
 }
 
-/** The disc ID lookup only returns the matching medium, so the disc count needs a second call. */
-async function fetchDiscTotal(releaseId: string): Promise<number | null> {
+/**
+ * The disc ID endpoint cannot return disc IDs per medium, so exact disc position comes from the
+ * release itself, where each medium lists the disc IDs pressed for it.
+ */
+async function fetchReleaseDiscInfo(
+  releaseId: string,
+  discId: string
+): Promise<{ position: number | null; total: number | null } | null> {
   try {
     await delay(1100)
     const body = (await musicBrainzGet(
-      `https://musicbrainz.org/ws/2/release/${encodeURIComponent(releaseId)}?fmt=json&inc=media`
-    )) as { media?: unknown[] } | null
-    return body?.media?.length ?? null
+      `https://musicbrainz.org/ws/2/release/${encodeURIComponent(releaseId)}?fmt=json&inc=media+discids`
+    )) as { media?: MusicBrainzMedium[] } | null
+
+    const media = body?.media
+    if (!media?.length) return null
+
+    const match = media.find((medium) => medium.discs?.some((disc) => disc.id === discId))
+    return { position: match?.position ?? null, total: media.length }
   } catch {
     return null
   }
 }
 
 /**
+ * A disc ID lookup can return every medium of a multi-disc release, so the medium matching this
+ * physical disc must be identified rather than assumed to be the first.
+ */
+function selectMedium(
+  media: MusicBrainzMedium[],
+  position: number | null,
+  trackCount: number | null
+): MusicBrainzMedium | undefined {
+  if (position !== null) {
+    const byPosition = media.find((medium) => medium.position === position)
+    if (byPosition) return byPosition
+  }
+  if (trackCount !== null) {
+    const byTrackCount = media.filter((medium) => medium['track-count'] === trackCount)
+    if (byTrackCount.length === 1) return byTrackCount[0]
+  }
+  return media[0]
+}
+
+/**
  * Looks up disc/track titles from MusicBrainz. Returns null when the disc simply isn't in the
  * database; throws when the lookup itself failed so the caller can report why.
  */
-export async function fetchAudioCdMetadata(discId: string): Promise<AudioCdMetadata | null> {
+export async function fetchAudioCdMetadata(
+  discId: string,
+  trackCount: number | null = null
+): Promise<AudioCdMetadata | null> {
   const body = (await musicBrainzGet(
     `https://musicbrainz.org/ws/2/discid/${encodeURIComponent(discId)}?fmt=json&inc=artist-credits+recordings`
   )) as MusicBrainzResponse | null
@@ -223,23 +264,22 @@ export async function fetchAudioCdMetadata(discId: string): Promise<AudioCdMetad
   const release = body?.releases?.[0]
   if (!release) return null
 
-  const trackTitles: Record<number, string> = {}
-  for (const medium of release.media ?? []) {
-    for (const track of medium.tracks ?? []) {
-      if (typeof track.position === 'number' && track.title) trackTitles[track.position] = track.title
-    }
-  }
+  const media = release.media ?? []
+  const discInfo = release.id ? await fetchReleaseDiscInfo(release.id, discId) : null
+  const medium = selectMedium(media, discInfo?.position ?? null, trackCount)
 
-  const discNumber = release.media?.[0]?.position ?? null
-  const discTotal = release.id ? await fetchDiscTotal(release.id) : null
+  const trackTitles: Record<number, string> = {}
+  for (const track of medium?.tracks ?? []) {
+    if (typeof track.position === 'number' && track.title) trackTitles[track.position] = track.title
+  }
 
   return {
     discId,
     releaseId: release.id ?? null,
     albumTitle: release.title ?? null,
     artist: release['artist-credit']?.[0]?.name ?? null,
-    discNumber,
-    discTotal,
+    discNumber: discInfo?.position ?? medium?.position ?? null,
+    discTotal: discInfo?.total ?? (media.length > 1 ? media.length : null),
     trackTitles
   }
 }

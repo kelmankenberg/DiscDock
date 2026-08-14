@@ -17844,3 +17844,520 @@ Restart the dev session to pick this up (renderer-only change this time, so a re
 _**User (2026-08-14 17:04:05Z)**_
 
 with a new dev session, the issue persists. In the Media Library, I click Add Media and then Audio CD, but nothing happens in the UI and the CD is never registered.
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && ELECTRON\_RUN\_AS\_NODE=1 ./node\_modules/.bin/elec...`
+
+Get the disc IDs for the audio CDs registered so far.
+
+```bash
+cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron -e "
+const Database = require('better-sqlite3');
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3', {readonly:true});
+console.log(JSON.stringify(db.prepare(\"SELECT id,label,device_fingerprint FROM media_item WHERE media_type='cd' ORDER BY id DESC LIMIT 3\").all(),null,1));
+" 2>&1 | grep -v Warning | tail -20
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cd /home/kel/dev/DiscDock && ELECTRON_RUN_AS_NO
+DE=1 ./node_modules/.bin/electron -e "
+const Database = require('better-sqlite3');
+const db = new Database('/home/kel/.config/discdock/discdock.sqlite3', {readonly
+:true});
+console.log(JSON.stringify(db.prepare(\"SELECT id,label,device_fingerprint FROM
+media_item WHERE media_type='cd' ORDER BY id DESC LIMIT 3\").all(),null,1));
+" 2>&1 | grep -v Warning | tail -20
+[
+ {
+  "id": 20,
+  "label": "Kazuma Jinnouchi — Halo 5: Guardians Original Soundtrack (Disc 1 of
+2)",
+  "device_fingerprint": "audiocd:Y3JKBdM2Dq06nMo5_5KUmcVFS1U-"
+ }
+]
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && node -e "
+const \{ readAudioCdToc, computeDiscId...`
+
+Inspect the raw MusicBrainz response for the disc currently in the drive.
+
+```bash
+cd /home/kel/dev/DiscDock && node -e "
+const { readAudioCdToc, computeDiscId } = require('./dist-electron/electron/scanning/audioCd.js');
+readAudioCdToc('/dev/sr0').then(async toc => {
+  const id = computeDiscId(toc);
+  console.log('disc in drive:', id, 'tracks:', toc.tracks.length);
+  const r = await fetch('https://musicbrainz.org/ws/2/discid/' + id + '?fmt=json&inc=artist-credits+recordings', {headers:{'User-Agent':'DiscDock/0.1.0 (test)'}});
+  const b = await r.json();
+  console.log('releases:', (b.releases||[]).length);
+  for (const rel of (b.releases||[]).slice(0,3)) {
+    console.log(' -', rel.id, '|', rel.title, '| media:', JSON.stringify((rel.media||[]).map(m => ({position:m.position, trackCount:m['track-count']}))));
+  }
+}).catch(e => console.log('ERR', e.message));
+"
+```
+
+**Result:**
+
+```
+disc in drive: 0O7M.t2Y6RTBMdVVGg9Leme6f9Y- tracks: 15
+releases: 1
+ - 4610a9f6-f6d3-43bd-a83e-554e37d24d4e | Halo 5: Guardians Original Soundtrack | media: [{"position":1,"trackCount":24},{"position":2,"trackCount":15}]
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Found it — and it's worse than the label. Disc 2 (15 tracks) returns **both** media in the response:
+
+```
+media: [{position:1, trackCount:24}, {position:2, trackCount:15}]
+```
+
+I was taking `media[0]` for the position *and* merging track titles from every medium — so disc 2 also got disc 1's track names.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **audioCd.ts**</summary>
+
+@@ lines 215-234 @@
+
+```
+A disc ID lookup can return every medium of a multi-disc release, so the medium matching this
+ * physical disc must be identified explicitly — by disc ID, then by track count as a fallback.
+ */
+function selectMedium(
+  media: MusicBrainzMedium[],
+  discId: string,
+  trackCount: number | null
+): MusicBrainzMedium | undefined {
+  const byDiscId = media.find((medium) => medium.discs?.some((disc) => disc.id === discId))
+  if (byDiscId) return byDiscId
+
+  if (trackCount !== null) {
+    const byTrackCount = media.filter((medium) => medium['track-count'] === trackCount)
+    if (byTrackCount.length === 1) return byTrackCount[0]
+  }
+  return media[0]
+}
+
+/**
+ * Looks up disc/track titles from MusicBrainz. Returns null when the disc simply isn't in the
+ * database; throws when the lookup itself failed so the caller can report why.
+ */
+export async function fetchAudioCdMetadata(
+  discId: string,
+  trackCount: number | null = null
+): Promise<AudioCdMetadata | null> {
+  const body = (await musicBrainzGet(
+    `https://musicbrainz.org/ws/2/discid/${encodeURIComponent(discId)}?fmt=json&inc=artist-credits+recordings+discids`
+  )) as MusicBrainzResponse | null
+
+  const release = body?.releases?.[0]
+  if (!release) return null
+
+  const media = release.media ?? []
+  const medium = selectMedium(media, discId, trackCount)
+
+  const trackTitles: Record<number, string> = {}
+  for (const track of medium?.tracks ?? []) {
+    if (typeof track.position === 'number' && track.title) trackTitles[track.position] = track.title
+  }
+
+  const discNumber = medium?.position ?? null
+  // When the response carries the whole release, the disc count is already known.
+  const discTotal =
+    media.length > 1 ? media.length :
+```
+
+@@ lines 171-175 @@
+
+```
+Medium {
+  position?: number
+  'track-count'?: number
+  discs?: { id?: string }[]
+  tracks?: { position?: number; title?: string }[]
+}
+
+interface MusicBrainzRelease {
+  id?: string
+  title?: string
+  'artist-credit'?: { name?: string }[]
+  media?: MusicBrainzMedium
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanManager.ts**</summary>
+
+@@ lines 103-103 @@
+
+```
+, toc.tracks.length
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && npm run build:electron 2>&1 | tail -3 && node -...`
+
+Verify the correct medium is now selected for the disc in the drive.
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:electron 2>&1 | tail -3 && node -e "
+const { readAudioCdToc, computeDiscId, fetchAudioCdMetadata } = require('./dist-electron/electron/scanning/audioCd.js');
+readAudioCdToc('/dev/sr0').then(async toc => {
+  const id = computeDiscId(toc);
+  const m = await fetchAudioCdMetadata(id, toc.tracks.length);
+  console.log('disc in drive :', id, '(' + toc.tracks.length + ' tracks)');
+  console.log('album         :', m.albumTitle);
+  console.log('disc position :', m.discNumber, 'of', m.discTotal);
+  console.log('track 1       :', m.trackTitles[1]);
+  console.log('track 15      :', m.trackTitles[15]);
+  console.log('track 24      :', m.trackTitles[24] || '(none - correct for a 15-track disc)');
+}).catch(e => console.log('ERR', e.message));
+"
+```
+
+**Result:**
+
+```
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+ERR MusicBrainz returned 400 Bad Request
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && node -e "
+const id='0O7M.t2Y6RTBMdVVGg9Leme6f9Y...`
+
+Find which inc parameters the discid endpoint accepts.
+
+```bash
+cd /home/kel/dev/DiscDock && node -e "
+const id='0O7M.t2Y6RTBMdVVGg9Leme6f9Y-';
+const H={headers:{'User-Agent':'DiscDock/0.1.0 (test)'}};
+(async () => {
+  for (const inc of ['artist-credits+recordings+discids','artist-credits+recordings+media','recordings+discids','artist-credits+recordings']) {
+    const r = await fetch('https://musicbrainz.org/ws/2/discid/'+id+'?fmt=json&inc='+inc, H);
+    let detail='';
+    if (!r.ok) { const t = await r.text(); detail = t.slice(0,120).replace(/\s+/g,' '); }
+    console.log(inc.padEnd(34), r.status, detail);
+    await new Promise(s=>setTimeout(s,1200));
+  }
+})();
+"
+```
+
+**Result:**
+
+```
+artist-credits+recordings+discids  400 
+artist-credits+recordings+media    503 
+recordings+discids                 400 
+artist-credits+recordings          200
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+`discids` isn't a valid `inc` on the discid endpoint (400). The release endpoint does support it, so I'll disambiguate there.    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **audioCd.ts**</summary>
+
+@@ lines 223-274 @@
+
+```
+rather than assumed to be the first.
+ */
+function selectMedium(
+  media: MusicBrainzMedium[],
+  position: number | null,
+  trackCount: number | null
+): MusicBrainzMedium | undefined {
+  if (position !== null) {
+    const byPosition = media.find((medium) => medium.position === position)
+    if (byPosition) return byPosition
+  }
+  if (trackCount !== null) {
+    const byTrackCount = media.filter((medium) => medium['track-count'] === trackCount)
+    if (byTrackCount.length === 1) return byTrackCount[0]
+  }
+  return media[0]
+}
+
+/**
+ * Looks up disc/track titles from MusicBrainz. Returns null when the disc simply isn't in the
+ * database; throws when the lookup itself failed so the caller can report why.
+ */
+export async function fetchAudioCdMetadata(
+  discId: string,
+  trackCount: number | null = null
+): Promise<AudioCdMetadata | null> {
+  const body = (await musicBrainzGet(
+    `https://musicbrainz.org/ws/2/discid/${encodeURIComponent(discId)}?fmt=json&inc=artist-credits+recordings`
+  )) as MusicBrainzResponse | null
+
+  const release = body?.releases?.[0]
+  if (!release) return null
+
+  const media = release.media ?? []
+  const discInfo = release.id ? await fetchReleaseDiscInfo(release.id, discId) : null
+  const medium = selectMedium(media, discInfo?.position ?? null, trackCount)
+
+  const trackTitles: Record<number, string> = {}
+  for (const track of medium?.tracks ?? []) {
+    if (typeof track.position === 'number' && track.title) trackTitles[track.position] = track.title
+  }
+
+  return {
+    discId,
+    releaseId: release.id ?? null,
+    albumTitle: release.title ?? null,
+    artist: release['artist-credit']?.[0]?.name ?? null,
+    discNumber: discInfo?.position ?? medium?.position ?? null,
+    discTotal: discInfo?.total ?? (media.length > 1 ? media.length : null)
+```
+
+@@ lines 208-215 @@
+
+```
+
+ * The disc ID endpoint cannot return disc IDs per medium, so exact disc position comes from the
+ * release itself, where each medium lists the disc IDs pressed for it.
+ */
+async function fetchReleaseDiscInfo(
+  releaseId: string,
+  discId: string
+): Promise<{ position: number | null; total: number | null } | null> {
+  try {
+    await delay(1100)
+    const body = (await musicBrainzGet(
+      `https://musicbrainz.org/ws/2/release/${encodeURIComponent(releaseId)}?fmt=json&inc=media+discids`
+    )) as { media?: MusicBrainzMedium[] } | null
+
+    const media = body?.media
+    if (!media?.length) return null
+
+    const match = media.find((medium) => medium.discs?.some((disc) => disc.id === discId))
+    return { position: match?.position ?? null, total: media.length }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && npm run build:electron 2>&1 | tail -3 && node -...`
+
+Verify disc position and track titles for the disc in the drive.
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build:electron 2>&1 | tail -3 && node -e "
+const { readAudioCdToc, computeDiscId, fetchAudioCdMetadata } = require('./dist-electron/electron/scanning/audioCd.js');
+readAudioCdToc('/dev/sr0').then(async toc => {
+  const id = computeDiscId(toc);
+  const m = await fetchAudioCdMetadata(id, toc.tracks.length);
+  console.log('disc in drive :', id, '(' + toc.tracks.length + ' tracks)');
+  console.log('album         :', m.albumTitle);
+  console.log('disc position :', m.discNumber, 'of', m.discTotal);
+  console.log('track 1       :', m.trackTitles[1]);
+  console.log('track 15      :', m.trackTitles[15]);
+  console.log('track 24      :', m.trackTitles[24] || '(absent - correct for a 15-track disc)');
+}).catch(e => console.log('ERR', e.message));
+"
+```
+
+**Result:**
+
+```
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+ERR MusicBrainz is rate limiting requests — try scanning again in a moment.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && sleep 8; node -e "
+const \{ readAudioCdToc, comp...`
+
+Retry after the rate limit window.
+
+```bash
+cd /home/kel/dev/DiscDock && sleep 8; node -e "
+const { readAudioCdToc, computeDiscId, fetchAudioCdMetadata } = require('./dist-electron/electron/scanning/audioCd.js');
+readAudioCdToc('/dev/sr0').then(async toc => {
+  const id = computeDiscId(toc);
+  const m = await fetchAudioCdMetadata(id, toc.tracks.length);
+  console.log('disc in drive :', id, '(' + toc.tracks.length + ' tracks)');
+  console.log('album         :', m.albumTitle);
+  console.log('disc position :', m.discNumber, 'of', m.discTotal);
+  console.log('track 1       :', m.trackTitles[1]);
+  console.log('track 15      :', m.trackTitles[15]);
+  console.log('track 24      :', m.trackTitles[24] || '(absent - correct for a 15-track disc)');
+}).catch(e => console.log('ERR', e.message));
+"
+```
+
+**Result:**
+
+```
+disc in drive : 0O7M.t2Y6RTBMdVVGg9Leme6f9Y- (15 tracks)
+album         : Halo 5: Guardians Original Soundtrack
+disc position : 2 of 2
+track 1       : Advent
+track 15      : Osiris Suite, Act 4
+track 24      : (absent - correct for a 15-track disc)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Position is right now, but track 1 shows "Advent" — that's disc 1's track. Let me inspect which medium is being read.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && sleep 3; node -e "
+const id='0O7M.t2Y6RTBMdVVGg...`
+
+Inspect each medium's tracks in the discid response.
+
+```bash
+cd /home/kel/dev/DiscDock && sleep 3; node -e "
+const id='0O7M.t2Y6RTBMdVVGg9Leme6f9Y-';
+fetch('https://musicbrainz.org/ws/2/discid/'+id+'?fmt=json&inc=artist-credits+recordings',{headers:{'User-Agent':'DiscDock/0.1.0 (test)'}})
+ .then(r=>r.json()).then(b=>{
+   for (const rel of b.releases||[]) {
+     for (const m of rel.media||[]) {
+       console.log('medium position', m.position, 'track-count', m['track-count'], 'tracks array len', (m.tracks||[]).length, '| first track:', (m.tracks||[])[0] && (m.tracks||[])[0].title);
+     }
+   }
+ });
+"
+```
+
+**Result:**
+
+```
+medium position 1 track-count 24 tracks array len 24 | first track: Halo Canticles
+medium position 2 track-count 15 tracks array len 15 | first track: Advent
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build 2>&1 | tail -5`
+
+Full build after the medium selection fix.
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build 2>&1 | tail -5
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build 2>&1 | tail -5` (terminal ID=d149c130-a541-4f9e-b7f0-e6e88bbee0d1). This is the output of running that command instead:
+✓ built in 410ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Fixed, and it exposed a worse bug hiding behind the label.
+
+**What was wrong:** for a multi-disc release, MusicBrainz's disc ID lookup returns *every* medium, not just the matching one. I was taking `media[0]` for the position and **merging track titles from all media**. So disc 2 was labeled "Disc 1 of 2", and — worse — disc 1's tracks 1–15 were overwritten with disc 2's titles.
+
+**How the position is determined now:** the disc ID endpoint can't report disc IDs per medium (`inc=discids` returns 400 there — I confirmed), but the *release* endpoint can. So `electron/scanning/audioCd.ts` fetches the release with `inc=media+discids` and finds the medium whose pressed disc IDs include this disc — an exact match, not a guess. Track count disambiguates as a fallback, and `media[0]` remains the last resort. Track titles now come **only** from the selected medium.
+
+**Verified against disc 2 in your drive:**
+
+```
+disc          : 0O7M.t2Y6RTBMdVVGg9Leme6f9Y- (15 tracks)
+disc position : 2 of 2          ← was "1 of 2"
+track 1       : Advent          ← genuinely disc 2's opener
+track 15      : Osiris Suite, Act 4
+track 24      : absent          ← correct; only 15 tracks
+```
+
+For reference, disc 1's real track 1 is "Halo Canticles" — which is how I confirmed the old merge was corrupting it.
+
+**Action needed:** re-scan **disc 1** (item 20). Its stored titles are the corrupted mix, and since its label is no longer a placeholder it'll keep your existing label while replacing the tracks with the correct ones.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 6 todos
+</details></tool-use>
+
+---
+
+_**User (2026-08-14 17:08:43Z)**_
+
+nicely doen, that works. However, I just scanned disc 2 of 2 and it shows as disc 1 of 2. Can we make this more accurate?
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && ELECTRON\_RUN\_AS\_NODE=1 ./node\_modules/.bin/elec...`
+</details></tool-use>
