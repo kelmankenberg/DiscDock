@@ -1,7 +1,7 @@
 import { ipcMain, Notification } from 'electron'
 import { exportCatalog } from '../export/exportService'
 import type { ExportFormat, ExportScope, IpcResult } from '../../shared/types'
-import { isNonEmptyString, isPositiveInteger, isRecord, isTrustedRendererEvent } from './validation'
+import { isNonEmptyString, isPositiveInteger, isRecord, isTrustedRendererEvent, validateSearchFilters } from './validation'
 import { log } from '../logging'
 
 export function registerExportIpc(): void {
@@ -21,13 +21,20 @@ export function registerExportIpc(): void {
       return { ok: false, error: { code: 'invalid_input', message: 'format must be "json" or "csv"' } }
     }
 
-    if (!isRecord(scope) || (scope.type !== 'all' && scope.type !== 'media')) {
+    if (!isRecord(scope) || (scope.type !== 'all' && scope.type !== 'media' && scope.type !== 'search')) {
       return { ok: false, error: { code: 'invalid_input', message: 'Invalid export scope' } }
     }
     if (scope.type === 'media' && !isPositiveInteger(scope.mediaId)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A positive mediaId is required' } }
     }
-    const validScope: ExportScope = scope.type === 'media' ? { type: 'media', mediaId: scope.mediaId as number } : { type: 'all' }
+    if (scope.type === 'search' && (typeof scope.text !== 'string' || !validateSearchFilters(scope.filters))) {
+      return { ok: false, error: { code: 'invalid_input', message: 'Invalid search export scope' } }
+    }
+    const validScope: ExportScope = scope.type === 'media'
+      ? { type: 'media', mediaId: scope.mediaId as number }
+      : scope.type === 'search'
+        ? { type: 'search', text: scope.text as string, filters: validateSearchFilters(scope.filters)! }
+        : { type: 'all' }
 
     try {
       log.info('Export started', { format, scope: validScope, destinationPath })

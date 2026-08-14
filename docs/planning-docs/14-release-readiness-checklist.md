@@ -147,7 +147,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [x] Add recent scan activity to the Dashboard.
 - [x] Add a clear attention area for media needing verification, scan errors, incomplete scans, and failed operations.
 - [x] Add Search filters required by FR-3.3: specific media item, size range, modified date range, and scan/verification status. All listed filter categories are now available in Search.
-- [ ] Add filtered search-result export or explicitly remove that promise from the release scope and documentation.
+- [x] Add filtered search-result export or explicitly remove that promise from the release scope and documentation. Search can now export the complete active result set to CSV through the native save dialog.
 - [ ] Ensure empty states provide actionable guidance for first launch, no media, no devices, no results, and failed scans.
 
 ### P1.3 Catalog fidelity and scale

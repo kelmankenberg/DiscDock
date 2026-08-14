@@ -81,6 +81,24 @@ export default function Search(): JSX.Element {
   const pageSize = 100
   const hasMore = (page + 1) * pageSize < total
 
+  const exportResults = (): void => {
+    const filters: SearchFilters = {}
+    if (mediaType) filters.mediaType = mediaType
+    if (kind) filters.kind = kind
+    if (tag) filters.tag = tag
+    if (mediaItemId) filters.mediaItemId = Number(mediaItemId)
+    if (minSize) filters.minSizeBytes = Number(minSize)
+    if (maxSize) filters.maxSizeBytes = Number(maxSize)
+    if (modifiedAfter) filters.modifiedAfter = modifiedAfter
+    if (modifiedBefore) filters.modifiedBefore = modifiedBefore
+    if (scanStatus) filters.scanStatus = scanStatus as SearchFilters['scanStatus']
+    if (verificationStatus) filters.verificationStatus = verificationStatus as SearchFilters['verificationStatus']
+    void window.discdock.dialogs.pickSaveFile('discdock-search-results.csv').then((pick) => {
+      if (!pick.ok || !pick.data.path) return
+      void window.discdock.export.run({ type: 'search', text, filters }, 'csv', pick.data.path)
+    })
+  }
+
   return (
     <div className="search-view">
       <div className="page-header"><h1>Search</h1><HelpButton topicId="search" /></div>
@@ -160,6 +178,7 @@ export default function Search(): JSX.Element {
         <>
           <p className="search-view__status">
             {total} result{total === 1 ? '' : 's'}
+            <button type="button" className="button button--small search-view__export" onClick={exportResults} disabled={total === 0}>Export results</button>
           </p>
           <table className="search-table">
             <thead>

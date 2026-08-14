@@ -293,7 +293,10 @@ export interface ScanErrorEntry {
   scanStartedAt: string
 }
 
-export type ExportScope = { type: 'all' } | { type: 'media'; mediaId: number }
+export type ExportScope =
+  | { type: 'all' }
+  | { type: 'media'; mediaId: number }
+  | { type: 'search'; text: string; filters: SearchFilters }
 export type ExportFormat = 'json' | 'csv'
 
 export interface CustomFieldValue {

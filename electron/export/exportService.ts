@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import { getDb } from '../db/index'
 import type { ExportFormat, ExportScope } from '../../shared/types'
+import { searchFiles } from '../db/searchRepository'
 
 interface ExportRow {
   media_label: string
@@ -14,6 +15,27 @@ interface ExportRow {
 }
 
 function fetchRows(scope: ExportScope): ExportRow[] {
+  if (scope.type === 'search') {
+    const rows: ExportRow[] = []
+    const pageSize = 5000
+    let page = 0
+    while (true) {
+      const result = searchFiles(scope.text, scope.filters, page, pageSize)
+      rows.push(...result.results.map((row) => ({
+        media_label: row.mediaLabel,
+        path: row.path,
+        name: row.name,
+        extension: null,
+        kind: row.kind,
+        size_bytes: row.sizeBytes,
+        modified_at_src: row.modifiedAtSrc,
+        hash_value: null
+      })))
+      if (rows.length >= result.total || result.results.length === 0) break
+      page += 1
+    }
+    return rows
+  }
   const db = getDb()
   const base = `SELECT mi.label as media_label, fr.path, fr.name, fr.extension, fr.kind, fr.size_bytes,
                        fr.modified_at_src, fr.hash_value
