@@ -191,6 +191,25 @@ function runMigrations(database: Database.Database): void {
   }
 }
 
+function backupBeforeMigrations(database: Database.Database, databasePath: string, userDataDir: string): void {
+  const hasMigrationTable = database
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'schema_migrations'")
+    .get()
+  if (!hasMigrationTable) return
+
+  const applied = database.prepare('SELECT MAX(version) AS version FROM schema_migrations').get() as
+    | { version: number | null }
+    | undefined
+  if ((applied?.version ?? 0) >= CURRENT_SCHEMA_VERSION) return
+
+  const backupsDir = path.join(userDataDir, 'backups')
+  fs.mkdirSync(backupsDir, { recursive: true })
+  const backupPath = path.join(backupsDir, `pre-migration-${Date.now()}.sqlite3`)
+  database.pragma('wal_checkpoint(TRUNCATE)')
+  fs.copyFileSync(databasePath, backupPath)
+  log.info('Pre-migration database backup created', { backupPath, fromVersion: applied?.version ?? 0, toVersion: CURRENT_SCHEMA_VERSION })
+}
+
 export function getDb(): Database.Database {
   if (db) return db
 
@@ -199,6 +218,7 @@ export function getDb(): Database.Database {
   const dbPath = path.join(userDataDir, 'discdock.sqlite3')
 
   db = new Database(dbPath)
+  backupBeforeMigrations(db, dbPath, userDataDir)
   runMigrations(db)
 
   return db
