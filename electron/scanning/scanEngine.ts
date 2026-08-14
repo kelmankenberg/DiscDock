@@ -83,6 +83,7 @@ export async function walkAndScan(
   const { hashMode, followSymlinks } = options
   const excludeRegexes = options.excludePatterns.map(globToRegExp)
   const stack: string[] = [rootPath]
+  const visitedDirectories = new Set<string>()
   let filesProcessed = 0
   let bytesProcessed = 0
   let sinceYield = 0
@@ -92,6 +93,17 @@ export async function walkAndScan(
   while (stack.length > 0) {
     if (callbacks.isCancelled()) break
     const currentDir = stack.pop() as string
+
+    if (followSymlinks) {
+      try {
+        const realDirectory = await fs.realpath(currentDir)
+        if (visitedDirectories.has(realDirectory)) continue
+        visitedDirectories.add(realDirectory)
+      } catch (err) {
+        callbacks.onError(path.relative(rootPath, currentDir), 'realpath_failed', (err as Error).message)
+        continue
+      }
+    }
 
     let entries: string[]
     try {

@@ -92,6 +92,16 @@ describe('walkAndScan', () => {
     expect(withLinks.files.map((file) => file.path)).toContain('linked.JPG')
   })
 
+  it('does not loop through symlinked directories when following links', async () => {
+    const root = await createFixture()
+    await fs.symlink(root, path.join(root, 'included', 'loop'))
+
+    const result = await scanFixture(root, { hashMode: 'none', followSymlinks: true })
+
+    expect(result.errors).toEqual([])
+    expect(result.files.filter((file) => !file.isDirectory && file.name === 'photo.JPG')).toHaveLength(1)
+  })
+
   it('reports directory errors without rejecting the scan', async () => {
     const result = await scanFixture(path.join(os.tmpdir(), 'discdock-missing-root'), { hashMode: 'none' })
 

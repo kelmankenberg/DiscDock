@@ -74,7 +74,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [ ] Decide whether the initial release accepts the current yielding main-process scanner or requires a worker/utility process. The documented NFR requires filesystem scanning and hashing off the Electron UI thread.
 - [ ] If keeping the current architecture temporarily, establish measured limits and test responsiveness during large metadata and full-hash scans.
 - [~] Add progress timing that meets the documented update expectation and exposes enough information for long scans. Progress events now include elapsed milliseconds and emit at least every 250ms during active work; estimated time and worker-thread execution remain.
-- [ ] Test permission failures, disappearing files, unreadable files, symlink loops, disconnected media, and hash-read failures.
+- [~] Test permission failures, disappearing files, unreadable files, symlink loops, disconnected media, and hash-read failures. Symlink-loop regression coverage now passes; permission, disappearing-media, and remaining I/O failure cases remain.
 - [ ] Verify duplicate results distinguish full hashes, quick hashes, and files with no hash.
 
 **Exit evidence:** A large-media test matrix produces correct completed, incomplete, and failed states without freezing or corrupting the application.
