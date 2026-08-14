@@ -10,6 +10,7 @@ import type {
   DuplicateReportFilters,
   ExportFormat,
   ExportScope,
+  FileAnnotation,
   FileEntry,
   HashMode,
   IpcResult,
@@ -46,13 +47,20 @@ const api = {
     update: (id: number, patch: Partial<MediaItemInput>): Promise<IpcResult<MediaItem>> =>
       ipcRenderer.invoke('media:update', { id, patch }),
     retire: (id: number): Promise<IpcResult<MediaItem>> => ipcRenderer.invoke('media:retire', { id }),
+    markVerified: (id: number): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:markVerified', { id }),
     delete: (id: number): Promise<IpcResult<{ deleted: true }>> =>
       ipcRenderer.invoke('media:delete', { id })
   },
   app: {
     getVersion: (): Promise<IpcResult<string>> => ipcRenderer.invoke('app:getVersion'),
     restart: (): Promise<IpcResult<null>> => ipcRenderer.invoke('app:restart'),
-    toggleDevTools: (): Promise<IpcResult<null>> => ipcRenderer.invoke('app:toggleDevTools')
+    toggleDevTools: (): Promise<IpcResult<null>> => ipcRenderer.invoke('app:toggleDevTools'),
+    onOpenMedia: (callback: (mediaId: number) => void): (() => void) => {
+      const listener = (_event: unknown, payload: { mediaId: number }): void => callback(payload.mediaId)
+      ipcRenderer.on('app:openMedia', listener)
+      return () => ipcRenderer.removeListener('app:openMedia', listener)
+    }
   },
   devices: {
     list: (): Promise<IpcResult<DetectedDevice[]>> => ipcRenderer.invoke('devices:list'),
@@ -118,7 +126,17 @@ const api = {
   },
   files: {
     list: (mediaId: number, folderPath: string): Promise<IpcResult<FileEntry[]>> =>
-      ipcRenderer.invoke('files:list', { mediaId, folderPath })
+      ipcRenderer.invoke('files:list', { mediaId, folderPath }),
+    annotations: (mediaId: number): Promise<IpcResult<Record<string, FileAnnotation>>> =>
+      ipcRenderer.invoke('files:annotations', { mediaId }),
+    setTags: (mediaId: number, filePath: string, tagNames: string[]): Promise<IpcResult<FileAnnotation>> =>
+      ipcRenderer.invoke('files:setTags', { mediaId, filePath, tagNames }),
+    setNote: (mediaId: number, filePath: string, note: string | null): Promise<IpcResult<FileAnnotation>> =>
+      ipcRenderer.invoke('files:setNote', { mediaId, filePath, note }),
+    open: (mediaId: number, filePath: string): Promise<IpcResult<{ opened: true }>> =>
+      ipcRenderer.invoke('files:open', { mediaId, filePath }),
+    reveal: (mediaId: number, filePath: string): Promise<IpcResult<{ revealed: true }>> =>
+      ipcRenderer.invoke('files:reveal', { mediaId, filePath })
   },
   settings: {
     get: (): Promise<IpcResult<AppSettings>> => ipcRenderer.invoke('settings:get'),

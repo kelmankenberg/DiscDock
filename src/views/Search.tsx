@@ -17,15 +17,24 @@ export default function Search(): JSX.Element {
   const [text, setText] = useState('')
   const [mediaType, setMediaType] = useState<MediaType | ''>('')
   const [kind, setKind] = useState<FileKind | ''>('')
+  const [tag, setTag] = useState('')
+  const [tagNames, setTagNames] = useState<string[]>([])
   const [results, setResults] = useState<FileSearchResult[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    void window.discdock.tags.list().then((result) => {
+      if (result.ok) setTagNames(result.data)
+    })
+  }, [])
+
   const runSearch = (pageToLoad: number): void => {
     const filters: SearchFilters = {}
     if (mediaType) filters.mediaType = mediaType
     if (kind) filters.kind = kind
+    if (tag) filters.tag = tag
 
     setLoading(true)
     void window.discdock.search.query(text, filters, pageToLoad).then((result) => {
@@ -45,7 +54,7 @@ export default function Search(): JSX.Element {
     const timer = setTimeout(() => runSearch(0), DEBOUNCE_MS)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, mediaType, kind])
+  }, [text, mediaType, kind, tag])
 
   const pageSize = 100
   const hasMore = (page + 1) * pageSize < total
@@ -90,6 +99,16 @@ export default function Search(): JSX.Element {
             </option>
           ))}
         </select>
+        {tagNames.length > 0 && (
+          <select value={tag} onChange={(e) => setTag(e.target.value)}>
+            <option value="">All file tags</option>
+            {tagNames.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {loading ? (

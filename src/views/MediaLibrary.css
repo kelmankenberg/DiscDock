@@ -139,11 +139,18 @@
   gap: 4px;
   margin-left: 6px;
   padding: 1px 6px;
+  border: none;
   border-radius: 10px;
   font-size: 11px;
+  font-family: inherit;
   white-space: nowrap;
+  cursor: pointer;
   background: color-mix(in srgb, #e0a800 25%, transparent);
   color: #e0a800;
+}
+
+.verify-badge:hover {
+  background: color-mix(in srgb, #e0a800 40%, transparent);
 }
 
 .media-table__sort-header:hover {

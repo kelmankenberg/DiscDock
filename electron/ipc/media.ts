@@ -4,6 +4,7 @@ import {
   deleteMediaItem,
   getMediaItem,
   listMediaItems,
+  markMediaVerified,
   retireMediaItem,
   updateMediaItem
 } from '../db/mediaRepository'
@@ -117,6 +118,16 @@ export function registerMediaIpc(): void {
       if (typeof id !== 'number') throw new Error('A numeric id is required')
       deleteMediaItem(id)
       return { ok: true, data: { deleted: true } }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:markVerified', (_event, payload: unknown): IpcResult<MediaItem> => {
+    try {
+      const id = (payload as { id?: unknown })?.id
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      return { ok: true, data: markMediaVerified(id) }
     } catch (err) {
       return toErrorResult(err)
     }

@@ -127,6 +127,27 @@ const MIGRATIONS: { version: number; sql: string }[] = [
         PRIMARY KEY (media_item_id, field_name)
       );
     `
+  },
+  {
+    version: 4,
+    sql: `
+      -- File annotations are keyed by (media_item_id, path) rather than file_record.id so they
+      -- survive re-scans that prune and re-add rows for the same file.
+      CREATE TABLE IF NOT EXISTS file_note (
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        path TEXT NOT NULL,
+        note TEXT,
+        PRIMARY KEY (media_item_id, path)
+      );
+
+      CREATE TABLE IF NOT EXISTS file_tag (
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        path TEXT NOT NULL,
+        tag_id INTEGER NOT NULL REFERENCES tag(id),
+        PRIMARY KEY (media_item_id, path, tag_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_file_tag_tag ON file_tag(tag_id);
+    `
   }
 ]
 

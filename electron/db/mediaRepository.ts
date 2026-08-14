@@ -98,10 +98,17 @@ export function countMediaNeedingVerification(thresholdMonths: number): number {
     .prepare(
       `SELECT COUNT(*) as count FROM media_item
        WHERE status = 'active'
-         AND (last_verified_at IS NULL OR last_verified_at < datetime('now', ?))`
+         AND COALESCE(last_verified_at, created_at) < datetime('now', ?)`
     )
     .get(`-${months} months`) as { count: number }
   return count
+}
+
+export function markMediaVerified(id: number): MediaItem {
+  getDb().prepare("UPDATE media_item SET last_verified_at = datetime('now') WHERE id = ?").run(id)
+  const updated = getMediaItem(id)
+  if (!updated) throw new Error(`Media item ${id} not found`)
+  return updated
 }
 
 export function retireMediaItem(id: number): MediaItem {
@@ -121,6 +128,8 @@ export function deleteMediaItem(id: number): void {
     database
       .prepare('DELETE FROM media_item_custom_field WHERE media_item_id = ?')
       .run(mediaItemId)
+    database.prepare('DELETE FROM file_tag WHERE media_item_id = ?').run(mediaItemId)
+    database.prepare('DELETE FROM file_note WHERE media_item_id = ?').run(mediaItemId)
     database.prepare('DELETE FROM file_record WHERE media_item_id = ?').run(mediaItemId)
     database
       .prepare(

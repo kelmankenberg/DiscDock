@@ -68,3 +68,32 @@
   opacity: 0.7;
   font-size: 13px;
 }
+
+.media-detail__note-cell {
+  max-width: 220px;
+}
+
+.media-detail__file-actions {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.media-detail__note-cell .link-button {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-detail__annotation-input {
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 13px;
+  font-family: inherit;
+}

@@ -9,10 +9,13 @@ import {
   Usb,
   Pencil,
   MoreVertical,
-  AlertTriangle
+  AlertTriangle,
+  ShieldCheck,
+  QrCode
 } from 'lucide-react'
 import { MEDIA_TYPES } from '../../shared/types'
 import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
+import LabelSheet from '../components/LabelSheet'
 import './MediaLibrary.css'
 
 const EMPTY_FORM: MediaItemInput = {
@@ -80,13 +83,23 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
 
   const needsVerification = (item: MediaItem): boolean => {
     if (item.status !== 'active') return false
-    if (!item.lastVerifiedAt) return true
-    const verifiedAt = new Date(`${item.lastVerifiedAt.replace(' ', 'T')}Z`)
-    if (Number.isNaN(verifiedAt.getTime())) return true
+    // Newly added media starts its verification clock at creation, not at "never verified".
+    const baseline = item.lastVerifiedAt ?? item.createdAt
+    if (!baseline) return false
+    const baselineDate = new Date(`${baseline.replace(' ', 'T')}Z`)
+    if (Number.isNaN(baselineDate.getTime())) return false
     const cutoff = new Date()
     cutoff.setMonth(cutoff.getMonth() - verificationThresholdMonths)
-    return verifiedAt < cutoff
+    return baselineDate < cutoff
   }
+
+  const handleMarkVerified = (id: number): void => {
+    void window.discdock.media.markVerified(id).then((result) => {
+      if (result.ok) loadItems()
+    })
+  }
+
+  const [labelItems, setLabelItems] = useState<MediaItem[] | null>(null)
 
   const knownLocations = Array.from(
     new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
@@ -714,6 +727,13 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
               <button type="button" className="button button--small" onClick={handleBatchRetire}>
                 Retire Selected
               </button>
+              <button
+                type="button"
+                className="button button--small"
+                onClick={() => setLabelItems(sortedItems.filter((item) => selectedIds.has(item.id)))}
+              >
+                Print Labels
+              </button>
               <button type="button" className="button button--small button--danger" onClick={handleBatchDelete}>
                 Delete Selected
               </button>
@@ -827,12 +847,14 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                   <td>
                     <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
                     {needsVerification(item) && (
-                      <span
+                      <button
+                        type="button"
                         className="verify-badge"
-                        title={`Not verified in the last ${verificationThresholdMonths} months`}
+                        title={`Not verified in the last ${verificationThresholdMonths} months — click to mark verified now`}
+                        onClick={() => handleMarkVerified(item.id)}
                       >
                         <AlertTriangle size={12} aria-hidden="true" /> Verify
-                      </span>
+                      </button>
                     )}
                   </td>
                   <td>
@@ -921,6 +943,20 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                     role="menuitem"
                     onClick={() => {
                       setContextMenu(null)
+                      handleMarkVerified(item.id)
+                    }}
+                  >
+                    <ShieldCheck size={14} aria-hidden="true" /> Mark Verified
+                  </button>
+                </li>
+              )}
+              {item.status === 'active' && !scan && (
+                <li>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setContextMenu(null)
                       handleRetire(item.id)
                     }}
                   >
@@ -928,6 +964,18 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                   </button>
                 </li>
               )}
+              <li>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setContextMenu(null)
+                    setLabelItems([item])
+                  }}
+                >
+                  <QrCode size={14} aria-hidden="true" /> Print Label
+                </button>
+              </li>
               <li>
                 <button
                   type="button"
@@ -960,6 +1008,10 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
             </ul>
           )
         })()}
+
+      {labelItems && labelItems.length > 0 && (
+        <LabelSheet items={labelItems} onClose={() => setLabelItems(null)} />
+      )}
     </div>
   )
 }

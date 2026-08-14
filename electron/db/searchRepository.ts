@@ -68,6 +68,13 @@ export function searchFiles(text: string, filters: SearchFilters, page: number, 
     conditions.push('fr.size_bytes <= @maxSizeBytes')
     params.maxSizeBytes = filters.maxSizeBytes
   }
+  if (filters.tag) {
+    conditions.push(
+      `EXISTS (SELECT 1 FROM file_tag ft JOIN tag t ON t.id = ft.tag_id
+               WHERE ft.media_item_id = fr.media_item_id AND ft.path = fr.path AND t.name = @tag)`
+    )
+    params.tag = filters.tag
+  }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
   const offset = Math.max(0, page) * pageSize

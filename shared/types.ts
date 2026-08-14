@@ -114,6 +114,7 @@ export interface SearchFilters {
   kind?: FileKind
   minSizeBytes?: number
   maxSizeBytes?: number
+  tag?: string
 }
 
 export interface SearchQueryInput {
@@ -171,6 +172,11 @@ export interface FileEntry {
   isDirectory: boolean
   sizeBytes: number
   modifiedAtSrc: string | null
+}
+
+export interface FileAnnotation {
+  tags: string[]
+  note: string | null
 }
 
 export type Theme = 'light' | 'dark' | 'system'

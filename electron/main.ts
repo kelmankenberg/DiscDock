@@ -40,6 +40,43 @@ function registerAppIpc(): void {
   })
 }
 
+/** Extracts the media id from a discdock://media/<id> deep link (as encoded on printed labels). */
+function parseMediaDeepLink(url: string): number | null {
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol !== 'discdock:') return null
+    const segments = `${parsed.hostname}${parsed.pathname}`.split('/').filter(Boolean)
+    if (segments[0] !== 'media') return null
+    const id = Number(segments[1])
+    return Number.isInteger(id) && id > 0 ? id : null
+  } catch {
+    return null
+  }
+}
+
+function handleDeepLink(url: string): void {
+  const mediaId = parseMediaDeepLink(url)
+  if (mediaId === null || !mainWindow) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.focus()
+  mainWindow.webContents.send('app:openMedia', { mediaId })
+}
+
+function handleDeepLinkFromArgv(argv: string[]): void {
+  const url = argv.find((arg) => arg.startsWith('discdock://'))
+  if (url) handleDeepLink(url)
+}
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+} else {
+  app.on('second-instance', (_event, argv) => handleDeepLinkFromArgv(argv))
+  app.on('open-url', (event, url) => {
+    event.preventDefault()
+    handleDeepLink(url)
+  })
+}
+
 app.whenReady().then(() => {
   getDb() // initialize database + run migrations before the window is shown
 
@@ -62,6 +99,9 @@ app.whenReady().then(() => {
   registerCustomFieldsIpc()
   initScanManager(mainWindow)
   startDeviceWatcher(mainWindow)
+
+  app.setAsDefaultProtocolClient('discdock')
+  mainWindow.webContents.once('did-finish-load', () => handleDeepLinkFromArgv(process.argv))
 
   showVerificationReminder()
 

@@ -39,6 +39,15 @@ export default function App(): JSX.Element {
     })
   }, [])
 
+  useEffect(
+    () =>
+      window.discdock.app.onOpenMedia((mediaId) => {
+        setActiveView('media-library')
+        setSelectedMediaId(mediaId)
+      }),
+    []
+  )
+
   // Global keyboard shortcuts: Ctrl+F -> Search, Ctrl+, -> Settings.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {

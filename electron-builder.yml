@@ -19,6 +19,11 @@ linux:
       Name: DiscDock
       Comment: Catalog and search your external media collection
       Categories: Utility;FileTools;
+      MimeType: x-scheme-handler/discdock;
+protocols:
+  - name: DiscDock
+    schemes:
+      - discdock
 deb:
   depends:
     - libnotify4

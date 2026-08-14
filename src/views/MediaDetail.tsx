@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react'
 import { MEDIA_TYPES } from '../../shared/types'
-import type { AppSettings, CustomFieldValue, FileEntry, MediaItem, ScanErrorEntry, ScanJob } from '../../shared/types'
+import type {
+  AppSettings,
+  CustomFieldValue,
+  FileAnnotation,
+  FileEntry,
+  MediaItem,
+  ScanErrorEntry,
+  ScanJob
+} from '../../shared/types'
 import './MediaDetail.css'
 
 function formatBytes(bytes: number): string {
@@ -26,6 +34,25 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
   const [errors, setErrors] = useState<ScanErrorEntry[]>([])
   const [customFields, setCustomFields] = useState<CustomFieldValue[]>([])
   const [customFieldNames, setCustomFieldNames] = useState<string[]>([])
+  const [annotations, setAnnotations] = useState<Record<string, FileAnnotation>>({})
+  const [allTagNames, setAllTagNames] = useState<string[]>([])
+  const [editingCell, setEditingCell] = useState<{ path: string; field: 'tags' | 'note' } | null>(null)
+  const [editingValue, setEditingValue] = useState('')
+  const [fileActionMessage, setFileActionMessage] = useState<string | null>(null)
+
+  const openFile = (filePath: string): void => {
+    setFileActionMessage(null)
+    void window.discdock.files.open(mediaId, filePath).then((result) => {
+      if (!result.ok) setFileActionMessage(result.error.message)
+    })
+  }
+
+  const revealFile = (filePath: string): void => {
+    setFileActionMessage(null)
+    void window.discdock.files.reveal(mediaId, filePath).then((result) => {
+      if (!result.ok) setFileActionMessage(result.error.message)
+    })
+  }
 
   useEffect(() => {
     void window.discdock.media.get(mediaId).then((result) => {
@@ -39,6 +66,47 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
       if (result.ok) setEntries(result.data)
     })
   }, [mediaId, folderPath, tab])
+
+  useEffect(() => {
+    if (tab !== 'browse') return
+    void window.discdock.files.annotations(mediaId).then((result) => {
+      if (result.ok) setAnnotations(result.data)
+    })
+    void window.discdock.tags.list().then((result) => {
+      if (result.ok) setAllTagNames(result.data)
+    })
+  }, [mediaId, tab])
+
+  const startEditing = (path: string, field: 'tags' | 'note'): void => {
+    const annotation = annotations[path]
+    setEditingCell({ path, field })
+    setEditingValue(field === 'tags' ? (annotation?.tags ?? []).join(', ') : (annotation?.note ?? ''))
+  }
+
+  const saveEditing = (): void => {
+    if (!editingCell) return
+    const { path, field } = editingCell
+    setEditingCell(null)
+
+    const request =
+      field === 'tags'
+        ? window.discdock.files.setTags(
+            mediaId,
+            path,
+            Array.from(new Set(editingValue.split(',').map((tag) => tag.trim()).filter(Boolean)))
+          )
+        : window.discdock.files.setNote(mediaId, path, editingValue.trim() || null)
+
+    void request.then((result) => {
+      if (!result.ok) return
+      setAnnotations((current) => ({ ...current, [path]: result.data }))
+      if (field === 'tags') {
+        void window.discdock.tags.list().then((tagsResult) => {
+          if (tagsResult.ok) setAllTagNames(tagsResult.data)
+        })
+      }
+    })
+  }
 
   useEffect(() => {
     if (tab !== 'history') return
@@ -117,6 +185,17 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
           <p>Capacity: {item.capacityBytes ? formatBytes(item.capacityBytes) : 'Unknown'}</p>
           <p>Last scanned: {item.lastScannedAt ?? 'Never'}</p>
           <p>Last verified: {item.lastVerifiedAt ?? 'Never'}</p>
+          <button
+            type="button"
+            className="button button--small"
+            onClick={() => {
+              void window.discdock.media.markVerified(mediaId).then((result) => {
+                if (result.ok) setItem(result.data)
+              })
+            }}
+          >
+            Mark Verified Now
+          </button>
           <p>Notes: {item.notes ?? '—'}</p>
           {customFieldNames.length > 0 && (
             <div className="media-detail__custom-fields">
@@ -155,6 +234,8 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
             })}
           </div>
 
+          {fileActionMessage && <p className="media-detail__status">{fileActionMessage}</p>}
+
           {entries.length === 0 ? (
             <p className="media-detail__status">This folder is empty (or hasn't been scanned yet).</p>
           ) : (
@@ -165,28 +246,108 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
                   <th>Kind</th>
                   <th>Size</th>
                   <th>Modified</th>
+                  <th>Tags</th>
+                  <th>Note</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
-                {entries.map((entry) => (
-                  <tr key={entry.path}>
-                    <td>
-                      {entry.isDirectory ? (
-                        <button type="button" className="link-button" onClick={() => setFolderPath(entry.path)}>
-                          📁 {entry.name}
+                {entries.map((entry) => {
+                  const annotation = annotations[entry.path]
+                  const isEditingTags = editingCell?.path === entry.path && editingCell.field === 'tags'
+                  const isEditingNote = editingCell?.path === entry.path && editingCell.field === 'note'
+                  return (
+                    <tr key={entry.path}>
+                      <td>
+                        {entry.isDirectory ? (
+                          <button type="button" className="link-button" onClick={() => setFolderPath(entry.path)}>
+                            📁 {entry.name}
+                          </button>
+                        ) : (
+                          entry.name
+                        )}
+                      </td>
+                      <td>{entry.isDirectory ? 'folder' : entry.kind}</td>
+                      <td>{entry.isDirectory ? '—' : formatBytes(entry.sizeBytes)}</td>
+                      <td>{entry.modifiedAtSrc ?? '—'}</td>
+                      <td>
+                        {isEditingTags ? (
+                          <input
+                            type="text"
+                            autoFocus
+                            list="file-tag-suggestions"
+                            className="media-detail__annotation-input"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            onBlur={saveEditing}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveEditing()
+                              if (e.key === 'Escape') setEditingCell(null)
+                            }}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            className="link-button"
+                            onClick={() => startEditing(entry.path, 'tags')}
+                          >
+                            {(annotation?.tags ?? []).length > 0 ? annotation.tags.join(', ') : 'Add tags…'}
+                          </button>
+                        )}
+                      </td>
+                      <td className="media-detail__note-cell" title={annotation?.note ?? undefined}>
+                        {isEditingNote ? (
+                          <input
+                            type="text"
+                            autoFocus
+                            className="media-detail__annotation-input"
+                            value={editingValue}
+                            onChange={(e) => setEditingValue(e.target.value)}
+                            onBlur={saveEditing}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveEditing()
+                              if (e.key === 'Escape') setEditingCell(null)
+                            }}
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            className="link-button"
+                            onClick={() => startEditing(entry.path, 'note')}
+                          >
+                            {annotation?.note ?? 'Add note…'}
+                          </button>
+                        )}
+                      </td>
+                      <td className="media-detail__file-actions">
+                        {!entry.isDirectory && (
+                          <button
+                            type="button"
+                            className="button button--small"
+                            onClick={() => openFile(entry.path)}
+                          >
+                            Open
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="button button--small"
+                          onClick={() => revealFile(entry.path)}
+                        >
+                          Show in Files
                         </button>
-                      ) : (
-                        entry.name
-                      )}
-                    </td>
-                    <td>{entry.isDirectory ? 'folder' : entry.kind}</td>
-                    <td>{entry.isDirectory ? '—' : formatBytes(entry.sizeBytes)}</td>
-                    <td>{entry.modifiedAtSrc ?? '—'}</td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
+          <datalist id="file-tag-suggestions">
+            {allTagNames.map((tag) => (
+              <option key={tag} value={tag} />
+            ))}
+          </datalist>
         </div>
       )}
 
