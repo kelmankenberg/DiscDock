@@ -3,6 +3,7 @@ import fs from 'node:fs/promises'
 import { promisify } from 'node:util'
 import { computeDiscId, readAudioCdToc } from '../../scanning/audioCd'
 import type { DetectedDevice } from '../../../shared/types'
+import { log } from '../../logging'
 
 const execFileAsync = promisify(execFile)
 
@@ -131,8 +132,9 @@ export async function listConnectedDevices(): Promise<DetectedDevice[]> {
     )
 
     return [...mounted, ...audioCds]
-  } catch {
+  } catch (error) {
     // lsblk unavailable or failed — degrade gracefully to no auto-detected devices (FR-1.2/NFR-3.4).
+    log.error('Linux device detection failed', error)
     return []
   }
 }

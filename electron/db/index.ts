@@ -2,6 +2,7 @@ import Database from 'better-sqlite3'
 import { app } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
+import { log } from '../logging'
 
 let db: Database.Database | null = null
 
@@ -178,6 +179,7 @@ function runMigrations(database: Database.Database): void {
 
   for (const migration of MIGRATIONS) {
     if (appliedVersions.has(migration.version)) continue
+    log.info('Applying database migration', { version: migration.version })
     const applyMigration = database.transaction(() => {
       database.exec(migration.sql)
       database
@@ -185,6 +187,7 @@ function runMigrations(database: Database.Database): void {
         .run(migration.version)
     })
     applyMigration()
+    log.info('Database migration applied', { version: migration.version })
   }
 }
 

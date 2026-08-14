@@ -1,5 +1,6 @@
 import { listConnectedDevices } from './deviceDetection'
 import type { DetectedDevice } from '../../shared/types'
+import { log } from '../logging'
 
 const POLL_INTERVAL_MS = 3000
 
@@ -13,11 +14,13 @@ export class DeviceWatcher {
   ) {}
 
   async start(): Promise<void> {
+    log.info('Device watcher starting')
     await this.poll()
     this.timer = setInterval(() => void this.poll(), POLL_INTERVAL_MS)
   }
 
   stop(): void {
+    log.info('Device watcher stopping')
     if (this.timer) clearInterval(this.timer)
     this.timer = null
   }
@@ -28,6 +31,7 @@ export class DeviceWatcher {
 
   private async poll(): Promise<void> {
     const current = await listConnectedDevices()
+    log.debug('Device watcher poll completed', { deviceCount: current.length })
     const currentPaths = new Set(current.map((d) => d.devicePath))
 
     for (const device of current) {
