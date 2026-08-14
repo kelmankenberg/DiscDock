@@ -4,21 +4,21 @@
 
 - DiscDock is a **local-first, offline-by-default** application. It stores only file *metadata* (names, paths, sizes, timestamps, optional hashes) — never file contents — in its local SQLite database.
 - No catalog data, file names, or hashes are transmitted off the user's machine. There is no backend service in v1.
-- The only optional network activity is a manual/opt-in "check for updates" call (see [Packaging & Deployment](09-packaging-deployment.md#6-update-strategy-v1)); this must be clearly disclosed and off by default or clearly labeled.
+- Optional network activity consists of the manual/opt-in update check and optional audio-CD enrichment through MusicBrainz and Cover Art Archive. Both are disabled by default and must be clearly disclosed when enabled.
 
 ## 2. Electron Hardening
 
 - `contextIsolation: true` and `nodeIntegration: false` on all `BrowserWindow` instances.
 - `sandbox: true` for the renderer where feature compatibility allows.
 - Renderer loads only the packaged local `index.html`/bundle — no remote URLs are ever loaded in a `BrowserWindow`.
-- A strict Content-Security-Policy meta tag/header is set on the renderer document, disallowing inline scripts and remote script/style sources.
+- A Content-Security-Policy meta tag is set on the renderer document: scripts and images are local/data-only, and no remote source is allowed. `style-src 'unsafe-inline'` is currently required for the Help panel's persisted dynamic width and is a narrowly reviewed exception; it does not permit inline scripts.
 - `webSecurity` remains enabled (not disabled) in all environments, including development.
 - All privileged capabilities (filesystem scanning, DB access, device detection) are implemented only in the main process and exposed to the renderer exclusively via a narrow, typed `contextBridge` API (see [IPC contract](08-api-internal-spec.md)) — the renderer never receives direct `fs`, `child_process`, or `require` access.
 - `shell.openPath` / `openExternal` usage (e.g., "Open in File Manager") validates the target path is within a known media root before invoking, to prevent a compromised renderer from directing the OS to open arbitrary system paths.
 
 ## 3. Input Validation
 
-- Every IPC handler validates payload shape and types before use (schema validation, e.g., zod) and rejects malformed requests with a structured error rather than throwing raw exceptions.
+- Every IPC handler validates payload shape and types before use with shared type guards and rejects malformed requests with a structured error rather than throwing raw exceptions. Integration tests for malformed IPC calls remain a release test gap.
 - Glob-based exclude patterns and manually entered root paths are validated/normalized (e.g., resolved to an absolute path, checked for existence and directory-type) before being handed to the scanning engine.
 - CSV/JSON export writes are limited to a user-chosen destination via the native save dialog (no arbitrary path acceptance from renderer-supplied strings).
 
@@ -45,7 +45,7 @@
 |---|---|
 | Malicious/compromised renderer content attempts filesystem access | No nodeIntegration, contextIsolation on, strict preload API surface, no remote content loaded |
 | Path traversal via crafted IPC payload | Path validation/normalization in main-process handlers before any fs/db operation |
-| Corrupted media causing crash during scan | Per-file error capture in worker; scan continues; job-level try/catch prevents main-process crash |
+| Corrupted media causing crash during scan | Per-file error capture; scan continues; job-level try/catch prevents the main-process scan manager from crashing |
 | Data loss from bad migration or restore | Automatic safety backup before migrations and before restore operations |
 | Supply-chain vulnerability in a dependency | Lockfile + CI audit gate, minimal dependency footprint |
 | Unintended network exfiltration | No network calls in core flows; only opt-in update check, clearly disclosed |

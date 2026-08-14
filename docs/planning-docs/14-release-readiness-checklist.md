@@ -101,7 +101,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [~] Recheck that file open/reveal paths remain inside the linked media mount after symlink and case-related edge cases. The main process now validates canonical `realpath` values for both mount and target; symlink/case integration tests remain.
 - [ ] Validate backup/export destinations and selected restore files in the main process, even though the renderer uses native dialogs.
 - [~] Validate IPC sender origins and reject unexpected renderer senders. All registered IPC handlers now accept only the packaged `file://` renderer or the development localhost renderer; explicit malformed-origin integration tests remain.
-- [ ] Replace the current permissive CSP with the strictest policy compatible with the renderer bundle, documenting any required exceptions.
+- [~] Replace the current permissive CSP with the strictest policy compatible with the renderer bundle, documenting any required exceptions. Local-only scripts/data and no remote sources are enforced; the required inline-style exception for dynamic Help width is documented in the Security & Privacy plan.
 - [ ] Audit all remote calls and external process invocations, including MusicBrainz, Cover Art Archive, updater services, `lsblk`, `udisksctl`, and `eject`.
 
 **Exit evidence:** A malformed-input and path-traversal test suite passes, and the security checklist is reviewed against the packaged application.
