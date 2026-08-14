@@ -539,6 +539,21 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     if (scan) void window.discdock.scan.cancel(scan.jobId)
   }
 
+  const handleScanAudioCd = (mediaId: number, devicePath: string): void => {
+    void window.discdock.scan.startAudioCd(mediaId, devicePath).then((result) => {
+      if (!result.ok) {
+        setEjectMessage(result.error.message)
+        return
+      }
+      const jobId = result.data.jobId
+      setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+      setScansByMedia((prev) => ({
+        ...prev,
+        [mediaId]: { jobId, filesProcessed: 0, currentPath: '', queued: false }
+      }))
+    })
+  }
+
   const startEditingLocation = (item: MediaItem): void => {
     setEditingLocationId(item.id)
     setEditingLocationValue(item.physicalLocation ?? '')
@@ -950,6 +965,20 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                   )}
                 </button>
               </li>
+              {presentDevice?.isOptical && !scan && (
+                <li>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setContextMenu(null)
+                      handleScanAudioCd(item.id, presentDevice.devicePath)
+                    }}
+                  >
+                    <Disc3 size={14} aria-hidden="true" /> Scan Audio CD Tracks
+                  </button>
+                </li>
+              )}
               {item.status === 'active' && !scan && (
                 <li>
                   <button

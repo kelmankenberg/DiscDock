@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { cancelScan, startScan } from '../scanning/scanManager'
+import { cancelScan, startAudioCdScan, startScan } from '../scanning/scanManager'
 import { getErrorsForMedia, listScanJobsForMedia } from '../db/scanRepository'
 import { getSettings } from '../settings/settingsStore'
 import type { HashMode, IpcResult, ScanErrorEntry, ScanJob } from '../../shared/types'
@@ -23,6 +23,17 @@ export function registerScanIpc(): void {
 
     const jobId = startScan(mediaId, rootPath, mode)
     return { ok: true, data: { jobId } }
+  })
+
+  ipcMain.handle('scan:startAudioCd', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
+    const { mediaId, devicePath } = (payload ?? {}) as { mediaId?: unknown; devicePath?: unknown }
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    if (typeof devicePath !== 'string' || !devicePath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A devicePath is required' } }
+    }
+    return { ok: true, data: { jobId: startAudioCdScan(mediaId, devicePath) } }
   })
 
   ipcMain.handle('scan:cancel', (_event, payload: unknown): IpcResult<{ cancelled: boolean }> => {

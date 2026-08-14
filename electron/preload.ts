@@ -83,6 +83,8 @@ const api = {
   scan: {
     start: (mediaId: number, rootPath: string, hashMode?: HashMode): Promise<IpcResult<{ jobId: number }>> =>
       ipcRenderer.invoke('scan:start', { mediaId, rootPath, hashMode }),
+    startAudioCd: (mediaId: number, devicePath: string): Promise<IpcResult<{ jobId: number }>> =>
+      ipcRenderer.invoke('scan:startAudioCd', { mediaId, devicePath }),
     cancel: (jobId: number): Promise<IpcResult<{ cancelled: boolean }>> =>
       ipcRenderer.invoke('scan:cancel', { jobId }),
     history: (mediaId: number): Promise<IpcResult<ScanJob[]>> =>

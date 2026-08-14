@@ -105,6 +105,14 @@ export interface ScanStartInput {
   hashMode: HashMode
 }
 
+export interface AudioCdTrack {
+  trackNumber: number
+  sectors: number
+  durationSeconds: number
+  sizeBytes: number
+  isAudio: boolean
+}
+
 export const FILE_KINDS = ['image', 'video', 'audio', 'document', 'archive', 'other'] as const
 export type FileKind = (typeof FILE_KINDS)[number]
 

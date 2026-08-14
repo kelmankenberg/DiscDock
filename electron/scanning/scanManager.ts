@@ -1,5 +1,6 @@
 import { BrowserWindow, Notification } from 'electron'
 import { walkAndScan } from './scanEngine'
+import { readAudioCdTracks } from './audioCd'
 import {
   createScanJob,
   finalizeScanJob,
@@ -73,6 +74,59 @@ export function startScan(mediaItemId: number, rootPath: string, hashMode: HashM
   queue.push({ jobId: job.id, mediaItemId, rootPath, hashMode })
   pumpQueue()
   return job.id
+}
+
+/** Catalogs an audio CD's raw track list, which has no filesystem to walk (FR-1.7). */
+export function startAudioCdScan(mediaItemId: number, devicePath: string): number {
+  const job = createScanJob(mediaItemId, 'none')
+  markScanJobRunning(job.id)
+  void runAudioCdScan(job.id, mediaItemId, devicePath)
+  return job.id
+}
+
+async function runAudioCdScan(jobId: number, mediaItemId: number, devicePath: string): Promise<void> {
+  let filesAdded = 0
+  let filesModified = 0
+  let filesUnchanged = 0
+
+  try {
+    const tracks = await readAudioCdTracks(devicePath)
+
+    for (const track of tracks) {
+      const name = `Track ${String(track.trackNumber).padStart(2, '0')}.${track.isAudio ? 'cdda' : 'bin'}`
+      const outcome = upsertFileRecord(mediaItemId, jobId, {
+        path: name,
+        name,
+        extension: track.isAudio ? 'cdda' : 'bin',
+        kind: track.isAudio ? 'audio' : 'other',
+        sizeBytes: track.sizeBytes,
+        isDirectory: false,
+        createdAtSrc: null,
+        modifiedAtSrc: null,
+        hashAlgo: null,
+        hashValue: null
+      })
+      if (outcome === 'added') filesAdded += 1
+      else if (outcome === 'modified') filesModified += 1
+      else filesUnchanged += 1
+    }
+
+    const filesRemoved = pruneUnseenFiles(mediaItemId, jobId)
+    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount: 0 }
+    finalizeScanJob(jobId, 'completed', counts)
+    markMediaScanned(mediaItemId, true)
+    win?.webContents.send('scan:completed', { jobId, summary: counts })
+  } catch (err) {
+    finalizeScanJob(jobId, 'failed', {
+      filesAdded,
+      filesRemoved: 0,
+      filesModified,
+      filesUnchanged,
+      errorCount: 1
+    })
+    recordScanError(jobId, devicePath, 'audio_cd', (err as Error).message)
+    win?.webContents.send('scan:failed', { jobId, error: (err as Error).message })
+  }
 }
 
 async function runScan(jobId: number, mediaItemId: number, rootPath: string, hashMode: HashMode): Promise<void> {

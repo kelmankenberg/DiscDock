@@ -8754,3 +8754,2496 @@ _**Agent (copilot/auto)**_
 Running ` cd /home/kel/dev/DiscDock && npm run build:electron && node -e "
 process.env...`
 </details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `deviceDetection.ts`
+
+**Input:**
+
+- endLine: `200`
+- filePath: `/home/kel/dev/DiscDock/electron/devices/deviceDetection.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import type { DetectedDevice } from '../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+interface LsblkDevice {
+  name: string
+  label: string | null
+  fstype: string | null
+  mountpoint: string | null
+  size: string | null
+  rm: string | boolean
+  type: string
+  uuid: string | null
+  children?: LsblkDevice[]
+}
+
+function toBytes(sizeStr: string | null): number | null {
+  if (!sizeStr) return null
+  const n = Number(sizeStr)
+  return Number.isFinite(n) ? n : null
+}
+
+function flatten(devices: LsblkDevice[]): LsblkDevice[] {
+  const result: LsblkDevice[] = []
+  for (const device of devices) {
+    result.push(device)
+    if (device.children) result.push(...flatten(device.children))
+  }
+  return result
+}
+
+function isRemovable(device: LsblkDevice): boolean {
+  return device.rm === true || device.rm === '1'
+}
+
+/**
+ * Detect currently connected/mounted removable media via `lsblk`.
+ * This is the documented fallback strategy (no udisks2 D-Bus dependency for v0.1.0).
+ */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  try {
+    const { stdout } = await execFileAsync('lsblk', [
+      '-J',
+      '-b',
+      '-o',
+      'NAME,LABEL,FSTYPE,MOUNTPOINT,SIZE,RM,TYPE,UUID'
+    ])
+    const parsed = JSON.parse(stdout) as { blockdevices: LsblkDevice[] }
+    const flat = flatten(parsed.blockdevices)
+
+    return flat
+      .filter((d) => isRemovable(d) && d.mountpoint && (d.type === 'part' || d.type === 'rom'))
+      .map((d) => ({
+        devicePath: `/dev/${d.name}`,
+        label: d.label ?? null,
+        fsType: d.fstype ?? null,
+        mountPoint: d.mountpoint as string,
+        sizeBytes: toBytes(d.size),
+        uuid: d.uuid ?? null,
+        isOptical: d.type === 'rom'
+      }))
+  } catch {
+    // lsblk unavailable or failed — degrade gracefully to no auto-detected devices (FR-1.2/NFR-3.4).
+    return []
+  }
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `deviceEject.ts`
+
+**Input:**
+
+- endLine: `120`
+- filePath: `/home/kel/dev/DiscDock/electron/devices/deviceEject.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+
+const execFileAsync = promisify(execFile)
+
+interface ExecError extends Error {
+  stdout?: string
+  stderr?: string
+}
+
+function describeFailure(err: unknown): string {
+  const execErr = err as ExecError
+  const detail = execErr.stderr?.trim() || execErr.stdout?.trim() || execErr.message
+
+  // "eject" spins the drive down as its first step even when the final unmount/tray-open fails,
+  // so a busy mount can look like "nothing happened" rather than a clear error. Common cause:
+  // a file manager window (auto-opened by desktop automount-open settings) still browsing the disc.
+  if (/busy|in use/i.test(detail)) {
+    return `${detail} — close any file manager windows or programs browsing this media and try again.`
+  }
+  return detail
+}
+
+const BUSY_ADVICE = 'close any file manager windows or programs browsing this media and try again.'
+
+/** Some `eject` builds exit 0 even when the tray-open step silently failed (e.g. busy mount). */
+async function isStillMounted(devicePath: string): Promise<boolean> {
+  try {
+    const { stdout } = await execFileAsync('lsblk', ['-no', 'MOUNTPOINT', devicePath])
+    return stdout.trim().length > 0
+  } catch {
+    return false // device likely gone entirely (ejected) — lsblk failing to find it counts as success
+  }
+}
+
+/**
+ * Ejects/detaches a removable device so it's safe to disconnect.
+ * Optical drives: unmount first (in case something other than a plain filesystem mount, e.g. a
+ * desktop file manager's GVFS mount, is holding it), then `eject` opens the tray.
+ * USB/external drives: `udisksctl unmount` then `power-off` fully detaches the block device
+ * (equivalent to "Safely Remove Hardware") — neither requires root for the user's own session-mounted media.
+ */
+export async function ejectDevice(devicePath: string, isOptical: boolean): Promise<string> {
+  if (isOptical) {
+    // Best-effort pre-unmount: ignore failures here (e.g. "not mounted"), the re
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `DeviceWatcher.ts`
+
+**Input:**
+
+- endLine: `60`
+- filePath: `/home/kel/dev/DiscDock/electron/devices/DeviceWatcher.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { listConnectedDevices } from './deviceDetection'
+import type { DetectedDevice } from '../../shared/types'
+
+const POLL_INTERVAL_MS = 3000
+
+export class DeviceWatcher {
+  private timer: NodeJS.Timeout | null = null
+  private known = new Map<string, DetectedDevice>()
+
+  constructor(
+    private readonly onConnected: (device: DetectedDevice) => void,
+    private readonly onDisconnected: (devicePath: string) => void
+  ) {}
+
+  async start(): Promise<void> {
+    await this.poll()
+    this.timer = setInterval(() => void this.poll(), POLL_INTERVAL_MS)
+  }
+
+  stop(): void {
+    if (this.timer) clearInterval(this.timer)
+    this.timer = null
+  }
+
+  getKnownDevices(): DetectedDevice[] {
+    return Array.from(this.known.values())
+  }
+
+  private async poll(): Promise<void> {
+    const current = await listConnectedDevices()
+    const currentPaths = new Set(current.map((d) => d.devicePath))
+
+    for (const device of current) {
+      if (!this.known.has(device.devicePath)) {
+        this.known.set(device.devicePath, device)
+        this.onConnected(device)
+      }
+    }
+
+    for (const devicePath of this.known.keys()) {
+      if (!currentPaths.has(devicePath)) {
+        this.known.delete(devicePath)
+        this.onDisconnected(devicePath)
+      }
+    }
+  }
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Watcher is platform-agnostic already. I'll split detection/eject into per-OS modules behind the existing entry points.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `linux.ts`
+
+**Input:**
+
+- content:
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import type { DetectedDevice } from '../../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+interface LsblkDevice {
+  name: string
+  label: string | null
+  fstype: string | null
+  mountpoint: string | null
+  size: string | null
+  rm: string | boolean
+  type: string
+  uuid: string | null
+  children?: LsblkDevice[]
+}
+
+function toBytes(sizeStr: string | null): number | null {
+  if (!sizeStr) return null
+  const n = Number(sizeStr)
+  return Number.isFinite(n) ? n : null
+}
+
+function flatten(devices: LsblkDevice[]): LsblkDevice[] {
+  const result: LsblkDevice[] = []
+  for (const device of devices) {
+    result.push(device)
+    if (device.children) result.push(...flatten(device.children))
+  }
+  return result
+}
+
+function isRemovable(device: LsblkDevice): boolean {
+  return device.rm === true || device.rm === '1'
+}
+
+/**
+ * Detect currently connected/mounted removable media via `lsblk`.
+ * This is the documented fallback strategy (no udisks2 D-Bus dependency for v0.1.0).
+ */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  try {
+    const { stdout } = await execFileAsync('lsblk', [
+      '-J',
+      '-b',
+      '-o',
+      'NAME,LABEL,FSTYPE,MOUNTPOINT,SIZE,RM,TYPE,UUID'
+    ])
+    const parsed = JSON.parse(stdout) as { blockdevices: LsblkDevice[] }
+    const flat = flatten(parsed.blockdevices)
+
+    return flat
+      .filter((d) => isRemovable(d) && d.mountpoint && (d.type === 'part' || d.type === 'rom'))
+      .map((d) => ({
+        devicePath: `/dev/${d.name}`,
+        label: d.label ?? null,
+        fsType: d.fstype ?? null,
+        mountPoint: d.mountpoint as string,
+        sizeBytes: toBytes(d.size),
+        uuid: d.uuid ?? null,
+        isOptical: d.type === 'rom'
+      }))
+  } catch {
+    // lsblk unavailable or failed — degrade gracefully to no auto-detected devices (FR-1.2/NFR-3.4).
+    return []
+  }
+}
+
+interface ExecError extends Error {
+  stdout?: string
+  stderr?: string
+}
+
+const BUSY_ADVICE = 'close any file manager windows or programs browsing this media and try again.'
+
+function describeFailure(err: unknown): string {
+  const execErr = err as ExecError
+  const detail = execErr.stderr?.trim() || execErr.stdout?.trim() || execErr.message
+
+  // "eject" spins the drive down as its first step even when the final unmount/tray-open fails,
+  // so a busy mount can look like "nothing happened" rather than a clear error. Common cause:
+  // a file manager window (auto-opened by desktop automount-open settings) still browsing the disc.
+  if (/busy|in use/i.test(detail)) {
+    return `${detail} — ${BUSY_ADVICE}`
+  }
+  return detail
+}
+
+/** Some `eject` builds exit 0 even when the tray-open step silently failed (e.g. busy mount). */
+async function isStillMounted(devicePath: string): Promise<boolean> {
+  try {
+    const { stdout } = await execFileAsync('lsblk', ['-no', 'MOUNTPOINT', devicePath])
+    return stdout.trim().length > 0
+  } catch {
+    return false // device likely gone entirely (ejected) — lsblk failing to find it counts as success
+  }
+}
+
+/**
+ * Optical drives: unmount first (in case something other than a plain filesystem mount, e.g. a
+ * desktop file manager's GVFS mount, is holding it), then `eject` opens the tray.
+ * USB/external drives: `udisksctl unmount` then `power-off` fully detaches the block device
+ * (equivalent to "Safely Remove Hardware") — neither requires root for session-mounted media.
+ */
+export async function ejectDevice(devicePath: string, isOptical: boolean): Promise<string> {
+  if (isOptical) {
+    // Best-effort pre-unmount: ignore failures here (e.g. "not mounted"), the real failure signal
+    // is whether the subsequent eject actually opens the tray.
+    try {
+      await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+    } catch {
+      // ignore — device may already be unmounted, or udisksctl doesn't manage this mount
+    }
+
+    try {
+      await execFileAsync('eject', ['-v', devicePath])
+    } catch (err) {
+      throw new Error(`Eject failed: ${describeFailure(err)}`)
+    }
+
+    if (await isStillMounted(devicePath)) {
+      throw new Error(`Eject reported success but the disc is still mounted — ${BUSY_ADVICE}`)
+    }
+    return 'Disc ejected.'
+  }
+
+  await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+  try {
+    await execFileAsync('udisksctl', ['power-off', '-b', devicePath])
+    return 'Drive unmounted and powered off — safe to unplug.'
+  } catch {
+    // power-off isn't supported on all udisks2 versions/devices; unmount alone is still safe to remove.
+    return 'Drive unmounted — safe to unplug.'
+  }
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/devices/platform/linux.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/devices/platform/linux.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **linux.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import type { DetectedDevice } from '../../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+interface LsblkDevice {
+  name: string
+  label: string | null
+  fstype: string | null
+  mountpoint: string | null
+  size: string | null
+  rm: string | boolean
+  type: string
+  uuid: string | null
+  children?: LsblkDevice[]
+}
+
+function toBytes(sizeStr: string | null): number | null {
+  if (!sizeStr) return null
+  const n = Number(sizeStr)
+  return Number.isFinite(n) ? n : null
+}
+
+function flatten(devices: LsblkDevice[]): LsblkDevice[] {
+  const result: LsblkDevice[] = []
+  for (const device of devices) {
+    result.push(device)
+    if (device.children) result.push(...flatten(device.children))
+  }
+  return result
+}
+
+function isRemovable(device: LsblkDevice): boolean {
+  return device.rm === true || device.rm === '1'
+}
+
+/**
+ * Detect currently connected/mounted removable media via `lsblk`.
+ * This is the documented fallback strategy (no udisks2 D-Bus dependency for v0.1.0).
+ */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  try {
+    const { stdout } = await execFileAsync('lsblk', [
+      '-J',
+      '-b',
+      '-o',
+      'NAME,LABEL,FSTYPE,MOUNTPOINT,SIZE,RM,TYPE,UUID'
+    ])
+    const parsed = JSON.parse(stdout) as { blockdevices: LsblkDevice[] }
+    const flat = flatten(parsed.blockdevices)
+
+    return flat
+      .filter((d) => isRemovable(d) && d.mountpoint && (d.type === 'part' || d.type === 'rom'))
+      .map((d) => ({
+        devicePath: `/dev/${d.name}`,
+        label: d.label ?? null,
+        fsType: d.fstype ?? null,
+        mountPoint: d.mountpoint as string,
+        sizeBytes: toBytes(d.size),
+        uuid: d.uuid ?? null,
+        isOptical: d.type === 'rom'
+      }))
+  } catch {
+    // lsblk unavailable or failed — degrade gracefully to no auto-detected devices (FR-1.2/NFR-3.4).
+    return []
+  }
+}
+
+interface ExecError extends Error {
+  stdout?: string
+  stderr?: string
+}
+
+const BUSY_ADVICE = 'close any file manager windows or programs browsing this media and try again.'
+
+function describeFailure(err: unknown): string {
+  const execErr = err as ExecError
+  const detail = execErr.stderr?.trim() || execErr.stdout?.trim() || execErr.message
+
+  // "eject" spins the drive down as its first step even when the final unmount/tray-open fails,
+  // so a busy mount can look like "nothing happened" rather than a clear error. Common cause:
+  // a file manager window (auto-opened by desktop automount-open settings) still browsing the disc.
+  if (/busy|in use/i.test(detail)) {
+    return `${detail} — ${BUSY_ADVICE}`
+  }
+  return detail
+}
+
+/** Some `eject` builds exit 0 even when the tray-open step silently failed (e.g. busy mount). */
+async function isStillMounted(devicePath: string): Promise<boolean> {
+  try {
+    const { stdout } = await execFileAsync('lsblk', ['-no', 'MOUNTPOINT', devicePath])
+    return stdout.trim().length > 0
+  } catch {
+    return false // device likely gone entirely (ejected) — lsblk failing to find it counts as success
+  }
+}
+
+/**
+ * Optical drives: unmount first (in case something other than a plain filesystem mount, e.g. a
+ * desktop file manager's GVFS mount, is holding it), then `eject` opens the tray.
+ * USB/external drives: `udisksctl unmount` then `power-off` fully detaches the block device
+ * (equivalent to "Safely Remove Hardware") — neither requires root for session-mounted media.
+ */
+export async function ejectDevice(devicePath: string, isOptical: boolean): Promise<string> {
+  if (isOptical) {
+    // Best-effort pre-unmount: ignore failures here (e.g. "not mounted"), the real failure signal
+    // is whether the subsequent eject actually opens the tray.
+    try {
+      await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+    } catch {
+      // ignore — device may already be unmounted, or udisksctl doesn't manage this mount
+    }
+
+    try {
+      await execFileAsync('eject', ['-v', devicePath])
+    } catch (err) {
+      throw new Error(`Eject failed: ${describeFailure(err)}`)
+    }
+
+    if (await isStillMounted(devicePath)) {
+      throw new Error(`Eject reported success but the disc is still mounted — ${BUSY_ADVICE}`)
+    }
+    return 'Disc ejected.'
+  }
+
+  await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+  try {
+    await execFileAsync('udisksctl', ['power-off', '-b', devicePath])
+    return 'Drive unmounted and powered off — safe to unplug.'
+  } catch {
+    // power-off isn't supported on all udisks2 versions/devices; unmount alone is still safe to remove.
+    return 'Drive unmounted — safe to unplug.'
+  }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `windows.ts`
+
+**Input:**
+
+- content:
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import type { DetectedDevice } from '../../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+// Win32_LogicalDisk DriveType values we care about.
+const DRIVE_TYPE_REMOVABLE = 2
+const DRIVE_TYPE_CDROM = 5
+
+interface LogicalDisk {
+  DeviceID: string
+  VolumeName: string | null
+  FileSystem: string | null
+  Size: number | string | null
+  VolumeSerialNumber: string | null
+  DriveType: number
+}
+
+async function powershell(script: string): Promise<string> {
+  const { stdout } = await execFileAsync(
+    'powershell.exe',
+    ['-NoProfile', '-NonInteractive', '-Command', script],
+    { windowsHide: true }
+  )
+  return stdout
+}
+
+function toBytes(size: number | string | null): number | null {
+  if (size === null) return null
+  const n = Number(size)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Detects mounted removable and optical volumes via Win32_LogicalDisk. */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  try {
+    const stdout = await powershell(
+      'Get-CimInstance Win32_LogicalDisk | ' +
+        `Where-Object { $_.DriveType -eq ${DRIVE_TYPE_REMOVABLE} -or $_.DriveType -eq ${DRIVE_TYPE_CDROM} } | ` +
+        'Select-Object DeviceID,VolumeName,FileSystem,Size,VolumeSerialNumber,DriveType | ' +
+        'ConvertTo-Json -Compress'
+    )
+    if (!stdout.trim()) return []
+
+    const parsed = JSON.parse(stdout) as LogicalDisk | LogicalDisk[]
+    const disks = Array.isArray(parsed) ? parsed : [parsed]
+
+    return disks
+      // A CD-ROM drive with no disc still enumerates, but reports no filesystem.
+      .filter((disk) => Boolean(disk.DeviceID) && Boolean(disk.FileSystem))
+      .map((disk) => ({
+        devicePath: disk.DeviceID,
+        label: disk.VolumeName || null,
+        fsType: disk.FileSystem || null,
+        mountPoint: `${disk.DeviceID}\\`,
+        sizeBytes: toBytes(disk.Size),
+        uuid: disk.VolumeSerialNumber || null,
+        isOptical: disk.DriveType === DRIVE_TYPE_CDROM
+      }))
+  } catch {
+    return []
+  }
+}
+
+/** Uses the shell's own Eject verb, which handles both optical trays and safe USB removal. */
+export async function ejectDevice(devicePath: string, _isOptical: boolean): Promise<string> {
+  const driveLetter = devicePath.replace(/\\+$/, '')
+  try {
+    await powershell(
+      `$shell = New-Object -ComObject Shell.Application; ` +
+        `$drive = $shell.Namespace(17).ParseName('${driveLetter}'); ` +
+        `if ($null -eq $drive) { throw 'Drive ${driveLetter} not found' }; ` +
+        `$drive.InvokeVerb('Eject')`
+    )
+    return 'Drive ejected — safe to remove.'
+  } catch (err) {
+    throw new Error(`Eject failed: ${(err as Error).message}`)
+  }
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/devices/platform/windows.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/devices/platform/windows.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **windows.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import type { DetectedDevice } from '../../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+// Win32_LogicalDisk DriveType values we care about.
+const DRIVE_TYPE_REMOVABLE = 2
+const DRIVE_TYPE_CDROM = 5
+
+interface LogicalDisk {
+  DeviceID: string
+  VolumeName: string | null
+  FileSystem: string | null
+  Size: number | string | null
+  VolumeSerialNumber: string | null
+  DriveType: number
+}
+
+async function powershell(script: string): Promise<string> {
+  const { stdout } = await execFileAsync(
+    'powershell.exe',
+    ['-NoProfile', '-NonInteractive', '-Command', script],
+    { windowsHide: true }
+  )
+  return stdout
+}
+
+function toBytes(size: number | string | null): number | null {
+  if (size === null) return null
+  const n = Number(size)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Detects mounted removable and optical volumes via Win32_LogicalDisk. */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  try {
+    const stdout = await powershell(
+      'Get-CimInstance Win32_LogicalDisk | ' +
+        `Where-Object { $_.DriveType -eq ${DRIVE_TYPE_REMOVABLE} -or $_.DriveType -eq ${DRIVE_TYPE_CDROM} } | ` +
+        'Select-Object DeviceID,VolumeName,FileSystem,Size,VolumeSerialNumber,DriveType | ' +
+        'ConvertTo-Json -Compress'
+    )
+    if (!stdout.trim()) return []
+
+    const parsed = JSON.parse(stdout) as LogicalDisk | LogicalDisk[]
+    const disks = Array.isArray(parsed) ? parsed : [parsed]
+
+    return disks
+      // A CD-ROM drive with no disc still enumerates, but reports no filesystem.
+      .filter((disk) => Boolean(disk.DeviceID) && Boolean(disk.FileSystem))
+      .map((disk) => ({
+        devicePath: disk.DeviceID,
+        label: disk.VolumeName || null,
+        fsType: disk.FileSystem || null,
+        mountPoint: `${disk.DeviceID}\\`,
+        sizeBytes: toBytes(disk.Size),
+        uuid: disk.VolumeSerialNumber || null,
+        isOptical: disk.DriveType === DRIVE_TYPE_CDROM
+      }))
+  } catch {
+    return []
+  }
+}
+
+/** Uses the shell's own Eject verb, which handles both optical trays and safe USB removal. */
+export async function ejectDevice(devicePath: string, _isOptical: boolean): Promise<string> {
+  const driveLetter = devicePath.replace(/\\+$/, '')
+  try {
+    await powershell(
+      `$shell = New-Object -ComObject Shell.Application; ` +
+        `$drive = $shell.Namespace(17).ParseName('${driveLetter}'); ` +
+        `if ($null -eq $drive) { throw 'Drive ${driveLetter} not found' }; ` +
+        `$drive.InvokeVerb('Eject')`
+    )
+    return 'Drive ejected — safe to remove.'
+  } catch (err) {
+    throw new Error(`Eject failed: ${(err as Error).message}`)
+  }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `macos.ts`
+
+**Input:**
+
+- content:
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import type { DetectedDevice } from '../../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+/** Parses `diskutil info` output, which is a flat list of "  Key:   Value" lines. */
+function parseDiskutilInfo(stdout: string): Record<string, string> {
+  const info: Record<string, string> = {}
+  for (const line of stdout.split('\n')) {
+    const separator = line.indexOf(':')
+    if (separator === -1) continue
+    const key = line.slice(0, separator).trim()
+    const value = line.slice(separator + 1).trim()
+    if (key) info[key] = value
+  }
+  return info
+}
+
+function isYes(value: string | undefined): boolean {
+  return value?.toLowerCase().startsWith('yes') ?? false
+}
+
+function parseBytes(value: string | undefined): number | null {
+  // e.g. "Disk Size: 15.9 GB (15931539456 Bytes) (exactly 31116288 512-Byte-Units)"
+  const match = value?.match(/\((\d+) Bytes\)/)
+  return match ? Number(match[1]) : null
+}
+
+/** Mount lines look like: `/dev/disk2s1 on /Volumes/USB (msdos, local, nodev, noowners)` */
+function parseMounts(stdout: string): { devicePath: string; mountPoint: string }[] {
+  const mounts: { devicePath: string; mountPoint: string }[] = []
+  for (const line of stdout.split('\n')) {
+    const match = line.match(/^(\/dev\/\S+) on (\/Volumes\/[^(]+?)\s+\(/)
+    if (match) mounts.push({ devicePath: match[1], mountPoint: match[2] })
+  }
+  return mounts
+}
+
+/** Detects mounted removable/optical volumes under /Volumes via `mount` + `diskutil info`. */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  try {
+    const { stdout } = await execFileAsync('mount')
+    const mounts = parseMounts(stdout)
+
+    const devices = await Promise.all(
+      mounts.map(async ({ devicePath, mountPoint }) => {
+        try {
+          const { stdout: infoOut } = await execFileAsync('diskutil', ['info', devicePath])
+          const info = parseDiskutilInfo(infoOut)
+
+          const isOptical = isYes(info['Optical Media Type']) || info['Protocol'] === 'ATAPI'
+          const removable = isYes(info['Removable Media']) || isYes(info['Ejectable']) || isOptical
+          if (!removable) return null
+
+          return {
+            devicePath,
+            label: info['Volume Name'] || null,
+            fsType: info['Type (Bundle)'] || info['File System Personality'] || null,
+            mountPoint,
+            sizeBytes: parseBytes(info['Volume Total Space'] ?? info['Disk Size']),
+            uuid: info['Volume UUID'] || null,
+            isOptical
+          } satisfies DetectedDevice
+        } catch {
+          return null
+        }
+      })
+    )
+
+    return devices.filter((device): device is DetectedDevice => device !== null)
+  } catch {
+    return []
+  }
+}
+
+export async function ejectDevice(devicePath: string, _isOptical: boolean): Promise<string> {
+  try {
+    await execFileAsync('diskutil', ['eject', devicePath])
+    return 'Drive ejected — safe to remove.'
+  } catch (err) {
+    const detail = (err as Error & { stderr?: string }).stderr?.trim() || (err as Error).message
+    if (/busy|in use/i.test(detail)) {
+      throw new Error(`Eject failed: ${detail} — close any apps using this media and try again.`)
+    }
+    throw new Error(`Eject failed: ${detail}`)
+  }
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/devices/platform/macos.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/devices/platform/macos.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **linux.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import type { DetectedDevice } from '../../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+interface LsblkDevice {
+  name: string
+  label: string | null
+  fstype: string | null
+  mountpoint: string | null
+  size: string | null
+  rm: string | boolean
+  type: string
+  uuid: string | null
+  children?: LsblkDevice[]
+}
+
+function toBytes(sizeStr: string | null): number | null {
+  if (!sizeStr) return null
+  const n = Number(sizeStr)
+  return Number.isFinite(n) ? n : null
+}
+
+function flatten(devices: LsblkDevice[]): LsblkDevice[] {
+  const result: LsblkDevice[] = []
+  for (const device of devices) {
+    result.push(device)
+    if (device.children) result.push(...flatten(device.children))
+  }
+  return result
+}
+
+function isRemovable(device: LsblkDevice): boolean {
+  return device.rm === true || device.rm === '1'
+}
+
+/**
+ * Detect currently connected/mounted removable media via `lsblk`.
+ * This is the documented fallback strategy (no udisks2 D-Bus dependency for v0.1.0).
+ */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  try {
+    const { stdout } = await execFileAsync('lsblk', [
+      '-J',
+      '-b',
+      '-o',
+      'NAME,LABEL,FSTYPE,MOUNTPOINT,SIZE,RM,TYPE,UUID'
+    ])
+    const parsed = JSON.parse(stdout) as { blockdevices: LsblkDevice[] }
+    const flat = flatten(parsed.blockdevices)
+
+    return flat
+      .filter((d) => isRemovable(d) && d.mountpoint && (d.type === 'part' || d.type === 'rom'))
+      .map((d) => ({
+        devicePath: `/dev/${d.name}`,
+        label: d.label ?? null,
+        fsType: d.fstype ?? null,
+        mountPoint: d.mountpoint as string,
+        sizeBytes: toBytes(d.size),
+        uuid: d.uuid ?? null,
+        isOptical: d.type === 'rom'
+      }))
+  } catch {
+    // lsblk unavailable or failed — degrade gracefully to no auto-detected devices (FR-1.2/NFR-3.4).
+    return []
+  }
+}
+
+interface ExecError extends Error {
+  stdout?: string
+  stderr?: string
+}
+
+const BUSY_ADVICE = 'close any file manager windows or programs browsing this media and try again.'
+
+function describeFailure(err: unknown): string {
+  const execErr = err as ExecError
+  const detail = execErr.stderr?.trim() || execErr.stdout?.trim() || execErr.message
+
+  // "eject" spins the drive down as its first step even when the final unmount/tray-open fails,
+  // so a busy mount can look like "nothing happened" rather than a clear error. Common cause:
+  // a file manager window (auto-opened by desktop automount-open settings) still browsing the disc.
+  if (/busy|in use/i.test(detail)) {
+    return `${detail} — ${BUSY_ADVICE}`
+  }
+  return detail
+}
+
+/** Some `eject` builds exit 0 even when the tray-open step silently failed (e.g. busy mount). */
+async function isStillMounted(devicePath: string): Promise<boolean> {
+  try {
+    const { stdout } = await execFileAsync('lsblk', ['-no', 'MOUNTPOINT', devicePath])
+    return stdout.trim().length > 0
+  } catch {
+    return false // device likely gone entirely (ejected) — lsblk failing to find it counts as success
+  }
+}
+
+/**
+ * Optical drives: unmount first (in case something other than a plain filesystem mount, e.g. a
+ * desktop file manager's GVFS mount, is holding it), then `eject` opens the tray.
+ * USB/external drives: `udisksctl unmount` then `power-off` fully detaches the block device
+ * (equivalent to "Safely Remove Hardware") — neither requires root for session-mounted media.
+ */
+export async function ejectDevice(devicePath: string, isOptical: boolean): Promise<string> {
+  if (isOptical) {
+    // Best-effort pre-unmount: ignore failures here (e.g. "not mounted"), the real failure signal
+    // is whether the subsequent eject actually opens the tray.
+    try {
+      await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+    } catch {
+      // ignore — device may already be unmounted, or udisksctl doesn't manage this mount
+    }
+
+    try {
+      await execFileAsync('eject', ['-v', devicePath])
+    } catch (err) {
+      throw new Error(`Eject failed: ${describeFailure(err)}`)
+    }
+
+    if (await isStillMounted(devicePath)) {
+      throw new Error(`Eject reported success but the disc is still mounted — ${BUSY_ADVICE}`)
+    }
+    return 'Disc ejected.'
+  }
+
+  await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+  try {
+    await execFileAsync('udisksctl', ['power-off', '-b', devicePath])
+    return 'Drive unmounted and powered off — safe to unplug.'
+  } catch {
+    // power-off isn't supported on all udisks2 versions/devices; unmount alone is still safe to remove.
+    return 'Drive unmounted — safe to unplug.'
+  }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **windows.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import type { DetectedDevice } from '../../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+// Win32_LogicalDisk DriveType values we care about.
+const DRIVE_TYPE_REMOVABLE = 2
+const DRIVE_TYPE_CDROM = 5
+
+interface LogicalDisk {
+  DeviceID: string
+  VolumeName: string | null
+  FileSystem: string | null
+  Size: number | string | null
+  VolumeSerialNumber: string | null
+  DriveType: number
+}
+
+async function powershell(script: string): Promise<string> {
+  const { stdout } = await execFileAsync(
+    'powershell.exe',
+    ['-NoProfile', '-NonInteractive', '-Command', script],
+    { windowsHide: true }
+  )
+  return stdout
+}
+
+function toBytes(size: number | string | null): number | null {
+  if (size === null) return null
+  const n = Number(size)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Detects mounted removable and optical volumes via Win32_LogicalDisk. */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  try {
+    const stdout = await powershell(
+      'Get-CimInstance Win32_LogicalDisk | ' +
+        `Where-Object { $_.DriveType -eq ${DRIVE_TYPE_REMOVABLE} -or $_.DriveType -eq ${DRIVE_TYPE_CDROM} } | ` +
+        'Select-Object DeviceID,VolumeName,FileSystem,Size,VolumeSerialNumber,DriveType | ' +
+        'ConvertTo-Json -Compress'
+    )
+    if (!stdout.trim()) return []
+
+    const parsed = JSON.parse(stdout) as LogicalDisk | LogicalDisk[]
+    const disks = Array.isArray(parsed) ? parsed : [parsed]
+
+    return disks
+      // A CD-ROM drive with no disc still enumerates, but reports no filesystem.
+      .filter((disk) => Boolean(disk.DeviceID) && Boolean(disk.FileSystem))
+      .map((disk) => ({
+        devicePath: disk.DeviceID,
+        label: disk.VolumeName || null,
+        fsType: disk.FileSystem || null,
+        mountPoint: `${disk.DeviceID}\\`,
+        sizeBytes: toBytes(disk.Size),
+        uuid: disk.VolumeSerialNumber || null,
+        isOptical: disk.DriveType === DRIVE_TYPE_CDROM
+      }))
+  } catch {
+    return []
+  }
+}
+
+/** Uses the shell's own Eject verb, which handles both optical trays and safe USB removal. */
+export async function ejectDevice(devicePath: string, _isOptical: boolean): Promise<string> {
+  const driveLetter = devicePath.replace(/\\+$/, '')
+  try {
+    await powershell(
+      `$shell = New-Object -ComObject Shell.Application; ` +
+        `$drive = $shell.Namespace(17).ParseName('${driveLetter}'); ` +
+        `if ($null -eq $drive) { throw 'Drive ${driveLetter} not found' }; ` +
+        `$drive.InvokeVerb('Eject')`
+    )
+    return 'Drive ejected — safe to remove.'
+  } catch (err) {
+    throw new Error(`Eject failed: ${(err as Error).message}`)
+  }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **macos.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import type { DetectedDevice } from '../../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+/** Parses `diskutil info` output, which is a flat list of "  Key:   Value" lines. */
+function parseDiskutilInfo(stdout: string): Record<string, string> {
+  const info: Record<string, string> = {}
+  for (const line of stdout.split('\n')) {
+    const separator = line.indexOf(':')
+    if (separator === -1) continue
+    const key = line.slice(0, separator).trim()
+    const value = line.slice(separator + 1).trim()
+    if (key) info[key] = value
+  }
+  return info
+}
+
+function isYes(value: string | undefined): boolean {
+  return value?.toLowerCase().startsWith('yes') ?? false
+}
+
+function parseBytes(value: string | undefined): number | null {
+  // e.g. "Disk Size: 15.9 GB (15931539456 Bytes) (exactly 31116288 512-Byte-Units)"
+  const match = value?.match(/\((\d+) Bytes\)/)
+  return match ? Number(match[1]) : null
+}
+
+/** Mount lines look like: `/dev/disk2s1 on /Volumes/USB (msdos, local, nodev, noowners)` */
+function parseMounts(stdout: string): { devicePath: string; mountPoint: string }[] {
+  const mounts: { devicePath: string; mountPoint: string }[] = []
+  for (const line of stdout.split('\n')) {
+    const match = line.match(/^(\/dev\/\S+) on (\/Volumes\/[^(]+?)\s+\(/)
+    if (match) mounts.push({ devicePath: match[1], mountPoint: match[2] })
+  }
+  return mounts
+}
+
+/** Detects mounted removable/optical volumes under /Volumes via `mount` + `diskutil info`. */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  try {
+    const { stdout } = await execFileAsync('mount')
+    const mounts = parseMounts(stdout)
+
+    const devices = await Promise.all(
+      mounts.map(async ({ devicePath, mountPoint }) => {
+        try {
+          const { stdout: infoOut } = await execFileAsync('diskutil', ['info', devicePath])
+          const info = parseDiskutilInfo(infoOut)
+
+          const isOptical = isYes(info['Optical Media Type']) || info['Protocol'] === 'ATAPI'
+          const removable = isYes(info['Removable Media']) || isYes(info['Ejectable']) || isOptical
+          if (!removable) return null
+
+          return {
+            devicePath,
+            label: info['Volume Name'] || null,
+            fsType: info['Type (Bundle)'] || info['File System Personality'] || null,
+            mountPoint,
+            sizeBytes: parseBytes(info['Volume Total Space'] ?? info['Disk Size']),
+            uuid: info['Volume UUID'] || null,
+            isOptical
+          } satisfies DetectedDevice
+        } catch {
+          return null
+        }
+      })
+    )
+
+    return devices.filter((device): device is DetectedDevice => device !== null)
+  } catch {
+    return []
+  }
+}
+
+export async function ejectDevice(devicePath: string, _isOptical: boolean): Promise<string> {
+  try {
+    await execFileAsync('diskutil', ['eject', devicePath])
+    return 'Drive ejected — safe to remove.'
+  } catch (err) {
+    const detail = (err as Error & { stderr?: string }).stderr?.trim() || (err as Error).message
+    if (/busy|in use/i.test(detail)) {
+      throw new Error(`Eject failed: ${detail} — close any apps using this media and try again.`)
+    }
+    throw new Error(`Eject failed: ${detail}`)
+  }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now replace the two entry points with dispatchers.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `index.ts`
+
+**Input:**
+
+- content:
+
+```
+import type { DetectedDevice } from '../../shared/types'
+import * as linux from './platform/linux'
+import * as macos from './platform/macos'
+import * as windows from './platform/windows'
+
+interface PlatformDevices {
+  listConnectedDevices: () => Promise<DetectedDevice[]>
+  ejectDevice: (devicePath: string, isOptical: boolean) => Promise<string>
+}
+
+const unsupported: PlatformDevices = {
+  listConnectedDevices: async () => [],
+  ejectDevice: async () => {
+    throw new Error(`Ejecting media is not supported on ${process.platform}`)
+  }
+}
+
+export function platformDevices(): PlatformDevices {
+  switch (process.platform) {
+    case 'linux':
+      return linux
+    case 'win32':
+      return windows
+    case 'darwin':
+      return macos
+    default:
+      return unsupported
+  }
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/devices/platform/index.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/devices/platform/index.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import type { DetectedDevice } from '../../shared/types'
+import * as linux from './platform/linux'
+import * as macos from './platform/macos'
+import * as windows from './platform/windows'
+
+interface PlatformDevices {
+  listConnectedDevices: () => Promise<DetectedDevice[]>
+  ejectDevice: (devicePath: string, isOptical: boolean) => Promise<string>
+}
+
+const unsupported: PlatformDevices = {
+  listConnectedDevices: async () => [],
+  ejectDevice: async () => {
+    throw new Error(`Ejecting media is not supported on ${process.platform}`)
+  }
+}
+
+export function platformDevices(): PlatformDevices {
+  switch (process.platform) {
+    case 'linux':
+      return linux
+    case 'win32':
+      return windows
+    case 'darwin':
+      return macos
+    default:
+      return unsupported
+  }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `deviceDetection.ts.new`
+
+**Input:**
+
+- content:
+
+```
+import { platformDevices } from './platform'
+import type { DetectedDevice } from '../../shared/types'
+
+/** Lists currently connected/mounted removable media using the current platform's implementation. */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  return platformDevices().listConnectedDevices()
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/devices/deviceDetection.ts.new`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/devices/deviceDetection.ts.new
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **deviceDetection.ts.new**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { platformDevices } from './platform'
+import type { DetectedDevice } from '../../shared/types'
+
+/** Lists currently connected/mounted removable media using the current platform's implementation. */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  return platformDevices().listConnectedDevices()
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm electron/devices/deviceDetection.ts.new && echo removed`
+
+Remove the accidental scratch file.
+
+```bash
+cd /home/kel/dev/DiscDock && rm electron/devices/deviceDetection.ts.new && echo removed
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm electron/devices/deviceDetection.ts.new && echo removed` (terminal ID=f13fbb8f-e0d3-4246-9e0a-8e471cdd5fc0). This is the output of running that command instead:
+removed
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **deviceDetection.ts**</summary>
+
+@@ lines 1-67 @@
+
+```
+platformDevices } from './platform'
+import type { DetectedDevice } from '../../shared/types'
+
+/** Lists connected/mounted removable media using the current platform's implementation. */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  return platformDevices().listConnectedDevices()
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **deviceEject.ts**</summary>
+
+@@ lines 1-72 @@
+
+```
+platformDevices } from './platform'
+
+/**
+ * Ejects/detaches a removable device so it's safe to disconnect, using the current platform's
+ * implementation.
+ */
+export async function ejectDevice(devicePath: string, isOptical: boolean): Promise<string> {
+  return platformDevices().ejectDevice(devicePath, isOptical)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build 2>&1 | tail -10`
+
+Build after the platform device refactor.
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build 2>&1 | tail -10
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build 2>&1 | tail -10` (terminal ID=483ff8c4-6689-444b-90e2-a49c11661922). This is the output of running that command instead:
+
+✓ built in 473ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+electron/devices/platform/index.ts(1,37): error TS2307: Cannot find module '../.
+./shared/types' or its corresponding type declarations.
+electron/devices/platform/index.ts(2,24): error TS2307: Cannot find module './pl
+atform/linux' or its corresponding type declarations.
+electron/devices/platform/index.ts(3,24): error TS2307: Cannot find module './pl
+atform/macos' or its corresponding type declarations.
+electron/devices/platform/index.ts(4,26): error TS2307: Cannot find module './pl
+atform/windows' or its corresponding type declarations.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import type { DetectedDevice } from '../../shared/types'
+import * as linux from './platform/linux'
+import * as macos from './platform/macos'
+import * as windows from './platform/windows'
+
+interface PlatformDevices {
+  listConnectedDevices: () => Promise<DetectedDevice[]>
+  ejectDevice: (devicePath: string, isOptical: boolean) => Promise<string>
+}
+
+const unsupported: PlatformDevices = {
+  listConnectedDevices: async () => [],
+  ejectDevice: async () => {
+    throw new Error(`Ejecting media is not supported on ${process.platform}`)
+  }
+}
+
+export function platformDevices(): PlatformDevices {
+  switch (process.platform) {
+    case 'linux':
+      return linux
+    case 'win32':
+      return windows
+    case 'darwin':
+      return macos
+    default:
+      return unsupported
+  }
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **deviceDetection.ts.new**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { platformDevices } from './platform'
+import type { DetectedDevice } from '../../shared/types'
+
+/** Lists currently connected/mounted removable media using the current platform's implementation. */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  return platformDevices().listConnectedDevices()
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **deviceDetection.ts**</summary>
+
+@@ lines 1-67 @@
+
+```
+platformDevices } from './platform'
+import type { DetectedDevice } from '../../shared/types'
+
+/** Lists connected/mounted removable media using the current platform's implementation. */
+export async function listConnectedDevices(): Promise<DetectedDevice[]> {
+  return platformDevices().listConnectedDevices()
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **deviceEject.ts**</summary>
+
+@@ lines 1-72 @@
+
+```
+platformDevices } from './platform'
+
+/**
+ * Ejects/detaches a removable device so it's safe to disconnect, using the current platform's
+ * implementation.
+ */
+export async function ejectDevice(devicePath: string, isOptical: boolean): Promise<string> {
+  return platformDevices().ejectDevice(devicePath, isOptical)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ts**</summary>
+
+@@ lines 1-4 @@
+
+```
+../shared/types'
+import * as linux from './linux'
+import * as macos from './macos'
+import * as windows from '.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Refactor device detection for multiple OS* (1/2)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build 2>&1 | tail -10`
+
+Rebuild after fixing import paths.
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build 2>&1 | tail -10
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build 2>&1 | tail -10` (terminal ID=378e28a3-4791-42fd-a759-9f1863793fa0). This is the output of running that command instead:
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BcGbPnvG.css   16.33 kB │ gzip:  3.32 kB
+dist/assets/index-C9ypHKUb.js   282.17 kB │ gzip: 86.57 kB
+
+✓ built in 290ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && node -e "
+const \{listConnectedDevices\} = requir...`
+
+Smoke-test Linux detection through the new dispatcher.
+
+```bash
+cd /home/kel/dev/DiscDock && node -e "
+const {listConnectedDevices} = require('./dist-electron/electron/devices/deviceDetection.js');
+listConnectedDevices().then(d => console.log('devices:', JSON.stringify(d, null, 1)));
+"
+```
+
+**Result:**
+
+```
+devices: []
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Next Phase 3 item done: **cross-platform device detection & eject architecture**.
+
+Detection and eject were Linux-only (`lsblk`, `udisksctl`, ). They're now behind a platform dispatcher:
+
+- **platform/index.ts** — selects the implementation by , with a safe fallback that reports no devices and a clear "not supported" eject error on unknown platforms.
+- **platform/linux.ts** — the existing `lsblk` detection and the `udisksctl`/ logic (including the busy-mount detection and post-eject mount verification) moved verbatim.
+- **platform/windows.ts** — detection via `Win32_LogicalDisk` through PowerShell JSON (DriveType 2 = removable, 5 = optical), skipping empty optical drives; eject via the Shell  verb, which covers both trays and safe USB removal.
+- **platform/macos.ts** — detection by parsing `mount` for `/Volumes` entries and enriching each with `diskutil info` (removable/ejectable/optical, label, UUID, size); eject via `diskutil eject` with busy-media guidance.
+- **`electron/devices/deviceDetection.ts`** and `electron/devices/deviceEject.ts` are now thin pass-throughs, so  and all IPC callers are unchanged.
+
+Build passes and the Linux path still runs through the dispatcher cleanly (returned `[]` with no removable media attached). The Windows and macOS implementations are untested — they need those platforms plus real media, and `electron-builder.yml` still targets Linux only, so add /`mac` targets when you're ready to produce those builds.
+
+That leaves optical audio CD track listing (FR-1.7) as the last Phase 3 item; it needs `libcdio`/`cd-info` and a physical audio CD to validate.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Updated todo list
+</details></tool-use>
+
+---
+
+_**User (2026-08-14 15:45:33Z)**_
+
+continue with what is the next logical step
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `deviceDetection.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `deviceEject.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` which cd-info cdparanoia cdda2wav 2>&1; echo "---"; cd-info --version 2>&1 |...`
+
+Check which optical CD tools are available.
+
+```bash
+which cd-info cdparanoia cdda2wav 2>&1; echo "---"; cd-info --version 2>&1 | head -2
+```
+
+**Result:**
+
+```
+---
+Command 'cd-info' not found, but can be installed with:
+sudo apt install libcdio-utils
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search,**/.dart_tool]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- includePattern: `electron/scanning/scanEngine.ts`
+- isRegexp: `true`
+- query: `export interface WalkedFile[\s\S]{0,400}`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `scan.ts`
+
+**Input:**
+
+- endLine: `60`
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/scan.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { ipcMain } from 'electron'
+import { cancelScan, startScan } from '../scanning/scanManager'
+import { getErrorsForMedia, listScanJobsForMedia } from '../db/scanRepository'
+import { getSettings } from '../settings/settingsStore'
+import type { HashMode, IpcResult, ScanErrorEntry, ScanJob } from '../../shared/types'
+
+export function registerScanIpc(): void {
+  ipcMain.handle('scan:start', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
+    const { mediaId, rootPath, hashMode } = (payload ?? {}) as {
+      mediaId?: unknown
+      rootPath?: unknown
+      hashMode?: unknown
+    }
+
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    if (typeof rootPath !== 'string' || !rootPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A rootPath is required' } }
+    }
+    const validModes: HashMode[] = ['none', 'quick', 'full']
+    const mode = validModes.includes(hashMode as HashMode) ? (hashMode as HashMode) : getSettings().defaultHashMode
+
+    const jobId = startScan(mediaId, rootPath, mode)
+    return { ok: true, data: { jobId } }
+  })
+
+  ipcMain.handle('scan:cancel', (_event, payload: unknown): IpcResult<{ cancelled: boolean }> => {
+    const jobId = (payload as { jobId?: unknown })?.jobId
+    if (typeof jobId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric jobId is required' } }
+    }
+    return { ok: true, data: { cancelled: cancelScan(jobId) } }
+  })
+
+  ipcMain.handle('scan:history', (_event, payload: unknown): IpcResult<ScanJob[]> => {
+    const mediaId = (payload as { mediaId?: unknown })?.mediaId
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    return { ok: true, data: listScanJobsForMedia(mediaId) }
+  })
+
+  ipcMain.handle('scan:errors', (_event, payload: unknown): IpcResult<Sc
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `WalkedFile` (`**/electron/scanning/scanEngine.ts`), 2 results
+
+**Input:**
+
+- includePattern: `electron/scanning/scanEngine.ts`
+- isRegexp: `true`
+- query: `WalkedFile`
+
+**Result:**
+
+```
+Found 2 matches in 1 file for "WalkedFile"
+
+electron/scanning/scanEngine.ts
+7:import type { WalkedFile } from '../db/scanRepository'
+19:  onFile: (file: WalkedFile) => void
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `export interface WalkedFile` (`**/electron/db/scanRepository.ts`), 1 result
+
+**Input:**
+
+- includePattern: `electron/db/scanRepository.ts`
+- isRegexp: `true`
+- query: `export interface WalkedFile`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "export interface WalkedFile"
+
+electron/db/scanRepository.ts
+115:export interface WalkedFile {
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `scanRepository.ts`, lines 100 to 122
+
+**Input:**
+
+- endLine: `122`
+- filePath: `/home/kel/dev/DiscDock/electron/db/scanRepository.ts`
+- startLine: `100`
+
+**Result:**
+
+```
+    .all(mediaItemId) as { path: string; errorType: string; message: string | null; scanStartedAt: string }[]
+  return rows
+}
+
+export function markMediaScanned(mediaItemId: number, verified: boolean): void {
+  const db = getDb()
+  if (verified) {
+    db.prepare(
+      "UPDATE media_item SET last_scanned_at = datetime('now'), last_verified_at = datetime('now') WHERE id = ?"
+    ).run(mediaItemId)
+  } else {
+    db.prepare("UPDATE media_item SET last_scanned_at = datetime('now') WHERE id = ?").run(mediaItemId)
+  }
+}
+
+export interface WalkedFile {
+  path: string
+  name: string
+  extension: string | null
+  kind: string
+  sizeBytes: number
+  isDirectory: boolean
+  createdAtSrc: string | null
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the audio CD reader.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `audioCd.ts`
+
+**Input:**
+
+- content:
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import type { AudioCdTrack } from '../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+const CDDA_BYTES_PER_SECTOR = 2352
+const CDDA_SECTORS_PER_SECOND = 75
+
+const MISSING_TOOLS_MESSAGE =
+  'Reading audio CDs requires libcdio-utils (cd-info) or cdparanoia. Install one of them and try again.'
+
+function sectorsToSeconds(sectors: number): number {
+  return Math.round(sectors / CDDA_SECTORS_PER_SECOND)
+}
+
+function toTrack(trackNumber: number, sectors: number, isAudio: boolean): AudioCdTrack {
+  return {
+    trackNumber,
+    sectors,
+    durationSeconds: sectorsToSeconds(sectors),
+    sizeBytes: sectors * CDDA_BYTES_PER_SECTOR,
+    isAudio
+  }
+}
+
+/**
+ * Parses the `cd-info` track table, e.g.
+ * `  1: 00:02:00  000000 audio  false  no    2        no`
+ * with a trailing `170: 55:22:33 249183 leadout` entry used to size the final track.
+ */
+export function parseCdInfo(output: string): AudioCdTrack[] {
+  const entries: { trackNumber: number; lsn: number; isAudio: boolean }[] = []
+  let leadoutLsn: number | null = null
+
+  for (const line of output.split('\n')) {
+    const match = line.match(/^\s*(\d+):\s+\d+:\d+:\d+\s+(\d+)\s+(\S+)/)
+    if (!match) continue
+
+    const trackNumber = Number(match[1])
+    const lsn = Number(match[2])
+    const type = match[3].toLowerCase()
+
+    if (type === 'leadout') {
+      leadoutLsn = lsn
+      continue
+    }
+    entries.push({ trackNumber, lsn, isAudio: type === 'audio' })
+  }
+
+  return entries.map((entry, index) => {
+    const nextLsn = index + 1 < entries.length ? entries[index + 1].lsn : leadoutLsn
+    const sectors = nextLsn !== null && nextLsn > entry.lsn ? nextLsn - entry.lsn : 0
+    return toTrack(entry.trackNumber, sectors, entry.isAudio)
+  })
+}
+
+/**
+ * Parses the `cdparanoia -Q` table, e.g.
+ * `  1.    18375 [04:05.00]        0 [00:00.00]    no   no  2`
+ * where the second column is the track length in sectors.
+ */
+export function parseCdparanoia(output: string): AudioCdTrack[] {
+  const tracks: AudioCdTrack[] = []
+  for (const line of output.split('\n')) {
+    const match = line.match(/^\s*(\d+)\.\s+(\d+)\s+\[[\d:.]+\]/)
+    if (!match) continue
+    tracks.push(toTrack(Number(match[1]), Number(match[2]), true))
+  }
+  return tracks
+}
+
+/**
+ * Reads the raw track listing from an audio CD, which has no filesystem to walk (FR-1.7).
+ * Prefers cd-info (reports data tracks too) and falls back to cdparanoia.
+ */
+export async function readAudioCdTracks(devicePath: string): Promise<AudioCdTrack[]> {
+  try {
+    const { stdout } = await execFileAsync('cd-info', [
+      '--no-header',
+      '--no-device-info',
+      '--no-cddb',
+      '--no-disc-mode',
+      '-C',
+      devicePath
+    ])
+    const tracks = parseCdInfo(stdout)
+    if (tracks.length > 0) return tracks
+  } catch {
+    // fall through to cdparanoia
+  }
+
+  try {
+    // cdparanoia writes its query table to stderr.
+    const { stdout, stderr } = await execFileAsync('cdparanoia', ['-Q', '-d', devicePath])
+    const tracks = parseCdparanoia(`${stderr}\n${stdout}`)
+    if (tracks.length > 0) return tracks
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code
+    if (code === 'ENOENT') throw new Error(MISSING_TOOLS_MESSAGE)
+    throw new Error(`Could not read the disc: ${(err as Error).message}`)
+  }
+
+  throw new Error('No tracks found — the disc may be empty, unreadable, or not an audio CD.')
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/scanning/audioCd.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/scanning/audioCd.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **audioCd.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import type { AudioCdTrack } from '../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+const CDDA_BYTES_PER_SECTOR = 2352
+const CDDA_SECTORS_PER_SECOND = 75
+
+const MISSING_TOOLS_MESSAGE =
+  'Reading audio CDs requires libcdio-utils (cd-info) or cdparanoia. Install one of them and try again.'
+
+function sectorsToSeconds(sectors: number): number {
+  return Math.round(sectors / CDDA_SECTORS_PER_SECOND)
+}
+
+function toTrack(trackNumber: number, sectors: number, isAudio: boolean): AudioCdTrack {
+  return {
+    trackNumber,
+    sectors,
+    durationSeconds: sectorsToSeconds(sectors),
+    sizeBytes: sectors * CDDA_BYTES_PER_SECTOR,
+    isAudio
+  }
+}
+
+/**
+ * Parses the `cd-info` track table, e.g.
+ * `  1: 00:02:00  000000 audio  false  no    2        no`
+ * with a trailing `170: 55:22:33 249183 leadout` entry used to size the final track.
+ */
+export function parseCdInfo(output: string): AudioCdTrack[] {
+  const entries: { trackNumber: number; lsn: number; isAudio: boolean }[] = []
+  let leadoutLsn: number | null = null
+
+  for (const line of output.split('\n')) {
+    const match = line.match(/^\s*(\d+):\s+\d+:\d+:\d+\s+(\d+)\s+(\S+)/)
+    if (!match) continue
+
+    const trackNumber = Number(match[1])
+    const lsn = Number(match[2])
+    const type = match[3].toLowerCase()
+
+    if (type === 'leadout') {
+      leadoutLsn = lsn
+      continue
+    }
+    entries.push({ trackNumber, lsn, isAudio: type === 'audio' })
+  }
+
+  return entries.map((entry, index) => {
+    const nextLsn = index + 1 < entries.length ? entries[index + 1].lsn : leadoutLsn
+    const sectors = nextLsn !== null && nextLsn > entry.lsn ? nextLsn - entry.lsn : 0
+    return toTrack(entry.trackNumber, sectors, entry.isAudio)
+  })
+}
+
+/**
+ * Parses the `cdparanoia -Q` table, e.g.
+ * `  1.    18375 [04:05.00]        0 [00:00.00]    no   no  2`
+ * where the second column is the track length in sectors.
+ */
+export function parseCdparanoia(output: string): AudioCdTrack[] {
+  const tracks: AudioCdTrack[] = []
+  for (const line of output.split('\n')) {
+    const match = line.match(/^\s*(\d+)\.\s+(\d+)\s+\[[\d:.]+\]/)
+    if (!match) continue
+    tracks.push(toTrack(Number(match[1]), Number(match[2]), true))
+  }
+  return tracks
+}
+
+/**
+ * Reads the raw track listing from an audio CD, which has no filesystem to walk (FR-1.7).
+ * Prefers cd-info (reports data tracks too) and falls back to cdparanoia.
+ */
+export async function readAudioCdTracks(devicePath: string): Promise<AudioCdTrack[]> {
+  try {
+    const { stdout } = await execFileAsync('cd-info', [
+      '--no-header',
+      '--no-device-info',
+      '--no-cddb',
+      '--no-disc-mode',
+      '-C',
+      devicePath
+    ])
+    const tracks = parseCdInfo(stdout)
+    if (tracks.length > 0) return tracks
+  } catch {
+    // fall through to cdparanoia
+  }
+
+  try {
+    // cdparanoia writes its query table to stderr.
+    const { stdout, stderr } = await execFileAsync('cdparanoia', ['-Q', '-d', devicePath])
+    const tracks = parseCdparanoia(`${stderr}\n${stdout}`)
+    if (tracks.length > 0) return tracks
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code
+    if (code === 'ENOENT') throw new Error(MISSING_TOOLS_MESSAGE)
+    throw new Error(`Could not read the disc: ${(err as Error).message}`)
+  }
+
+  throw new Error('No tracks found — the disc may be empty, unreadable, or not an audio CD.')
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 106-106 @@
+
+```
+
+
+export interface AudioCdTrack {
+  trackNumber: number
+  sectors: number
+  durationSeconds: number
+  sizeBytes: number
+  isAudio: boolean
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanManager.ts**</summary>
+
+@@ lines 76-76 @@
+
+```
+
+
+/** Catalogs an audio CD's raw track list, which has no filesystem to walk (FR-1.7). */
+export function startAudioCdScan(mediaItemId: number, devicePath: string): number {
+  const job = createScanJob(mediaItemId, 'none')
+  markScanJobRunning(job.id)
+  void runAudioCdScan(job.id, mediaItemId, devicePath)
+  return job.id
+}
+
+async function runAudioCdScan(jobId: number, mediaItemId: number, devicePath: string): Promise<void> {
+  let filesAdded = 0
+  let filesModified = 0
+  let filesUnchanged = 0
+
+  try {
+    const tracks = await readAudioCdTracks(devicePath)
+
+    for (const track of tracks) {
+      const name = `Track ${String(track.trackNumber).padStart(2, '0')}.${track.isAudio ? 'cdda' : 'bin'}`
+      const outcome = upsertFileRecord(mediaItemId, jobId, {
+        path: name,
+        name,
+        extension: track.isAudio ? 'cdda' : 'bin',
+        kind: track.isAudio ? 'audio' : 'other',
+        sizeBytes: track.sizeBytes,
+        isDirectory: false,
+        createdAtSrc: null,
+        modifiedAtSrc: null,
+        hashAlgo: null,
+        hashValue: null
+      })
+      if (outcome === 'added') filesAdded += 1
+      else if (outcome === 'modified') filesModified += 1
+      else filesUnchanged += 1
+    }
+
+    const filesRemoved = pruneUnseenFiles(mediaItemId, jobId)
+    const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount: 0 }
+    finalizeScanJob(jobId, 'completed', counts)
+    markMediaScanned(mediaItemId, true)
+    win?.webContents.send('scan:completed', { jobId, summary: counts })
+  } catch (err) {
+    finalizeScanJob(jobId, 'failed', {
+      filesAdded,
+      filesRemoved: 0,
+      filesModified,
+      filesUnchanged,
+      errorCount: 1
+    })
+    recordScanError(jobId, devicePath, 'audio_cd', (err as Error).message)
+    win?.webContents.send('scan:failed', { jobId, error: (err as Error).message })
+  }
+}
+```
+
+@@ lines 2-2 @@
+
+```
+
+import { readAudioCdTracks } from './audioCd'
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scan.ts**</summary>
+
+@@ lines 2-2 @@
+
+```
+AudioCdScan, start
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scan.ts**</summary>
+
+@@ lines 28-28 @@
+
+```
+startAudioCd', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
+    const { mediaId, devicePath } = (payload ?? {}) as { mediaId?: unknown; devicePath?: unknown }
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    if (typeof devicePath !== 'string' || !devicePath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A devicePath is required' } }
+    }
+    return { ok: true, data: { jobId: startAudioCdScan(mediaId, devicePath) } }
+  })
+
+  ipcMain.handle('scan:
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `preload.ts`, lines 80 to 88
+
+**Input:**
+
+- endLine: `88`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `80`
+
+**Result:**
+
+```
+    eject: (devicePath: string, isOptical: boolean): Promise<IpcResult<{ message: string }>> =>
+      ipcRenderer.invoke('devices:eject', { devicePath, isOptical })
+  },
+  scan: {
+    start: (mediaId: number, rootPath: string, hashMode?: HashMode): Promise<IpcResult<{ jobId: number }>> =>
+      ipcRenderer.invoke('scan:start', { mediaId, rootPath, hashMode }),
+    cancel: (jobId: number): Promise<IpcResult<{ cancelled: boolean }>> =>
+      ipcRenderer.invoke('scan:cancel', { jobId }),
+    history: (mediaId: number): Promise<IpcResult<ScanJob[]>> =>
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 85-85 @@
+
+```
+
+    startAudioCd: (mediaId: number, devicePath: string): Promise<IpcResult<{ jobId: number }>> =>
+      ipcRenderer.invoke('scan:startAudioCd', { mediaId, devicePath }),
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the UI entry point in the Media Library menu.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 953-953 @@
+
+```
+presentDevice?.isOptical && !scan && (
+                <li>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setContextMenu(null)
+                      handleScanAudioCd(item.id, presentDevice.devicePath)
+                    }}
+                  >
+                    <Disc3 size={14} aria-hidden="true" /> Scan Audio CD Tracks
+                  </button>
+                </li>
+              )}
+              {
+```
+
+@@ lines 540-540 @@
+
+```
+
+
+  const handleScanAudioCd = (mediaId: number, devicePath: string): void => {
+    void window.discdock.scan.startAudioCd(mediaId, devicePath).then((result) => {
+      if (!result.ok) {
+        setEjectMessage(result.error.message)
+        return
+      }
+      const jobId = result.data.jobId
+      setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
+      setScansByMedia((prev) => ({
+        ...prev,
+        [mediaId]: { jobId, filesProcessed: 0, currentPath: '', queued: false }
+      }))
+    })
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build 2>&1 | tail -10`
+
+Build after adding audio CD support.
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build 2>&1 | tail -10
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build 2>&1 | tail -10` (terminal ID=be9c5f15-00b0-4d97-a260-9016ff151628). This is the output of running that command instead:
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BcGbPnvG.css   16.33 kB │ gzip:  3.32 kB
+dist/assets/index-etiJh1nl.js   282.60 kB │ gzip: 86.64 kB
+
+✓ built in 251ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now I'll verify the parsers against real-format sample output.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cd /home/kel/dev/DiscDock && node -e "
+const \{ parseCdInfo, parseCdparanoia ...`
+
+Validate both audio CD parsers against representative tool output.
+
+```bash
+cd /home/kel/dev/DiscDock && node -e "
+const { parseCdInfo, parseCdparanoia } = require('./dist-electron/electron/scanning/audioCd.js');
+
+const cdInfo = \`CD-ROM Track List (1 - 3)
+  #: MSF       LSN    Type   Green? Copy? Channels Premphasis?
+  1: 00:02:00  000000 audio  false  no    2        no
+  2: 04:07:00  018375 audio  false  no    2        no
+  3: 08:20:00  037350 audio  false  no    2        no
+170: 12:00:00  053850 leadout
+\`;
+
+const cdp = \`
+track        length               begin        copy pre ch
+===========================================================
+  1.    18375 [04:05.00]        0 [00:00.00]    no   no  2
+  2.    18975 [04:13.00]    18375 [04:05.00]    no   no  2
+  3.    16500 [03:40.00]    37350 [08:18.00]    no   no  2
+\`;
+
+console.log('cd-info:', JSON.stringify(parseCdInfo(cdInfo)));
+console.log('cdparanoia:', JSON.stringify(parseCdparanoia(cdp)));
+"
+```
+
+**Result:**
+
+```
+cd-info: [{"trackNumber":1,"sectors":18375,"durationSeconds":245,"sizeBytes":43218000,"isAudio":true},{"trackNumber":2,"sectors":18975,"durationSeconds":253,"sizeBytes":44629200,"isAudio":true},{"trackNumber":3,"sectors":16500,"durationSeconds":220,"sizeBytes":38808000,"isAudio":true}]
+cdparanoia: [{"trackNumber":1,"sectors":18375,"durationSeconds":245,"sizeBytes":43218000,"isAudio":true},{"trackNumber":2,"sectors":18975,"durationSeconds":253,"sizeBytes":44629200,"isAudio":true},{"trackNumber":3,"sectors":16500,"durationSeconds":220,"sizeBytes":38808000,"isAudio":true}]
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="memory"><details>
+<summary>Tool use: **memory**</summary>
+
+Updated memory file `discdock-build.md`
+
+**Input:**
+
+- command: `str_replace`
+- new_str:
+
+```
+## Gotchas (2026-08-14)
+- `electron-updater` is CJS with no default export: use `import { autoUpdater } from 'electron-updater'`.
+  A default import compiles but is `undefined` at runtime ("Cannot destructure property 'autoUpdater'").
+- Audio CD track listing (electron/scanning/audioCd.ts) needs `cd-info` (libcdio-utils) or `cdparanoia`;
+  neither is installed on this machine — parsers verified against sample output instead.
+- Device detection/eject are split per-OS under electron/devices/platform/ (linux/windows/macos + index
+  dispatcher). Windows/macOS impls are untested.
+
+## Disk space incident (2026-08-13)
+```
+
+- old_str: `## Disk space incident (2026-08-13)`
+- path: `/memories/repo/discdock-build.md`
+
+**Result:**
+
+```
+The memory file has been edited. Here's the result of running `cat -n` on a snippet of /memories/repo/discdock-build.md:
+     7	- npm has an "allow-scripts" gate blocking postinstall for electron/better-sqlite3/electron-winstaller;
+     8	  run `npm approve-scripts <pkg>` (or per-pkg) after installing new native/electron deps.
+     9	- electron-vite/electron-builder targets: deb + AppImage (Linux only, per planning docs).
+    10	
+    11	## Gotchas (2026-08-14)
+    12	- `electron-updater` is CJS with no default export: use `import { autoUpdater } from 'electron-updater'`.
+    13	  A default import compiles but is `undefined` at runtime ("Cannot destructure property 'autoUpdater'").
+    14	- Audio CD track listing (electron/scanning/audioCd.ts) needs `cd-info` (libcdio-utils) or `cdparanoia`;
+    15	  neither is installed on this machine — parsers verified against sample output instead.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+**Phase 3 is complete.** The final item — optical audio CD track listing (FR-1.7) — is in:
+
+- **`electron/scanning/audioCd.ts`** — reads the raw track table from a disc with no filesystem. Tries `cd-info` (libcdio) first since it also reports data tracks, falls back to `cdparanoia -Q` (which writes its table to stderr), and raises an actionable "install libcdio-utils or cdparanoia" error when neither exists. Sectors convert to duration at 75 sectors/sec and to size at 2352 bytes/sector.
+- **** in `electron/scanning/scanManager.ts` — creates a real scan job and writes one `file_record` per track (`Track 01.cdda`, kind `audio`), so tracks are searchable and browsable like any other catalog entry. Re-scans diff correctly via the normal upsert/prune path, and failures record a scan error and emit `scan:failed`.
+- **`scan:startAudioCd` IPC** +  in preload, surfaced as "Scan Audio CD Tracks" in the row menu whenever the linked optical device is present.
+
+I validated both parsers against representative `cd-info` and `cdparanoia` output — they agree exactly (18375 sectors → 4:05, 43,218,000 bytes). Neither tool is installed here, so real-disc verification is still yours to do.
+
+**Full Phase 3 summary:**
+
+| Item | Status |
+|---|---|
+| File-level tagging + per-file notes (FR-5.2) | Done, including tag-filtered search |
+| Printable labels / QR codes + `discdock://` deep links | Done |
+| Optical audio CD track listing (FR-1.7) | Done (needs `cd-info`/`cdparanoia` at runtime) |
+| Auto-update via `electron-updater` | Done (needs a published release to verify) |
+| Windows/macOS support | Device detection & eject refactored per-OS; impls untested |
+| In-app preview / open with system viewer | Done |
+| Multi-concurrency scanning | Done, configurable with queueing |
+
+Everything builds. The untested surfaces are all ones needing hardware, another OS, or a published release: audio CD reading, Windows/macOS device detection, and the update feed. I also noted these gotchas in repository memory.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Integrate audio CD scan into MediaLibrary* (3/3)
+</details></tool-use>
+
+---
+
+_**User (2026-08-14 15:48:51Z)**_
+
+finish up phase 3
