@@ -190,7 +190,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [ ] Document backup/restore recovery behavior and where safety backups are stored.
 - [ ] Document known limitations and supported package formats.
 - [ ] Add a first-run workflow guide or make the in-app empty states sufficient for a new user.
-- [ ] Add release notes covering schema migrations, data location, and upgrade expectations.
+- [x] Add release notes covering schema migrations, data location, and upgrade expectations. See [0.1.0 release notes](../release-notes/0.1.0.md).
 - [ ] Confirm the Help topics match the final UI and release scope.
 
 ## Recommended Execution Order
