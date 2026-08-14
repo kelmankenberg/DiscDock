@@ -11745,3 +11745,3277 @@ Remaining gaps:
 - The specification’s optional first-launch Dashboard behavior remains undecided and is not implemented.
 
 So the core Help system is implemented and build-clean, but I would call it “complete for the current app surface” rather than fully acceptance-tested.
+
+---
+
+_**User (2026-08-14 17:54:02Z)**_
+
+ok, then take a holistic view of the app and let me kow what is missing before we can consider the intitial release. I know that we need to work on the build scripts and prove that out, but what other items/suggestions ware we not including?
+
+---
+
+_**Agent (copilot/auto)**_
+
+I’ll audit the release surface against the planning requirements and the current implementation: first the roadmap, packaging/security requirements, and package scripts, then the main user workflows and known platform/runtime dependencies. I’ll separate release blockers from hardening and post-v1 suggestions so the result is actionable rather than just a long feature inventory.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="runSubagent"><details>
+<summary>Tool use: **runSubagent**</summary>
+
+Audit initial release gaps
+
+**Input:**
+
+- agentName: `Explore`
+- description: `Audit initial release gaps`
+- prompt: `Perform a thorough read-only holistic audit of /home/kel/dev/DiscDock for initial release readiness. Compare docs/planning-docs/01 through 13, especially roadmap, functional/non-functional requirements, technical spec, packaging/deployment, security/privacy, help system, against current source. Inspect package scripts/config, Electron main/preload/IPC, renderer views, tests if any, and platform/runtime assumptions. Do not edit files. Return findings ordered by severity with concrete file paths and concise evidence, plus missing tests and release recommendations. Note what appears implemented and what is absent. Focus on release blockers beyond the user's already-known build script work.`
+
+**Result:**
+
+```
+Now I'll compile the comprehensive audit findings. Let me create a detailed summary organized by severity.
+
+## COMPREHENSIVE RELEASE READINESS AUDIT – DiscDock
+
+**Date:** 2026-08-14 | **Scope:** Full codebase vs. 01-13 planning docs | **Mode:** Read-only analysis
+
+---
+
+## EXECUTIVE SUMMARY
+
+**Release Status:** **NOT READY** – Multiple critical gaps remain beyond the known build-script work. The application has strong architectural foundations (proper IPC isolation, database versioning, help system, device detection), but lacks essential production infrastructure (automated tests, runtime logging, worker threads for long-running scans, error boundaries) and incomplete platform support. **Estimated readiness: 60-70%.**
+
+---
+
+## CRITICAL BLOCKERS (Must Fix Before Release)
+
+### 1. **Scanning Runs on Main Thread (NFR-1.5 Violation)**
+- **Severity:** 🔴 **CRITICAL**
+- **Requirement:** NFR-1.5 mandates "All filesystem scanning and hashing work shall occur off the Electron main UI thread"
+- **Reality:** [electron/scanning/scanEngine.ts](electron/scanning/scanEngine.ts#L67) explicitly states:
+  > "Runs on the main process event loop but yields periodically so IPC/UI stay responsive (v0.1.0 simplification — see roadmap for moving this to a worker_thread/utility process)."
+- **Impact:** Even with periodic yields, a large scan (e.g., 100k+ files) will cause visible UI freezing/janky updates, poor user experience, violates spec and v1 acceptance criteria.
+- **Fix Required:** Migrate `walkAndScan` + `hashFile` to a Node.js `worker_threads` pool or Electron Utility Process. Currently marked as "roadmap" but is blocking.
+- **Effort:** ~2-3 days (re-architect callbacks to worker messaging, handle backpressure/batching).
+
+### 2. **No Automated Test Suite (NFR-6.2 Violation)**
+- **Severity:** 🔴 **CRITICAL**
+- **Requirement:** NFR-6.2 demands "Automated tests (unit + integration) shall cover: scan diffing logic, hashing modes, search/filter query building, database migrations."
+- **Real
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `package.json`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `01-product-requirements.md`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `02-user-stories.md`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `03-functional-requirements.md`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `04-non-functional-requirements.md`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `13-help-system.md`, lines 1 to 100
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `05-technical-specification.md`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `09-packaging-deployment.md`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `10-security-privacy.md`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `11-roadmap.md`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_listDirectory"><details>
+<summary>Tool use: **copilot_listDirectory**</summary>
+
+Read `views`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_listDirectory"><details>
+<summary>Tool use: **copilot_listDirectory**</summary>
+
+Read `ipc`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_listDirectory"><details>
+<summary>Tool use: **copilot_listDirectory**</summary>
+
+Read `db`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `main.ts`, lines 1 to 80
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 1 to 80
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `test|spec|jest|vitest` (`**/*.{ts,tsx,json}`), 39 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `electron-builder.yml`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `index.ts`, lines 1 to 100
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `scanManager.ts`, lines 1 to 80
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `scan.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `media.ts`, lines 1 to 100
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `DeviceWatcher.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `index.html`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `HelpPanel.tsx`, lines 1 to 100
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `registry.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `worker|thread` (`**/electron/scanning/scanEngine.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `createWindow.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `settingsStore.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Settings.tsx`, lines 1 to 80
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `scanEngine.ts`, lines 1 to 150
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `devices.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `App.tsx`, lines 1 to 80
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `search.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `duplicates.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `audioCd.ts`, lines 1 to 80
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `main.ts`, lines 80 to 100
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `index.ts`, lines 100 to 150
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `logging|log|error|catch` (`**/electron/**/*.ts`), 223 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `vite.config.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `index.ts`, lines 100 to 150
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `TODO|FIXME|XXX|HACK` (`**/*.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `Dashboard.tsx`, lines 1 to 100
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `deviceDetection.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 100 to 200
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `before-quit|closed|uncaught` (`**/electron/main.ts`), 3 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `ErrorBoundary|catch|error` (`**/src/**/*.tsx`), 42 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_memory"><details>
+<summary>Tool use: **copilot_memory**</summary>
+
+Read memory
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_memory"><details>
+<summary>Tool use: **copilot_memory**</summary>
+
+Read memory `discdock-build.md`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The repository audit is running while I inspect the release contracts and execution surface locally. I’m looking especially for gaps that can make a packaged app unsafe or unusable even when the UI appears complete: database lifecycle, restore/export correctness, scanning edge cases, update behavior, and install/runtime prerequisites.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `package.json`
+
+**Input:**
+
+- endLine: `180`
+- filePath: `/home/kel/dev/DiscDock/package.json`
+- startLine: `1`
+
+**Result:**
+
+```
+{
+  "name": "discdock",
+  "version": "0.1.0",
+  "description": "Catalog and search your external/removable media collection",
+  "main": "dist-electron/electron/main.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron .\"",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p electron/tsconfig.json",
+    "build": "npm run build:renderer && npm run build:electron",
+    "start": "electron .",
+    "package": "npm run build && electron-builder",
+    "package:linux": "npm run build && electron-builder --linux deb AppImage",
+    "postinstall": "electron-builder install-app-deps",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kelmankenberg/DiscDock.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kelmankenberg/DiscDock/issues"
+  },
+  "homepage": "https://github.com/kelmankenberg/DiscDock#readme",
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.2.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "concurrently": "^9.2.4",
+    "cross-env": "^10.1.0",
+    "electron": "^41.7.1",
+    "electron-builder": "^26.15.3",
+    "electron-log": "^5.4.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "wait-on": "^9.1.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1",
+    "electron-updater": "^6.8.9",
+    "lucide-react": "^1.31.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true,
+    "electron@41.7.1": true,
+    "electron-winstaller@5.4.0": true
+  }
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `electron-builder.yml`
+
+**Input:**
+
+- endLine: `160`
+- filePath: `/home/kel/dev/DiscDock/electron-builder.yml`
+- startLine: `1`
+
+**Result:**
+
+```
+appId: com.discdock.app
+productName: DiscDock
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+linux:
+  category: Utility
+  target:
+    - target: deb
+      arch: [x64]
+    - target: AppImage
+      arch: [x64]
+  desktop:
+    entry:
+      Name: DiscDock
+      Comment: Catalog and search your external media collection
+      Categories: Utility;FileTools;
+      MimeType: x-scheme-handler/discdock;
+protocols:
+  - name: DiscDock
+    schemes:
+      - discdock
+# electron-updater supports the AppImage target; .deb installs update via the distro package.
+publish:
+  provider: github
+  owner: kelmankenberg
+  repo: DiscDock
+deb:
+  depends:
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libgtk-3-0
+  packageCategory: utils
+appImage:
+  license: LICENSE
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `11-roadmap.md`
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/11-roadmap.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# Roadmap & Release Plan
+
+## Phase 0 — Foundations (Pre-MVP)
+- Project scaffolding: Electron + React + TypeScript + Vite, electron-builder pipeline producing installable `.deb`/`.AppImage` (even with a blank window) to de-risk packaging early.
+- SQLite integration with migration runner and base schema (`media_item`, `file_record`, `scan_job`).
+- Preload/contextBridge IPC skeleton with the discriminated result pattern.
+
+## Phase 1 — MVP
+
+Scope: the minimum feature set that makes DiscDock genuinely useful end-to-end.
+
+- Media registration (manual) — FR-1.1, FR-1.5, FR-1.6
+- Linux device detection (udisks2 + fallback) and linking to media — FR-1.2–1.4
+- Scanning engine: metadata-only and full-hash modes, progress, cancel — FR-2.1–2.10
+- Re-scan with diff summary — FR-2.11, FR-2.12
+- Global search with core filters — FR-3.1–3.4, FR-3.6
+- Media Library list + Media Detail (Overview, Browse, Scan History) — UI spec §2.2–2.3
+- Dashboard with summary stats and attention panel — FR-8.1
+- Settings: scan defaults, theme, notifications — FR-8.2
+- Backup/restore of the whole database — FR-7.2
+- `.deb` + `.AppImage` packaging finalized with QA checklist passed — Packaging doc §7
+
+**MVP exit criteria:** a user can register a drive, scan it, search across multiple scanned drives without connecting them, and back up/restore their catalog.
+
+## Phase 2 — Post-MVP Enhancements
+
+- Duplicate file detection & report — FR-4.1–4.4
+- Tags on media + Collections — FR-5.1, 5.3, 5.4
+- Media health/lifecycle tracking (verification threshold alerts, error logs, retire status) — FR-6.1–6.4
+- CSV/JSON export of catalog/search results — FR-7.1
+- Custom media types & custom metadata fields — FR-8.3
+
+## Phase 3 — Stretch / Future Ideas
+
+- File-level tagging (FR-5.2) and per-file notes.
+- Printable labels/QR codes linking a physical media item to its DiscDock record (scan QR to jump straight to Media Detail).
+- Optical media raw audio CD track listing support (FR-1.7 non-filesystem case).
+- Auto-update
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `09-packaging-deployment.md`
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/09-packaging-deployment.md`
+- startLine: `1`
+
+**Result:**
+
+````
+# Packaging & Deployment
+
+## 1. Build Tooling
+
+- **electron-builder** as the single packaging tool, configured to produce both target formats from one build.
+- Targets (Linux): `deb`, `AppImage`.
+
+## 2. Example `electron-builder` Configuration (`electron-builder.yml`)
+
+```yaml
+appId: com.discdock.app
+productName: DiscDock
+directories:
+  output: release
+files:
+  - dist/**
+  - package.json
+linux:
+  category: Utility
+  icon: build/icons/icon.png
+  target:
+    - target: deb
+      arch: [x64]
+    - target: AppImage
+      arch: [x64]
+  desktop:
+    Name: DiscDock
+    Comment: Catalog and search your external media collection
+    Categories: Utility;FileTools;
+deb:
+  depends:
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libgtk-3-0
+  packageCategory: utils
+appImage:
+  license: LICENSE
+```
+
+Adjust `deb.depends` to match the actual Electron version's bundled Chromium runtime dependencies at implementation time.
+
+## 3. Application Data Locations (Linux, XDG)
+
+| Purpose | Path |
+|---|---|
+| SQLite database | `~/.local/share/DiscDock/discdock.sqlite3` |
+| Configuration/settings | `~/.config/DiscDock/settings.json` |
+| Logs | `~/.local/share/DiscDock/logs/` |
+| Automatic pre-restore/pre-migration safety backups | `~/.local/share/DiscDock/backups/` |
+
+These follow the `XDG_DATA_HOME` / `XDG_CONFIG_HOME` conventions (falling back to the defaults above when unset), consistent with Electron's default `app.getPath()` behavior on Linux.
+
+## 4. Release Pipeline (CI)
+
+1. Checkout + install dependencies (`npm ci`).
+2. Lint (`eslint`) and type-check (`tsc --noEmit`).
+3. Run unit/integration test suite.
+4. Build renderer (Vite) and compile main/preload (TypeScript).
+5. Run `electron-builder` to produce `.deb` and `.AppImage` artifacts.
+6. Smoke test: install `.deb` in a clean container image (`dpkg -i` + launch headless check); run `.AppImage` with `--appimage-extract-and-run` and verify it starts and quits cleanly.
+7. Publish artifacts (GitHub Releases or internal artifact store) tag
+… (output truncated)
+````
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `10-security-privacy.md`
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/10-security-privacy.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# Security & Privacy
+
+## 1. Data Handling Principles
+
+- DiscDock is a **local-first, offline-by-default** application. It stores only file *metadata* (names, paths, sizes, timestamps, optional hashes) — never file contents — in its local SQLite database.
+- No catalog data, file names, or hashes are transmitted off the user's machine. There is no backend service in v1.
+- The only optional network activity is a manual/opt-in "check for updates" call (see [Packaging & Deployment](09-packaging-deployment.md#6-update-strategy-v1)); this must be clearly disclosed and off by default or clearly labeled.
+
+## 2. Electron Hardening
+
+- `contextIsolation: true` and `nodeIntegration: false` on all `BrowserWindow` instances.
+- `sandbox: true` for the renderer where feature compatibility allows.
+- Renderer loads only the packaged local `index.html`/bundle — no remote URLs are ever loaded in a `BrowserWindow`.
+- A strict Content-Security-Policy meta tag/header is set on the renderer document, disallowing inline scripts and remote script/style sources.
+- `webSecurity` remains enabled (not disabled) in all environments, including development.
+- All privileged capabilities (filesystem scanning, DB access, device detection) are implemented only in the main process and exposed to the renderer exclusively via a narrow, typed `contextBridge` API (see [IPC contract](08-api-internal-spec.md)) — the renderer never receives direct `fs`, `child_process`, or `require` access.
+- `shell.openPath` / `openExternal` usage (e.g., "Open in File Manager") validates the target path is within a known media root before invoking, to prevent a compromised renderer from directing the OS to open arbitrary system paths.
+
+## 3. Input Validation
+
+- Every IPC handler validates payload shape and types before use (schema validation, e.g., zod) and rejects malformed requests with a structured error rather than throwing raw exceptions.
+- Glob-based exclude patterns and manually entered root paths are validated/normali
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="file_search"><details>
+<summary>Tool use: **file_search**</summary>
+
+Searched for files matching `DiscDock` · `**/*.{test,spec}.{ts,tsx,js}`, no matches
+
+**Input:**
+
+- maxResults: `100`
+- query: `/home/kel/dev/DiscDock/**/*.{test,spec}.{ts,tsx,js}`
+
+**Result:**
+
+```
+No files found
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search,**/.dart_tool]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- includePattern: `electron/**|src/**`
+- isRegexp: `true`
+- maxResults: `100`
+- query: `TODO|FIXME|placeholder|planned|not implemented|console\.log`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `createWindow.ts`
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/home/kel/dev/DiscDock/electron/window/createWindow.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, shell } from 'electron'
+import path from 'node:path'
+import { loadWindowState, trackWindowState } from './windowState'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export function createMainWindow(): BrowserWindow {
+  const savedState = loadWindowState()
+
+  const win = new BrowserWindow({
+    width: savedState.width,
+    height: savedState.height,
+    x: savedState.x,
+    y: savedState.y,
+    minWidth: 900,
+    minHeight: 600,
+    // Frameless: DiscDock renders its own title bar/toolbar and window controls.
+    frame: false,
+    backgroundColor: '#1e1e1e',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => {
+    if (savedState.maximized) win.maximize()
+    win.show()
+  })
+
+  trackWindowState(win)
+
+  // Never allow navigation to or opening of remote content from the renderer.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  // DevTools are not opened automatically; toggle manually with Ctrl+Shift+I.
+  // Restart is bound to Ctrl+Shift+R. Only react to keyDown — before-input-event also fires
+  // on keyUp, which would otherwise double-fire (e.g. toggle open then immediately close again).
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type !== 'keyDown' || !input.control || !input.shift) return
+    const key = input.key.toLowerCase()
+    if (key === 'i') {
+      win.webContents.toggleDevTools()
+    } else if (key === 'r') {
+      app.relaunch()
+      app.exit(0)
+    }
+  })
+
+  if (isDev) {
+    void win.loadURL('http://localhost:5173')
+  } else {
+    void win.loadFile(path.join(__dirname, '../../../dist/index.html'))
+  }
+
+  return win
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `main.ts`
+
+**Input:**
+
+- endLine: `240`
+- filePath: `/home/kel/dev/DiscDock/electron/main.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, ipcMain, Notification } from 'electron'
+import { createMainWindow } from './window/createWindow'
+import { registerWindowControlIpc } from './ipc/windowControls'
+import { registerDashboardIpc } from './ipc/dashboard'
+import { registerMediaIpc } from './ipc/media'
+import { registerDeviceIpc, startDeviceWatcher, stopDeviceWatcher } from './ipc/devices'
+import { registerScanIpc } from './ipc/scan'
+import { registerDialogIpc } from './ipc/dialogs'
+import { registerSearchIpc } from './ipc/search'
+import { registerDuplicatesIpc } from './ipc/duplicates'
+import { registerFilesIpc } from './ipc/files'
+import { registerSettingsIpc } from './ipc/settings'
+import { registerBackupIpc } from './ipc/backup'
+import { registerTagsIpc } from './ipc/tags'
+import { registerCollectionsIpc } from './ipc/collections'
+import { registerExportIpc } from './ipc/export'
+import { registerCustomFieldsIpc } from './ipc/customFields'
+import { initScanManager } from './scanning/scanManager'
+import { initAutoUpdater, registerUpdateIpc } from './updates/autoUpdater'
+import { countMediaNeedingVerification } from './db/mediaRepository'
+import { getSettings } from './settings/settingsStore'
+import { getDb, closeDb } from './db'
+import type { IpcResult } from '../shared/types'
+
+let mainWindow: BrowserWindow | null = null
+
+function showVerificationReminder(): void {
+  const settings = getSettings()
+  if (!settings.notifications.verificationReminders) return
+  const count = countMediaNeedingVerification(settings.verificationThresholdMonths)
+  if (count === 0) return
+  new Notification({
+    title: 'DiscDock',
+    body: `${count} media item${count === 1 ? '' : 's'} ${count === 1 ? 'has' : 'have'} not been verified in the last ${settings.verificationThresholdMonths} months.`
+  }).show()
+}
+
+function registerAppIpc(): void {
+  ipcMain.handle('app:getVersion', (): IpcResult<string> => {
+    return { ok: true, data: app.getVersion() }
+  })
+}
+
+/** Extracts the media id from a discdock
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `ipcMain\.handle|payload|shell\.open|exec|spawn|network|fetch` (`**/electron/**/*.ts`), 149 results
+
+**Input:**
+
+- includePattern: `electron/**/*.ts`
+- isRegexp: `true`
+- maxResults: `200`
+- query: `ipcMain\.handle|payload|shell\.open|exec|spawn|network|fetch`
+
+**Result:**
+
+```
+Found 149 matches in 26 files for "ipcMain\.handle|payload|shell\.open|exec|spawn|network|fetch"
+
+electron/db/index.ts
+168:  database.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY)')
+179:      database.exec(migration.sql)
+
+electron/devices/platform/linux.ts
+1:import { execFile } from 'node:child_process'
+7:const execFileAsync = promisify(execFile)
+92:    const { stdout } = await execFileAsync('lsblk', [
+140:interface ExecError extends Error {
+148:  const execErr = err as ExecError
+149:  const detail = execErr.stderr?.trim() || execErr.stdout?.trim() || execErr.message
+163:    const { stdout } = await execFileAsync('lsblk', ['-no', 'MOUNTPOINT', devicePath])
+181:      await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+187:      await execFileAsync('eject', ['-v', devicePath])
+198:  await execFileAsync('udisksctl', ['unmount', '-b', devicePath])
+200:    await execFileAsync('udisksctl', ['power-off', '-b', devicePath])
+
+electron/devices/platform/macos.ts
+1:import { execFile } from 'node:child_process'
+5:const execFileAsync = promisify(execFile)
+43:    const { stdout } = await execFileAsync('mount')
+49:          const { stdout: infoOut } = await execFileAsync('diskutil', ['info', devicePath])
+81:    await execFileAsync('diskutil', ['eject', devicePath])
+
+electron/devices/platform/windows.ts
+1:import { execFile } from 'node:child_process'
+5:const execFileAsync = promisify(execFile)
+21:  const { stdout } = await execFileAsync(
+
+electron/export/exportService.ts
+16:function fetchRows(scope: ExportScope): ExportRow[] {
+64:  const rows = fetchRows(scope)
+
+electron/ipc/backup.ts
+6:  ipcMain.handle('backup:run', async (_event, payload: unknown): Promise<IpcResult<{ ok: true }>> => {
+7:    const destinationPath = (payload as { destinationPath?: unknown })?.destinationPath
+19:  ipcMain.handle(
+21:    async (_event, payload: unknown): Promise<IpcResult<{ safetyBackupPath: string }>> => {
+22:      const sourcePath = (payload as { sourc
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `04-non-functional-requirements.md`
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/04-non-functional-requirements.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# Non-Functional Requirements
+
+## 1. Performance
+
+- **NFR-1.1** Scanning throughput: capable of enumerating ≥ 2,000 files/second on metadata-only scans (no hashing) on reference hardware (SATA/USB 3.0 speeds).
+- **NFR-1.2** Full-hash scanning throughput bounded primarily by device read speed; UI must remain responsive (no main-thread blocking) regardless of scan size.
+- **NFR-1.3** Global search over a catalog of 500,000 file rows shall return first-page results in < 500ms (indexed SQLite queries).
+- **NFR-1.4** Application cold start (from launch to interactive Dashboard) shall be < 3 seconds on reference hardware with a catalog of up to 100,000 file rows.
+- **NFR-1.5** All filesystem scanning and hashing work shall occur off the Electron main UI thread (Node.js worker threads or a dedicated utility process) to avoid freezing the renderer.
+
+## 2. Reliability & Data Integrity
+
+- **NFR-2.1** The catalog database shall use transactional writes (SQLite with WAL mode) so a crash or power loss mid-scan does not corrupt previously committed data.
+- **NFR-2.2** Schema migrations shall be versioned and applied automatically on startup with a rollback-safe backup taken before migration.
+- **NFR-2.3** No user data (catalog, tags, settings) shall be lost across an application version upgrade.
+- **NFR-2.4** Scan jobs shall be resumable/cancellable without leaving the database in an inconsistent state (partial scans clearly flagged, not silently merged as complete).
+
+## 3. Compatibility
+
+- **NFR-3.1** Supported OS (v1): Linux distributions using glibc, tested against at least one Debian-based (Ubuntu LTS) and one RPM-based or Arch-based distro for AppImage compatibility.
+- **NFR-3.2** `.deb` package shall declare correct dependency metadata and install cleanly via `dpkg -i` / `apt install ./package.deb`.
+- **NFR-3.3** `.AppImage` shall run without installation on distros supporting FUSE (or `--appimage-extract-and-run` fallback documented).
+- **NFR-3.4** Device detection shall d
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The first pass already surfaces several release-level gaps beyond packaging: no automated test suite or lint gate, no CSP, likely incomplete logging/exception surfacing, and network behavior that may exceed the offline-by-default contract. I’m checking the database/scan and export/backup paths now to distinguish documented requirements that are truly missing from features that are merely planned for 
+
+The first pass already surfaces several release-level gaps beyond packaging: no automated test suite or lint gate, no CSP, likely incomplete logging/exception surfacing, and network behavior that may exceed the offline-by-default contract. I’m checking the database/scan and export/backup paths now to distinguish documented requirements that are truly missing from features that are merely planned for later.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `index.ts`
+
+**Input:**
+
+- endLine: `240`
+- filePath: `/home/kel/dev/DiscDock/electron/db/index.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import Database from 'better-sqlite3'
+import { app } from 'electron'
+import path from 'node:path'
+import fs from 'node:fs'
+
+let db: Database.Database | null = null
+
+const MIGRATIONS: { version: number; sql: string }[] = [
+  {
+    version: 1,
+    sql: `
+      CREATE TABLE IF NOT EXISTS schema_migrations (
+        version INTEGER PRIMARY KEY
+      );
+
+      CREATE TABLE IF NOT EXISTS media_item (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        label TEXT NOT NULL,
+        media_type TEXT NOT NULL,
+        device_fingerprint TEXT,
+        capacity_bytes INTEGER,
+        physical_location TEXT,
+        notes TEXT,
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        last_scanned_at TEXT,
+        last_verified_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_media_item_type ON media_item(media_type);
+      CREATE INDEX IF NOT EXISTS idx_media_item_status ON media_item(status);
+      CREATE INDEX IF NOT EXISTS idx_media_item_fingerprint ON media_item(device_fingerprint);
+
+      CREATE TABLE IF NOT EXISTS scan_job (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        status TEXT NOT NULL,
+        hash_mode TEXT NOT NULL DEFAULT 'none',
+        started_at TEXT NOT NULL DEFAULT (datetime('now')),
+        completed_at TEXT,
+        files_added INTEGER NOT NULL DEFAULT 0,
+        files_removed INTEGER NOT NULL DEFAULT 0,
+        files_modified INTEGER NOT NULL DEFAULT 0,
+        files_unchanged INTEGER NOT NULL DEFAULT 0,
+        error_count INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE INDEX IF NOT EXISTS idx_scan_job_media_item ON scan_job(media_item_id);
+
+      CREATE TABLE IF NOT EXISTS scan_error (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        scan_job_id INTEGER NOT NULL REFERENCES scan_job(id),
+        path TEXT NOT NULL,
+        error_type TEXT NOT NULL,
+        message TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS fi
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `scanManager.ts`
+
+**Input:**
+
+- endLine: `280`
+- filePath: `/home/kel/dev/DiscDock/electron/scanning/scanManager.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { BrowserWindow, Notification, app } from 'electron'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import { walkAndScan } from './scanEngine'
+import { computeDiscId, fetchAudioCdMetadata, fetchCoverArtPng, readAudioCdToc } from './audioCd'
+import { getMediaItem, setMediaCoverPath, updateMediaItem } from '../db/mediaRepository'
+import {
+  createScanJob,
+  finalizeScanJob,
+  markMediaScanned,
+  markScanJobRunning,
+  pruneUnseenFiles,
+  recordScanError,
+  upsertFileRecord
+} from '../db/scanRepository'
+import { getSettings } from '../settings/settingsStore'
+import type { AudioCdMetadata, HashMode, ScanProgress } from '../../shared/types'
+
+interface ActiveJob {
+  cancelled: boolean
+}
+
+interface QueuedJob {
+  jobId: number
+  mediaItemId: number
+  rootPath: string
+  hashMode: HashMode
+}
+
+const activeJobs = new Map<number, ActiveJob>()
+const queue: QueuedJob[] = []
+let win: BrowserWindow | null = null
+
+export function initScanManager(mainWindow: BrowserWindow): void {
+  win = mainWindow
+}
+
+function maxConcurrentScans(): number {
+  const configured = getSettings().maxConcurrentScans
+  return Number.isFinite(configured) ? Math.max(1, Math.trunc(configured)) : 1
+}
+
+function pumpQueue(): void {
+  while (activeJobs.size < maxConcurrentScans() && queue.length > 0) {
+    const next = queue.shift() as QueuedJob
+    markScanJobRunning(next.jobId)
+    win?.webContents.send('scan:started', { jobId: next.jobId, mediaItemId: next.mediaItemId })
+    void runScan(next.jobId, next.mediaItemId, next.rootPath, next.hashMode)
+  }
+}
+
+export function cancelScan(jobId: number): boolean {
+  const job = activeJobs.get(jobId)
+  if (job) {
+    job.cancelled = true
+    return true
+  }
+
+  const queuedIndex = queue.findIndex((entry) => entry.jobId === jobId)
+  if (queuedIndex === -1) return false
+
+  queue.splice(queuedIndex, 1)
+  finalizeScanJob(jobId, 'cancelled', {
+    filesAdded: 0,
+    filesRemoved: 0,
+    filesModified: 0,
+    filesUnchanged: 0,
+    errorCount: 0
+  })
+  win
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `index.html`
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/home/kel/dev/DiscDock/src/index.html`
+- startLine: `1`
+
+**Result:**
+
+```
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Renderer only ever loads local bundled assets; no remote sources allowed. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+    <title>DiscDock</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/main.tsx"></script>
+  </body>
+</html>
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `BackupExport.tsx`, lines 55 to 127
+
+**Input:**
+
+- endLine: `190`
+- filePath: `/home/kel/dev/DiscDock/src/views/BackupExport.tsx`
+- startLine: `55`
+
+**Result:**
+
+```
+    if (scope === 'media' && !selectedMediaId) return
+    void window.discdock.dialogs.pickSaveFile(`discdock-catalog.${format}`).then((pick) => {
+      if (!pick.ok || !pick.data.path) return
+      setBusy(true)
+      setStatus(null)
+      const exportScope = scope === 'all' ? { type: 'all' as const } : { type: 'media' as const, mediaId: Number(selectedMediaId) }
+      void window.discdock.export.run(exportScope, format, pick.data.path).then((result) => {
+        setBusy(false)
+        setStatus(result.ok ? `Exported ${result.data.fileCount} files to ${pick.data.path}` : `Export failed: ${result.error.message}`)
+      })
+    })
+  }
+
+  return (
+    <div className="backup-export-view">
+      <div className="page-header"><h1>Backup / Export</h1><HelpButton topicId="backup-export" /></div>
+
+      <section className="settings-section">
+        <h2>Database Backup</h2>
+        <p className="backup-export-view__hint">
+          Back up your entire catalog (all media, files, tags, and scan history) to a single
+          portable file, or restore from a previous backup.
+        </p>
+        <div className="backup-export-view__actions">
+          <button type="button" className="button button--primary" disabled={busy} onClick={handleBackup}>
+            Backup Now
+          </button>
+          <button type="button" className="button" disabled={busy} onClick={handleRestore}>
+            Restore from Backup
+          </button>
+        </div>
+        {busy && <p className="backup-export-view__status">Working…</p>}
+        {status && <p className="backup-export-view__status">{status}</p>}
+      </section>
+
+      <section className="settings-section">
+        <h2>Catalog Export</h2>
+        <p className="backup-export-view__hint">Export cataloged files and their media metadata for use in spreadsheets or other tools.</p>
+        <div className="backup-export-view__export-controls">
+          <label>
+            Scope
+            <select value={scope} onChange={(e) => setScope(e.ta
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `backupService.ts`
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/home/kel/dev/DiscDock/electron/backup/backupService.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import fs from 'node:fs'
+import path from 'node:path'
+import { app } from 'electron'
+import { getDb, closeDb } from '../db'
+
+function dbPath(): string {
+  return path.join(app.getPath('userData'), 'discdock.sqlite3')
+}
+
+export async function backupNow(destinationPath: string): Promise<void> {
+  await getDb().backup(destinationPath)
+}
+
+/**
+ * Restores the database from a backup file. Takes a safety backup of the current database
+ * first (FR-7.2) so a bad/incompatible restore file can't destroy existing data.
+ */
+export async function restoreFromBackup(sourcePath: string): Promise<{ safetyBackupPath: string }> {
+  const current = dbPath()
+  const backupsDir = path.join(app.getPath('userData'), 'backups')
+  fs.mkdirSync(backupsDir, { recursive: true })
+  const safetyBackupPath = path.join(backupsDir, `pre-restore-${Date.now()}.sqlite3`)
+
+  await getDb().backup(safetyBackupPath)
+  closeDb()
+
+  fs.copyFileSync(sourcePath, current)
+  for (const ext of ['-wal', '-shm']) {
+    const sidecar = current + ext
+    if (fs.existsSync(sidecar)) fs.rmSync(sidecar)
+  }
+
+  getDb() // reopen and re-run (idempotent) migrations against the restored file
+
+  return { safetyBackupPath }
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `exportService.ts`
+
+**Input:**
+
+- endLine: `130`
+- filePath: `/home/kel/dev/DiscDock/electron/export/exportService.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import fs from 'node:fs'
+import { getDb } from '../db/index'
+import type { ExportFormat, ExportScope } from '../../shared/types'
+
+interface ExportRow {
+  media_label: string
+  path: string
+  name: string
+  extension: string | null
+  kind: string
+  size_bytes: number
+  modified_at_src: string | null
+  hash_value: string | null
+}
+
+function fetchRows(scope: ExportScope): ExportRow[] {
+  const db = getDb()
+  const base = `SELECT mi.label as media_label, fr.path, fr.name, fr.extension, fr.kind, fr.size_bytes,
+                       fr.modified_at_src, fr.hash_value
+                FROM file_record fr JOIN media_item mi ON mi.id = fr.media_item_id
+                WHERE fr.is_directory = 0`
+
+  if (scope.type === 'media') {
+    return db.prepare(`${base} AND fr.media_item_id = ? ORDER BY mi.label, fr.path`).all(scope.mediaId) as ExportRow[]
+  }
+  return db.prepare(`${base} ORDER BY mi.label, fr.path`).all() as ExportRow[]
+}
+
+function toCsv(rows: ExportRow[]): string {
+  const headers = ['Media', 'Path', 'Name', 'Extension', 'Kind', 'Size (bytes)', 'Modified', 'Hash']
+  const escape = (value: string | number | null): string => {
+    const str = value === null || value === undefined ? '' : String(value)
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+  }
+  const lines = [headers.join(',')]
+  for (const row of rows) {
+    lines.push(
+      [row.media_label, row.path, row.name, row.extension, row.kind, row.size_bytes, row.modified_at_src, row.hash_value]
+        .map(escape)
+        .join(',')
+    )
+  }
+  return lines.join('\n')
+}
+
+function toJson(rows: ExportRow[]): string {
+  return JSON.stringify(
+    rows.map((r) => ({
+      media: r.media_label,
+      path: r.path,
+      name: r.name,
+      extension: r.extension,
+      kind: r.kind,
+      sizeBytes: r.size_bytes,
+      modifiedAtSrc: r.modified_at_src,
+      hash: r.hash_value
+    })),
+    null,
+    2
+  )
+}
+
+export function exportCatalog(scope: ExportScope, format: ExportFormat, destinationPath: strin
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `autoUpdater.ts`
+
+**Input:**
+
+- endLine: `120`
+- filePath: `/home/kel/dev/DiscDock/electron/updates/autoUpdater.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { autoUpdater } from 'electron-updater'
+import { getSettings } from '../settings/settingsStore'
+import type { IpcResult, UpdateStatus } from '../../shared/types'
+
+let win: BrowserWindow | null = null
+let lastStatus: UpdateStatus = { state: 'idle' }
+
+function publish(status: UpdateStatus): void {
+  lastStatus = status
+  win?.webContents.send('update:status', status)
+}
+
+/** Auto-update only works against a packaged, signed artifact with a configured publish target. */
+function isSupported(): boolean {
+  return app.isPackaged
+}
+
+export function initAutoUpdater(mainWindow: BrowserWindow): void {
+  win = mainWindow
+  autoUpdater.autoDownload = false
+
+  autoUpdater.on('checking-for-update', () => publish({ state: 'checking' }))
+  autoUpdater.on('update-available', (info) => publish({ state: 'available', version: info.version }))
+  autoUpdater.on('update-not-available', () => publish({ state: 'up-to-date' }))
+  autoUpdater.on('download-progress', (progress) =>
+    publish({ state: 'downloading', percent: Math.round(progress.percent) })
+  )
+  autoUpdater.on('update-downloaded', (info) => publish({ state: 'downloaded', version: info.version }))
+  autoUpdater.on('error', (err) => publish({ state: 'error', message: err.message }))
+
+  if (isSupported() && getSettings().autoUpdateEnabled) {
+    void autoUpdater.checkForUpdates().catch(() => undefined)
+  }
+}
+
+export function registerUpdateIpc(): void {
+  ipcMain.handle('update:status', (): IpcResult<UpdateStatus> => ({ ok: true, data: lastStatus }))
+
+  ipcMain.handle('update:check', async (): Promise<IpcResult<UpdateStatus>> => {
+    if (!isSupported()) {
+      const status: UpdateStatus = {
+        state: 'error',
+        message: 'Updates are only available in an installed build.'
+      }
+      publish(status)
+      return { ok: true, data: status }
+    }
+    try {
+      await autoUpdater.checkForUpdates()
+      return { ok: true, data: lastStatus }
+    } catch (err)
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="file_search"><details>
+<summary>Tool use: **file_search**</summary>
+
+Searched for files matching `/home/kel/.config/Code/User/workspaceStorage/1a5718aa18a0d669d757142822af9cdc/GitHub.copilot-chat/chat-session-resources/**/content.txt`, no matches
+
+**Input:**
+
+- maxResults: `10`
+- query: `/home/kel/.config/Code/User/workspaceStorage/1a5718aa18a0d669d757142822af9cdc/GitHub.copilot-chat/chat-session-resources/**/content.txt`
+
+**Result:**
+
+```
+No files found
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `03-functional-requirements.md`
+
+**Input:**
+
+- endLine: `280`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/03-functional-requirements.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# Functional Requirements
+
+Numbered `FR-x.y` for traceability to user stories and test cases.
+
+## FR-1: Media Registration & Detection
+
+- **FR-1.1** The system shall allow manual creation of a media record with fields: name/label, media type, capacity (optional/auto-filled), physical location, notes, tags, color/icon (optional), created date.
+- **FR-1.2** The system shall detect connected/mounted removable storage devices on Linux via `udisks2` D-Bus signals where available, with polling of `/proc/mounts` / `lsblk -J` as a fallback.
+- **FR-1.3** The system shall present detected devices with: device path (e.g., `/dev/sdb1`), mount point, filesystem label, filesystem type, total/used/free capacity.
+- **FR-1.4** The system shall allow linking a detected device to a new or existing media record.
+- **FR-1.5** The system shall support at minimum media types: CD, DVD, Blu-ray, USB Flash Drive, External HDD, External SSD, SD Card/MicroSD, Network Share (read-only catalog use case), Other (custom).
+- **FR-1.6** The system shall allow users to define custom media types.
+- **FR-1.7** The system shall support optical media specifically: when a CD/DVD is inserted, read volume label via mount metadata; if no filesystem (raw audio CD), allow manual track listing entry or graceful "unsupported filesystem" messaging.
+
+## FR-2: Scanning Engine
+
+- **FR-2.1** The system shall recursively enumerate all files and directories under a selected root path (the mount point or a user-chosen subfolder).
+- **FR-2.2** For each file, the system shall record: full relative path, file name, extension, size in bytes, created timestamp, modified timestamp, and (optionally) content hash.
+- **FR-2.3** For each directory, the system shall record path and aggregate stats (file count, total size) computed post-scan.
+- **FR-2.4** The system shall support exclude patterns (glob-based, e.g., `**/.Trash-*`, `**/System Volume Information`) configurable globally and per-scan.
+- **FR-2.5** The system shall not f
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `scanEngine.ts`
+
+**Input:**
+
+- endLine: `280`
+- filePath: `/home/kel/dev/DiscDock/electron/scanning/scanEngine.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import crypto from 'node:crypto'
+import { createReadStream } from 'node:fs'
+import type { HashMode } from '../../shared/types'
+import { classifyKind, getExtension } from './fileKind'
+import type { WalkedFile } from '../db/scanRepository'
+
+const QUICK_HASH_SAMPLE_BYTES = 65536
+const PROGRESS_YIELD_EVERY = 200
+
+export interface ScanOptions {
+  hashMode: HashMode
+  excludePatterns: string[]
+  followSymlinks: boolean
+}
+
+export interface ScanCallbacks {
+  onFile: (file: WalkedFile) => void
+  onProgress: (filesProcessed: number, bytesProcessed: number, currentPath: string) => void
+  onError: (relativePath: string, errorType: string, message: string) => void
+  isCancelled: () => boolean
+}
+
+/** Converts a simple glob (`*`, `**`) into a RegExp for exclude-pattern matching (FR-2.4). */
+function globToRegExp(pattern: string): RegExp {
+  let escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+  escaped = escaped.replace(/\*\*\//g, '(?:.*/)?') // "**/" matches zero or more leading path segments
+  escaped = escaped.replace(/\*\*/g, '.*')
+  escaped = escaped.replace(/\*/g, '[^/]*')
+  return new RegExp(`^${escaped}$`)
+}
+
+function isExcluded(relativePath: string, excludeRegexes: RegExp[]): boolean {
+  return excludeRegexes.some((re) => re.test(relativePath))
+}
+
+async function hashFile(absolutePath: string, mode: HashMode, size: number): Promise<string | null> {
+  if (mode === 'none') return null
+
+  if (mode === 'quick') {
+    const handle = await fs.open(absolutePath, 'r')
+    try {
+      const buffer = Buffer.alloc(Math.min(QUICK_HASH_SAMPLE_BYTES, size))
+      await handle.read(buffer, 0, buffer.length, 0)
+      const hash = crypto.createHash('sha256')
+      hash.update(buffer)
+      hash.update(String(size))
+      return hash.digest('hex')
+    } finally {
+      await handle.close()
+    }
+  }
+
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256')
+    const stream = createReadStream
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `README.md`
+
+**Input:**
+
+- endLine: `240`
+- filePath: `/home/kel/dev/DiscDock/README.md`
+- startLine: `1`
+
+**Result:**
+
+````
+# DiscDock
+
+Catalog and search your external/removable media collection (CDs, DVDs, USB drives, external HDD/SSD, SD cards) without needing to reconnect the physical media.
+
+Planning documentation: [docs/planning-docs](docs/planning-docs/README.md)
+
+## Status
+
+v0.1.0 — foundational app shell: frameless window with custom title bar, sidebar navigation, SQLite-backed dashboard, and Linux (`deb`/`AppImage`) packaging pipeline. Feature work (scanning, search, tagging, etc.) is tracked in the [roadmap](docs/planning-docs/11-roadmap.md).
+
+## Development
+
+```bash
+npm install
+npm run dev            # Vite dev server + Electron with hot reload
+```
+
+## Building
+
+```bash
+npm run build          # Compile renderer (Vite) and main/preload (tsc)
+npm run package:linux   # Build + package as .deb and .AppImage (release/)
+```
+
+Native modules (`better-sqlite3`) are rebuilt for Electron's ABI automatically via the `postinstall` script (`electron-builder install-app-deps`).
+````
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `backup.ts`
+
+**Input:**
+
+- endLine: `120`
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/backup.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { ipcMain } from 'electron'
+import { backupNow, restoreFromBackup } from '../backup/backupService'
+import type { IpcResult } from '../../shared/types'
+
+export function registerBackupIpc(): void {
+  ipcMain.handle('backup:run', async (_event, payload: unknown): Promise<IpcResult<{ ok: true }>> => {
+    const destinationPath = (payload as { destinationPath?: unknown })?.destinationPath
+    if (typeof destinationPath !== 'string' || !destinationPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A destinationPath is required' } }
+    }
+    try {
+      await backupNow(destinationPath)
+      return { ok: true, data: { ok: true } }
+    } catch (err) {
+      return { ok: false, error: { code: 'backup_error', message: (err as Error).message } }
+    }
+  })
+
+  ipcMain.handle(
+    'backup:restore',
+    async (_event, payload: unknown): Promise<IpcResult<{ safetyBackupPath: string }>> => {
+      const sourcePath = (payload as { sourcePath?: unknown })?.sourcePath
+      if (typeof sourcePath !== 'string' || !sourcePath.trim()) {
+        return { ok: false, error: { code: 'invalid_input', message: 'A sourcePath is required' } }
+      }
+      try {
+        const result = await restoreFromBackup(sourcePath)
+        return { ok: true, data: result }
+      } catch (err) {
+        return { ok: false, error: { code: 'restore_error', message: (err as Error).message } }
+      }
+    }
+  )
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `export.ts`
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/export.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { ipcMain } from 'electron'
+import { exportCatalog } from '../export/exportService'
+import type { ExportFormat, ExportScope, IpcResult } from '../../shared/types'
+
+export function registerExportIpc(): void {
+  ipcMain.handle('export:run', (_event, payload: unknown): IpcResult<{ fileCount: number }> => {
+    const { scope, format, destinationPath } = (payload ?? {}) as {
+      scope?: unknown
+      format?: unknown
+      destinationPath?: unknown
+    }
+
+    if (typeof destinationPath !== 'string' || !destinationPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A destinationPath is required' } }
+    }
+    if (format !== 'json' && format !== 'csv') {
+      return { ok: false, error: { code: 'invalid_input', message: 'format must be "json" or "csv"' } }
+    }
+
+    const scopeObj = scope as ExportScope
+    const validScope: ExportScope =
+      scopeObj && scopeObj.type === 'media' && typeof scopeObj.mediaId === 'number'
+        ? { type: 'media', mediaId: scopeObj.mediaId }
+        : { type: 'all' }
+
+    try {
+      const fileCount = exportCatalog(validScope, format as ExportFormat, destinationPath)
+      return { ok: true, data: { fileCount } }
+    } catch (err) {
+      return { ok: false, error: { code: 'export_error', message: (err as Error).message } }
+    }
+  })
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `files.ts`
+
+**Input:**
+
+- endLine: `140`
+- filePath: `/home/kel/dev/DiscDock/electron/ipc/files.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { ipcMain, shell } from 'electron'
+import fs from 'node:fs'
+import nodePath from 'node:path'
+import { listFolderContents } from '../db/fileRepository'
+import { getMediaItem } from '../db/mediaRepository'
+import { listConnectedDevices } from '../devices/deviceDetection'
+import {
+  getFileAnnotations,
+  setNoteForFile,
+  setTagsForFile
+} from '../db/fileAnnotationRepository'
+import type { FileAnnotation, FileEntry, IpcResult } from '../../shared/types'
+
+const invalidInput = (message: string): IpcResult<never> => ({
+  ok: false,
+  error: { code: 'invalid_input', message }
+})
+
+/**
+ * Maps a catalog-relative path back onto the live filesystem via the media item's currently
+ * mounted device. Rejects paths that escape the mount point.
+ */
+async function resolveLivePath(mediaId: number, filePath: string): Promise<string> {
+  const item = getMediaItem(mediaId)
+  if (!item) throw new Error(`Media item ${mediaId} not found`)
+  if (!item.deviceFingerprint) throw new Error(`"${item.label}" is not linked to a device`)
+
+  const devices = await listConnectedDevices()
+  const device = devices.find((d) => (d.uuid ?? d.devicePath) === item.deviceFingerprint)
+  if (!device) throw new Error(`"${item.label}" is not currently connected`)
+
+  const mountPoint = nodePath.resolve(device.mountPoint)
+  const resolved = nodePath.resolve(mountPoint, filePath)
+  if (resolved !== mountPoint && !resolved.startsWith(`${mountPoint}${nodePath.sep}`)) {
+    throw new Error('Resolved path is outside the mounted media')
+  }
+  if (!fs.existsSync(resolved)) throw new Error('That file no longer exists on the media')
+
+  return resolved
+}
+
+export function registerFilesIpc(): void {
+  ipcMain.handle('files:list', (_event, payload: unknown): IpcResult<FileEntry[]> => {
+    const { mediaId, folderPath } = (payload ?? {}) as { mediaId?: unknown; folderPath?: unknown }
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } 
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The deeper audit confirms this is beyond a “finish the installer” release: several documented non-functional requirements are still unmet in code, and a few behaviors contradict the offline/local-first v1 policy. I’m doing one last pass over the user-facing workflow coverage so I can distinguish true blockers from roadmap items that are intentionally post-MVP.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `recent|activity|estimated|elapsed|progress|notification|backup|export|verification|date` (`**/src/views/*.tsx`), 102 results
+
+**Input:**
+
+- includePattern: `src/views/*.tsx`
+- isRegexp: `true`
+- maxResults: `150`
+- query: `recent|activity|estimated|elapsed|progress|notification|backup|export|verification|date`
+
+**Result:**
+
+```
+Found 102 matches in 9 files for "recent|activity|estimated|elapsed|progress|notification|backup|export|verification|date"
+
+src/views/BackupExport.tsx
+2:import type { ExportFormat, MediaItem } from '../../shared/types'
+3:import './BackupExport.css'
+6:export default function BackupExport(): JSX.Element {
+12:  const [format, setFormat] = useState<ExportFormat>('csv')
+20:  const handleBackup = (): void => {
+21:    void window.discdock.dialogs.pickSaveFile(`discdock-backup-${Date.now()}.sqlite3`).then((pick) => {
+25:      void window.discdock.backup.run(pick.data.path).then((result) => {
+27:        setStatus(result.ok ? `Backup saved to ${pick.data.path}` : `Backup failed: ${result.error.message}`)
+36:        'Restoring will replace your current catalog with the selected backup file. ' +
+37:          'A safety backup of your current data will be taken first. Continue?'
+43:      void window.discdock.backup.restore(pick.data.path!).then((result) => {
+47:            ? `Restored successfully. Your previous data was saved to ${result.data.safetyBackupPath}`
+54:  const handleExport = (): void => {
+60:      const exportScope = scope === 'all' ? { type: 'all' as const } : { type: 'media' as const, mediaId: Number(selectedMediaId) }
+61:      void window.discdock.export.run(exportScope, format, pick.data.path).then((result) => {
+63:        setStatus(result.ok ? `Exported ${result.data.fileCount} files to ${pick.data.path}` : `Export failed: ${result.error.message}`)
+69:    <div className="backup-export-view">
+70:      <div className="page-header"><h1>Backup / Export</h1><HelpButton topicId="backup-export" /></div>
+73:        <h2>Database Backup</h2>
+74:        <p className="backup-export-view__hint">
+76:          portable file, or restore from a previous backup.
+78:        <div className="backup-export-view__actions">
+79:          <button type="button" className="button button--primary" disabled={busy} onClick={handleBackup}>
+80:            Backup Now
+83:            Restore from 
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `Search.tsx`
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/home/kel/dev/DiscDock/src/views/Search.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import { X } from 'lucide-react'
+import { FILE_KINDS, MEDIA_TYPES } from '../../shared/types'
+import type { FileSearchResult, MediaType, FileKind, SearchFilters } from '../../shared/types'
+import './Search.css'
+import HelpButton from '../components/HelpButton'
+
+const DEBOUNCE_MS = 300
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+export default function Search(): JSX.Element {
+  const [text, setText] = useState('')
+  const [mediaType, setMediaType] = useState<MediaType | ''>('')
+  const [kind, setKind] = useState<FileKind | ''>('')
+  const [tag, setTag] = useState('')
+  const [tagNames, setTagNames] = useState<string[]>([])
+  const [results, setResults] = useState<FileSearchResult[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    void window.discdock.tags.list().then((result) => {
+      if (result.ok) setTagNames(result.data)
+    })
+  }, [])
+
+  const runSearch = (pageToLoad: number): void => {
+    const filters: SearchFilters = {}
+    if (mediaType) filters.mediaType = mediaType
+    if (kind) filters.kind = kind
+    if (tag) filters.tag = tag
+
+    setLoading(true)
+    void window.discdock.search.query(text, filters, pageToLoad).then((result) => {
+      setLoading(false)
+      if (result.ok) {
+        setResults(result.data.results)
+        setTotal(result.data.total)
+        setPage(pageToLoad)
+      }
+    })
+  }
+
+  // Acts as a live filter: re-runs (debounced) whenever the search text or filters change,
+  // rather than requiring an explicit submit — the catalog is typically small/fast enough
+  // (FTS5-backed) for this to feel instant.
+  useEffect(() => {
+    const timer = s
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `Dashboard.tsx`
+
+**Input:**
+
+- endLine: `280`
+- filePath: `/home/kel/dev/DiscDock/src/views/Dashboard.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import HelpButton from '../components/HelpButton'
+import { useEffect, useState } from 'react'
+import { Disc3, Usb } from 'lucide-react'
+import type { DashboardSummary, DetectedDevice, MediaItem } from '../../shared/types'
+
+const EMPTY_SUMMARY: DashboardSummary = {
+  totalMediaItems: 0,
+  totalFiles: 0,
+  totalSizeBytes: 0,
+  mediaNeedingVerification: 0
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1)
+  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
+}
+
+export default function Dashboard({
+  onShowInLibrary
+}: {
+  onShowInLibrary: (mediaId: number) => void
+}): JSX.Element {
+  const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY)
+  const [devices, setDevices] = useState<DetectedDevice[]>([])
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
+  const [scanningDevices, setScanningDevices] = useState<Set<string>>(new Set())
+  const [jobToDevice, setJobToDevice] = useState<Record<number, string>>({})
+  const [promptedDevices, setPromptedDevices] = useState<Set<string>>(new Set())
+  const [ejectingDevices, setEjectingDevices] = useState<Set<string>>(new Set())
+  const [ejectMessage, setEjectMessage] = useState<string | null>(null)
+
+  const findMediaForDevice = (device: DetectedDevice): MediaItem | undefined =>
+    mediaItems.find((m) => m.deviceFingerprint === (device.uuid ?? device.devicePath))
+
+  const refreshSummary = (): void => {
+    void window.discdock.dashboard.getSummary().then((result) => {
+      if (result.ok) setSummary(result.data)
+    })
+  }
+
+  const refreshMediaItems = (): void => {
+    void window.discdock.media.list().then((result) => {
+      if (result.ok) setMediaItems(result.data)
+    })
+  }
+
+  const startScanFor = (mediaId: number, device: DetectedDevice): void => {
+    setScanningDevices((prev) => new Set(prev).add(device.devicePath))
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="file_search"><details>
+<summary>Tool use: **file_search**</summary>
+
+Searched for files matching `DiscDock` · `.github/**`, no matches
+
+**Input:**
+
+- maxResults: `50`
+- query: `/home/kel/dev/DiscDock/.github/**`
+
+**Result:**
+
+```
+No files found
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `linux.ts`
+
+**Input:**
+
+- endLine: `230`
+- filePath: `/home/kel/dev/DiscDock/electron/devices/platform/linux.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { execFile } from 'node:child_process'
+import fs from 'node:fs/promises'
+import { promisify } from 'node:util'
+import { computeDiscId, readAudioCdToc } from '../../scanning/audioCd'
+import type { DetectedDevice } from '../../../shared/types'
+
+const execFileAsync = promisify(execFile)
+
+interface LsblkDevice {
+  name: string
+  label: string | null
+  fstype: string | null
+  mountpoint: string | null
+  size: string | null
+  rm: string | boolean
+  type: string
+  uuid: string | null
+  children?: LsblkDevice[]
+}
+
+function toBytes(sizeStr: string | null): number | null {
+  if (!sizeStr) return null
+  const n = Number(sizeStr)
+  return Number.isFinite(n) ? n : null
+}
+
+function flatten(devices: LsblkDevice[]): LsblkDevice[] {
+  const result: LsblkDevice[] = []
+  for (const device of devices) {
+    result.push(device)
+    if (device.children) result.push(...flatten(device.children))
+  }
+  return result
+}
+
+/**
+ * Reading the TOC is too slow for every poll, so disc IDs are cached per drive and dropped as soon
+ * as the drive reports empty (i.e. the disc was swapped or removed).
+ */
+const discIdCache = new Map<string, string | null>()
+
+/**
+ * Audio CDs have no filesystem UUID, so the drive path would be the only fingerprint available —
+ * which would make every disc in the same drive look like the same media item. The MusicBrainz
+ * disc ID is derived from the TOC, so it identifies the disc itself.
+ */
+async function audioCdFingerprint(devicePath: string): Promise<string | null> {
+  const cached = discIdCache.get(devicePath)
+  if (cached !== undefined) return cached
+
+  let discId: string | null = null
+  try {
+    discId = computeDiscId(await readAudioCdToc(devicePath))
+  } catch {
+    discId = null
+  }
+
+  const fingerprint = discId ? `audiocd:${discId}` : null
+  discIdCache.set(devicePath, fingerprint)
+  return fingerprint
+}
+
+function isRemovable(device: LsblkDevice): boolean {
+  return device.rm === true || device.rm === '1'
+}
+
+/**
+ * An empty optical drive keeps reportin
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+**Short answer:** not yet. The core catalog workflow exists, but I would not call this ready for an initial release until the following release risks are addressed.
+
+**Release blockers**
+
+1. **No automated test suite or CI quality gates**
+
+   `npm test` intentionally fails, and there are no test files, ESLint configuration, formatting checks, or CI workflows. The packaging specification explicitly requires:
+
+   - Unit and integration tests
+   - Type checking
+   - Linting
+   - Dependency audit
+   - Clean-install package smoke tests
+
+   The highest-value tests should cover scan diffing, hash modes, migrations, backup/restore, search filters, path validation, and device detection.
+
+2. **Scan cancellation does not match the documented data contract**
+
+   The scanner finalizes cancelled jobs as , but the requirements call for cancelled scans to be marked `incomplete` so partial results are not mistaken for a complete snapshot. The `incomplete` status exists in the shared type but is not used.
+
+   Relevant code: `electron/scanning/scanManager.ts`, `electron/scanning/scanEngine.ts`
+
+3. **Scanning runs on the Electron main process**
+
+   The scanner periodically yields, which helps responsiveness, but hashing and filesystem traversal still run in the main process. This explicitly conflicts with NFR-1.5, which requires worker threads or a utility process. Large full-hash scans can still affect device detection, IPC handling, notifications, and window behavior.
+
+4. **Backup and restore need stronger safety guarantees**
+
+   Current restore behavior copies the selected file directly over the live database:
+
+   - No validation that the source is a valid DiscDock database
+   - No schema compatibility check before replacement
+   - No atomic temporary-file swap
+   - No rollback if reopening or migration fails
+   - No pre-migration safety backup
+   - No user-facing way to recover the generated safety backup
+
+   Relevant code: `electron/backup/backupService.ts`, `electron/db/index.ts`
+
+5. **IPC validation is inconsistent**
+
+   Several IPC handlers cast arbitrary payloads directly into typed objects. The security specification calls for validating every IPC payload. This is especially important for:
+
+   - Settings patches
+   - Search filters and paging
+   - Duplicate filters
+   - Export scopes
+   - Collection membership
+   - Scan paths and hash modes
+   - File annotation payloads
+
+   A small shared validation layer would be worthwhile, whether using Zod or local type guards.
+
+6. **Offline-by-default behavior is currently inconsistent**
+
+   The app performs external network calls for:
+
+   - MusicBrainz audio-CD metadata
+   - Cover Art Archive cover images
+   - `electron-updater` checks
+
+   Audio-CD scanning can trigger those calls automatically, and automatic update checking is enabled by default in `electron/settings/settingsStore.ts`. That conflicts with the documented v1 policy of no background network activity by default. These should be explicitly opt-in, clearly disclosed, and gracefully handled offline.
+
+7. **Logging and exception reporting are missing**
+
+   Although `electron-log` is installed, there is no evident rotating log setup or centralized error reporting. The requirements call for local logs covering:
+
+   - App startup and shutdown
+   - Migrations
+   - Scan lifecycle and errors
+   - Backup and restore
+   - Device detection failures
+   - Update failures
+   - Unhandled main/renderer exceptions
+
+   Currently some errors are shown in the UI or notifications, but many failures are only returned through IPC or silently ignored.
+
+**Important functional gaps**
+
+8. **Dashboard does not yet meet its full requirement**
+
+   The Dashboard has summary cards and detected devices, but it does not show recent scan activity or a dedicated attention panel. See `src/views/Dashboard.tsx`.
+
+9. **Search is missing several specified filters**
+
+   Current Search supports text, media type, file kind, and file tags. The requirements also call for:
+
+   - Specific media item
+   - Size range
+   - Modified date range
+   - Scan/verification status
+   - Filtered-result export
+
+   The current export screen only exports all files or one media item, not filtered search results. See `src/views/Search.tsx`.
+
+10. **Directory aggregate statistics are not implemented**
+
+    Directory rows are stored with `sizeBytes: 0`, and there is no post-scan aggregation for file count and total size as required by FR-2.3.
+
+11. **Device detection is functional but below the documented target**
+
+    Linux detection currently uses `lsblk` polling. The requirement says to use udisks2 signals where available and polling as fallback. There is also no visible Settings control for device-watch behavior, despite that being part of FR-8.2.
+
+12. **Long-running operations are not actually background jobs**
+
+    Backup and export show a generic “Working…” message, but they do not provide:
+
+    - Progress
+    - Cancellation
+    - Desktop completion notifications
+    - Background execution separate from the main process
+
+    Export is synchronous in the IPC handler, so a large export can block the main process.
+
+13. **Migration safety and upgrade behavior need proof**
+
+    Migrations are transactional individually, which is good, but there is no automatic pre-migration backup as required by the packaging and reliability documentation. The FTS migration also creates triggers but does not visibly rebuild an existing external-content FTS index for databases upgraded from an earlier version.
+
+14. **The initial release documentation is stale**
+
+    `README.md` still describes the project as a foundational shell and says scanning, search, tagging, and other features are tracked work, even though several are now implemented. The release documentation should describe the actual supported workflow, limitations, Linux prerequisites, audio-CD dependencies, and backup semantics.
+
+**Packaging-related items beyond the build scripts**
+
+- The configured Linux icon path appears to be absent.
+- `appImage.license` points to `LICENSE`, which should be verified to exist and contain the intended license.
+- Package metadata needs testing on a clean Ubuntu LTS install.
+- AppImage needs testing both with FUSE and with `--appimage-extract-and-run`.
+- The GitHub publish configuration needs a deliberate release process and credentials/signing strategy.
+- The current updater implementation should be reconciled with the packaging document, which says auto-update is deferred for v1.
+- Native `better-sqlite3` ABI rebuilds need to be exercised inside the actual packaging environment, not only locally.
+
+**Recommended release order**
+
+1. Add tests and CI gates.
+2. Fix scan cancellation semantics and move scanning/hashing into a worker or utility process.
+3. Harden backup/restore and migration rollback behavior.
+4. Add structured IPC validation and centralized logging.
+5. Make all network activity explicitly opt-in.
+6. Finish Dashboard/Search/export requirements that are in the MVP contract.
+7. Add package smoke tests and verify icons, license, desktop entry, data persistence, and native dependencies.
+8. Update README and release documentation.
+9. Run a manual acceptance pass on a clean Linux installation with real removable media, an unplugged device, a permissions failure, a cancelled scan, a corrupted backup, an offline machine, and a large catalog.
+
+The biggest architectural risks are scanning on the main process, unsafe restore replacement, and the absence of tests/observability. I would address those before spending much more time on UI polish.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 6 todos
+</details></tool-use>
+
+---
+
+_**User (2026-08-14 18:00:28Z)**_
+
+let's create a planning doc with those items to use as a checklist and let me know when we are ready to address those.
+
+---
+
+_**Agent (copilot/auto)**_
+
+<think><details><summary>Thought Process</summary>
+The checklist is now captured as [14-release-readiness-checklist.md](docs/planning-docs/14-release-readiness-checklist.md) and indexed from the planning README. It separates P0 release blockers, P1 MVP completion, packaging QA, documentation, and explicit post-release scope; I’m checking the new document and patch formatting before closing out.
+</details></think>
+
+_**Agent (copilot/auto)**_
+
+I’ll turn the audit into a release-readiness checklist in the existing planning-doc style, with explicit priorities, acceptance checks, and a “ready to address” sequence. I’ll first inspect the planning-doc index and nearby roadmap conventions, then add the document and link it from the index.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="list_dir"><details>
+<summary>Tool use: **list_dir**</summary>
+
+Read `planning-docs`
+
+**Input:**
+
+- path: `/home/kel/dev/DiscDock/docs/planning-docs`
+
+**Result:**
+
+```
+01-product-requirements.md
+02-user-stories.md
+03-functional-requirements.md
+04-non-functional-requirements.md
+05-technical-specification.md
+06-data-model.md
+07-ui-ux-specification.md
+08-api-internal-spec.md
+09-packaging-deployment.md
+10-security-privacy.md
+11-roadmap.md
+12-glossary.md
+13-help-system.md
+README.md
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `README.md`
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/README.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# DiscDock — Planning Documentation
+
+DiscDock is a cross-platform-ready (Linux-first) Electron desktop application for cataloging external and removable media — optical discs (CD/DVD/Blu-ray), USB flash drives, external HDD/SSD drives, SD cards, and disc images (ISO) — so users can search "what's on that drive/disc?" without physically connecting it.
+
+This directory contains the full planning package for handoff to a development team.
+
+## Document Index
+
+| # | Document | Purpose |
+|---|----------|---------|
+| 01 | [Product Requirements Document](01-product-requirements.md) | Vision, goals, target users, scope, success metrics |
+| 02 | [User Stories & Epics](02-user-stories.md) | Backlog of user stories with acceptance criteria |
+| 03 | [Functional Requirements](03-functional-requirements.md) | Detailed feature-by-feature requirements |
+| 04 | [Non-Functional Requirements](04-non-functional-requirements.md) | Performance, reliability, compatibility, accessibility |
+| 05 | [Technical Specification](05-technical-specification.md) | Architecture, stack, module design, IPC, scanning engine |
+| 06 | [Data Model](06-data-model.md) | Database schema, ERD, entity definitions |
+| 07 | [UI/UX Specification](07-ui-ux-specification.md) | Screens, navigation, layout, interaction design |
+| 08 | [Internal API / IPC Contract](08-api-internal-spec.md) | Main↔renderer IPC channels and payload contracts |
+| 09 | [Packaging & Deployment](09-packaging-deployment.md) | electron-builder config, deb/AppImage build & release |
+| 10 | [Security & Privacy](10-security-privacy.md) | Threat model, hardening, data handling |
+| 11 | [Roadmap & Release Plan](11-roadmap.md) | MVP scope, phased releases, future ideas |
+| 12 | [Glossary](12-glossary.md) | Terminology reference |
+| 13 | [Help System Specification](13-help-system.md) | In-app contextual help panel: layout, content model, topics |
+
+## Product Snapshot
+
+- **Name:** DiscDock
+- **Platform (v1):** Linux only, packaged as `.deb` and `.AppIma
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `11-roadmap.md`
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/11-roadmap.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# Roadmap & Release Plan
+
+## Phase 0 — Foundations (Pre-MVP)
+- Project scaffolding: Electron + React + TypeScript + Vite, electron-builder pipeline producing installable `.deb`/`.AppImage` (even with a blank window) to de-risk packaging early.
+- SQLite integration with migration runner and base schema (`media_item`, `file_record`, `scan_job`).
+- Preload/contextBridge IPC skeleton with the discriminated result pattern.
+
+## Phase 1 — MVP
+
+Scope: the minimum feature set that makes DiscDock genuinely useful end-to-end.
+
+- Media registration (manual) — FR-1.1, FR-1.5, FR-1.6
+- Linux device detection (udisks2 + fallback) and linking to media — FR-1.2–1.4
+- Scanning engine: metadata-only and full-hash modes, progress, cancel — FR-2.1–2.10
+- Re-scan with diff summary — FR-2.11, FR-2.12
+- Global search with core filters — FR-3.1–3.4, FR-3.6
+- Media Library list + Media Detail (Overview, Browse, Scan History) — UI spec §2.2–2.3
+- Dashboard with summary stats and attention panel — FR-8.1
+- Settings: scan defaults, theme, notifications — FR-8.2
+- Backup/restore of the whole database — FR-7.2
+- `.deb` + `.AppImage` packaging finalized with QA checklist passed — Packaging doc §7
+
+**MVP exit criteria:** a user can register a drive, scan it, search across multiple scanned drives without connecting them, and back up/restore their catalog.
+
+## Phase 2 — Post-MVP Enhancements
+
+- Duplicate file detection & report — FR-4.1–4.4
+- Tags on media + Collections — FR-5.1, 5.3, 5.4
+- Media health/lifecycle tracking (verification threshold alerts, error logs, retire status) — FR-6.1–6.4
+- CSV/JSON export of catalog/search results — FR-7.1
+- Custom media types & custom metadata fields — FR-8.3
+
+## Phase 3 — Stretch / Future Ideas
+
+- File-level tagging (FR-5.2) and per-file notes.
+- Printable labels/QR codes linking a physical media item to its DiscDock record (scan QR to jump straight to Media Detail).
+- Optical media raw audio CD track listing support (FR-1.7 non-filesystem case).
+- Auto-update
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `09-packaging-deployment.md`
+
+**Input:**
+
+- endLine: `180`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/09-packaging-deployment.md`
+- startLine: `1`
+
+**Result:**
+
+````
+# Packaging & Deployment
+
+## 1. Build Tooling
+
+- **electron-builder** as the single packaging tool, configured to produce both target formats from one build.
+- Targets (Linux): `deb`, `AppImage`.
+
+## 2. Example `electron-builder` Configuration (`electron-builder.yml`)
+
+```yaml
+appId: com.discdock.app
+productName: DiscDock
+directories:
+  output: release
+files:
+  - dist/**
+  - package.json
+linux:
+  category: Utility
+  icon: build/icons/icon.png
+  target:
+    - target: deb
+      arch: [x64]
+    - target: AppImage
+      arch: [x64]
+  desktop:
+    Name: DiscDock
+    Comment: Catalog and search your external media collection
+    Categories: Utility;FileTools;
+deb:
+  depends:
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libgtk-3-0
+  packageCategory: utils
+appImage:
+  license: LICENSE
+```
+
+Adjust `deb.depends` to match the actual Electron version's bundled Chromium runtime dependencies at implementation time.
+
+## 3. Application Data Locations (Linux, XDG)
+
+| Purpose | Path |
+|---|---|
+| SQLite database | `~/.local/share/DiscDock/discdock.sqlite3` |
+| Configuration/settings | `~/.config/DiscDock/settings.json` |
+| Logs | `~/.local/share/DiscDock/logs/` |
+| Automatic pre-restore/pre-migration safety backups | `~/.local/share/DiscDock/backups/` |
+
+These follow the `XDG_DATA_HOME` / `XDG_CONFIG_HOME` conventions (falling back to the defaults above when unset), consistent with Electron's default `app.getPath()` behavior on Linux.
+
+## 4. Release Pipeline (CI)
+
+1. Checkout + install dependencies (`npm ci`).
+2. Lint (`eslint`) and type-check (`tsc --noEmit`).
+3. Run unit/integration test suite.
+4. Build renderer (Vite) and compile main/preload (TypeScript).
+5. Run `electron-builder` to produce `.deb` and `.AppImage` artifacts.
+6. Smoke test: install `.deb` in a clean container image (`dpkg -i` + launch headless check); run `.AppImage` with `--appimage-extract-and-run` and verify it starts and quits cleanly.
+7. Publish artifacts (GitHub Releases or internal artifact store) tag
+… (output truncated)
+````
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The checklist will be document 14 and will treat the existing roadmap as the scope authority: MVP requirements stay release-blocking, while explicitly post-MVP ideas remain out of the initial-release gate. I’ll include current status, acceptance evidence, and a recommended execution order so we can work through it incrementally.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `14-release-readiness-checklist.md`
+
+**Input:**
+
+- content:
+
+```
+# DiscDock Initial Release Readiness Checklist
+
+Status: **Not release-ready**
+
+Related: [Roadmap & Release Plan](11-roadmap.md), [Functional Requirements](03-functional-requirements.md), [Non-Functional Requirements](04-non-functional-requirements.md), [Packaging & Deployment](09-packaging-deployment.md), [Security & Privacy](10-security-privacy.md)
+
+## Purpose
+
+This document is the working gate for the first public Linux release of DiscDock. It records the remaining work found during the holistic application audit and defines the evidence required before release.
+
+The initial release is Linux-first and targets `.deb` and `.AppImage`. Post-MVP enhancements and explicitly deferred ideas are not release blockers unless they affect the MVP workflows or release safety.
+
+## Status Legend
+
+- [ ] Not started
+- [~] In progress or partially implemented
+- [x] Complete and verified with evidence
+- [!] Blocked or requires a product decision
+
+## Release Gate Summary
+
+### Must complete before initial release
+
+- [ ] Automated tests and CI quality gates
+- [ ] Scan cancellation and partial-scan semantics
+- [ ] Large-scan reliability and main-process workload decision
+- [ ] Backup, restore, and migration safety
+- [ ] IPC input validation and path safety review
+- [ ] Logging and unhandled-error reporting
+- [ ] Offline/network policy alignment
+- [ ] MVP workflow acceptance testing
+- [ ] Package build and clean-environment QA
+- [ ] User-facing documentation and release notes
+
+### Can follow shortly after release
+
+These are useful improvements, but should not delay the first release if the MVP acceptance criteria remain clear:
+
+- [ ] Full Dashboard recent-activity panel
+- [ ] Additional Search filters such as modified date and verification state
+- [ ] Filtered search-result export
+- [ ] Directory aggregate statistics
+- [ ] udisks2 event-driven device watching
+- [ ] Background progress and cancellation for export
+
+### Explicitly outside the initial-release gate
+
+- Windows and macOS builds
+- Cloud sync
+- Backing up original file contents
+- Disc writing or burning
+- In-app media previews
+- Printable QR labels, unless the current release scope is expanded
+- Advanced multi-device concurrency beyond the supported configured queue
+
+## P0 - Release Blockers
+
+### P0.1 Automated verification and CI
+
+- [ ] Add unit tests for hash modes, glob exclusions, symlink behavior, file-kind classification, scan diffing, and cancellation.
+- [ ] Add database integration tests for migrations, FTS search, tags, collections, backup, restore, and foreign-key behavior.
+- [ ] Add IPC tests for malformed payloads and structured error responses.
+- [ ] Add renderer tests for the primary registration, scan, search, backup, restore, and Help workflows.
+- [ ] Add `lint`, `typecheck`, and `test` scripts that fail on errors.
+- [ ] Add a CI workflow that runs `npm ci`, dependency audit, lint, typecheck, tests, renderer build, Electron build, and packaging.
+- [ ] Keep the lockfile committed and fail CI on new high or critical dependency vulnerabilities, with documented exceptions when necessary.
+
+**Exit evidence:** A clean checkout passes every required command without manual intervention.
+
+### P0.2 Scanning correctness and reliability
+
+- [ ] Mark cancelled scans as `incomplete` or otherwise clearly partial, matching FR-2.8 and NFR-2.4. Do not present a partial snapshot as a completed scan.
+- [ ] Verify that partial results, removed-file pruning, scan history, and `lastScannedAt` remain consistent after cancellation.
+- [ ] Decide whether the initial release accepts the current yielding main-process scanner or requires a worker/utility process. The documented NFR requires filesystem scanning and hashing off the Electron UI thread.
+- [ ] If keeping the current architecture temporarily, establish measured limits and test responsiveness during large metadata and full-hash scans.
+- [ ] Add progress timing that meets the documented update expectation and exposes enough information for long scans.
+- [ ] Test permission failures, disappearing files, unreadable files, symlink loops, disconnected media, and hash-read failures.
+- [ ] Verify duplicate results distinguish full hashes, quick hashes, and files with no hash.
+
+**Exit evidence:** A large-media test matrix produces correct completed, incomplete, and failed states without freezing or corrupting the application.
+
+### P0.3 Database, backup, restore, and migration safety
+
+- [ ] Create an automatic safety backup before migrations, not only before restore.
+- [ ] Validate a restore source before replacing the live database: readable SQLite file, expected schema, compatible migration state, and required tables.
+- [ ] Restore through a temporary destination and atomic rename rather than copying directly over the active database.
+- [ ] Define rollback behavior if reopening or migrating the restored database fails.
+- [ ] Ensure WAL and SHM sidecars are handled safely for both backup and restore.
+- [ ] Provide a clear recovery path to the generated pre-restore backup.
+- [ ] Test upgrades from every supported prior schema version, including populated FTS data and user annotations.
+- [ ] Verify foreign-key enforcement and transactional behavior under interruption or simulated failure.
+- [ ] Add a database integrity check to diagnostics or recovery tooling.
+
+**Exit evidence:** A corrupted, incompatible, interrupted, and valid restore are each tested, with no loss of the pre-restore catalog.
+
+### P0.4 Security and IPC hardening
+
+- [ ] Validate every IPC payload with shared schemas or explicit type guards instead of unchecked casts.
+- [ ] Validate numeric IDs, enum values, strings, array contents, paths, pagination values, and settings ranges.
+- [ ] Validate and normalize scan roots before traversal; require an existing directory where appropriate.
+- [ ] Recheck that file open/reveal paths remain inside the linked media mount after symlink and case-related edge cases.
+- [ ] Validate backup/export destinations and selected restore files in the main process, even though the renderer uses native dialogs.
+- [ ] Validate IPC sender origins and reject unexpected renderer senders.
+- [ ] Replace the current permissive CSP with the strictest policy compatible with the renderer bundle, documenting any required exceptions.
+- [ ] Audit all remote calls and external process invocations, including MusicBrainz, Cover Art Archive, updater services, `lsblk`, `udisksctl`, and `eject`.
+
+**Exit evidence:** A malformed-input and path-traversal test suite passes, and the security checklist is reviewed against the packaged application.
+
+### P0.5 Offline and network policy
+
+- [ ] Make network activity opt-in and visible to the user.
+- [ ] Disable automatic update checks by default for v1, or update the product/security documentation to explicitly approve the current behavior.
+- [ ] Make MusicBrainz and Cover Art Archive enrichment optional during audio-CD scans.
+- [ ] Ensure offline scanning succeeds without delays or failures caused by metadata lookup timeouts.
+- [ ] Document every external endpoint and the data sent to it.
+- [ ] Confirm that file names, paths, hashes, and catalog contents never leave the machine.
+
+**Exit evidence:** A network-disabled test run completes the core registration, scan, search, backup, restore, and export workflows.
+
+### P0.6 Logging and failure visibility
+
+- [ ] Configure rotating local main-process logs under the documented user-data directory.
+- [ ] Log application startup, shutdown, migrations, scan lifecycle, per-job failures, device detection failures, backup/restore, exports, and updater errors.
+- [ ] Add main-process handlers for uncaught exceptions and unhandled promise rejections.
+- [ ] Add renderer error-boundary handling and a non-blocking user-visible error path.
+- [ ] Avoid silently swallowing failures except where the fallback and user impact are documented.
+- [ ] Include a support-friendly diagnostics path that reports app version, platform, database schema, and recent error summaries without exposing catalog data unnecessarily.
+
+**Exit evidence:** Simulated failures appear in logs and produce an actionable UI or notification message.
+
+## P1 - MVP Completion and Product Quality
+
+### P1.1 Core workflow acceptance
+
+- [ ] Register media manually with all required fields, including tags and optional metadata.
+- [ ] Detect and link removable devices on a supported Linux distribution.
+- [ ] Gracefully fall back to manual folder selection when automatic device detection is unavailable.
+- [ ] Scan metadata-only and full-hash media, cancel a scan, rescan it, and inspect the diff summary.
+- [ ] Search across multiple disconnected media items.
+- [ ] Browse cataloged folders while the physical media is disconnected.
+- [ ] Open or reveal a file only when the linked media is currently connected and the path is valid.
+- [ ] Back up and restore the catalog without losing tags, collections, annotations, scan history, or custom fields.
+- [ ] Verify the Help system across all views, including keyboard navigation, resizing, persistence, and reduced-motion behavior.
+
+### P1.2 Dashboard and search coverage
+
+- [ ] Add recent scan activity to the Dashboard.
+- [ ] Add a clear attention area for media needing verification, scan errors, incomplete scans, and failed operations.
+- [ ] Add Search filters required by FR-3.3: specific media item, size range, modified date range, and scan/verification status.
+- [ ] Add filtered search-result export or explicitly remove that promise from the release scope and documentation.
+- [ ] Ensure empty states provide actionable guidance for first launch, no media, no devices, no results, and failed scans.
+
+### P1.3 Catalog fidelity and scale
+
+- [ ] Compute and display directory aggregate file counts and sizes.
+- [ ] Verify pagination or virtualization for every potentially large table and folder listing.
+- [ ] Measure search performance at 500,000 file rows.
+- [ ] Measure usability and memory behavior at 1,000 media items and 2,000,000 file rows.
+- [ ] Verify FTS indexes are rebuilt or repaired when upgrading existing databases.
+
+### P1.4 Device and optical-media behavior
+
+- [ ] Test mounted USB, external disk, SD card, DVD, Blu-ray, and audio CD scenarios.
+- [ ] Test device insertion, removal, replacement, duplicate fingerprints, and stale device links.
+- [ ] Test systems without `udisks2`, `lsblk`, audio-CD utilities, or network access.
+- [ ] Confirm audio-CD metadata enrichment is optional and that raw TOC cataloging remains useful without it.
+- [ ] Verify eject and safe-remove failures provide actionable guidance without claiming success prematurely.
+
+## P1 - Packaging and Distribution QA
+
+- [ ] Confirm `electron-builder` produces valid `.deb` and `.AppImage` artifacts from a clean checkout.
+- [ ] Add and verify the application icon referenced by the package configuration.
+- [ ] Add and verify the license file referenced by the AppImage configuration.
+- [ ] Test `.deb` installation on a current Ubuntu LTS image with `apt install ./package.deb` and `dpkg -i`.
+- [ ] Test desktop menu entry, icon, protocol registration, single-instance behavior, and deep links.
+- [ ] Test `.AppImage` on a non-Debian distribution with FUSE.
+- [ ] Test the documented `--appimage-extract-and-run` fallback without FUSE.
+- [ ] Verify correct native-module ABI packaging for `better-sqlite3`.
+- [ ] Verify first-run data directories, permissions, migration behavior, uninstall behavior, and retained user data.
+- [ ] Decide whether updates are disabled for v1 or fully tested against signed published artifacts.
+- [ ] Produce versioned release artifacts and release notes using semantic versioning.
+
+**Exit evidence:** The same artifacts pass the clean-install and launch checklist on the supported test environments.
+
+## P2 - Documentation and Support Readiness
+
+- [ ] Update [README.md](../../README.md) to describe the current product instead of the foundational shell status.
+- [ ] Document Linux prerequisites, optional audio-CD utilities, device detection fallback behavior, and offline behavior.
+- [ ] Document that DiscDock catalogs metadata and does not back up original file contents.
+- [ ] Document backup/restore recovery behavior and where safety backups are stored.
+- [ ] Document known limitations and supported package formats.
+- [ ] Add a first-run workflow guide or make the in-app empty states sufficient for a new user.
+- [ ] Add release notes covering schema migrations, data location, and upgrade expectations.
+- [ ] Confirm the Help topics match the final UI and release scope.
+
+## Recommended Execution Order
+
+1. Establish tests, linting, type checking, and CI so later changes have a reliable signal.
+2. Fix scan state semantics and database/restore safety before exercising destructive or long-running workflows.
+3. Add IPC validation, logging, and error boundaries.
+4. Resolve the offline/network policy and decide the v1 updater scope.
+5. Complete the remaining MVP Dashboard, Search, export, and directory-stat requirements.
+6. Run real-media and failure-mode acceptance tests.
+7. Package and test clean artifacts on supported Linux environments.
+8. Update documentation, version metadata, and release notes.
+
+## Ready-to-Address Status
+
+The project is ready to begin this checklist now. The first work package should be **P0.1 Automated verification and CI**, followed by **P0.2 Scanning correctness and reliability**. No product decision is required to start those items.
+
+The following decisions should be made before implementation reaches them:
+
+- Whether v1 strictly requires worker-thread scanning or accepts a measured interim limitation.
+- Whether automatic update checks remain in v1.
+- Whether filtered search export is a release requirement or a documented post-release feature.
+- Whether the current audio-CD metadata network enrichment is enabled by default.
+
+Initial release readiness should be declared only when every P0 item is checked, the P1 core workflow acceptance suite passes, and the packaging QA checklist has been completed with recorded evidence.
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/14-release-readiness-checklist.md`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/docs/planning-docs/14-release-readiness-checklist.md
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **14-release-readiness-checklist.md**</summary>
+
+@@ lines 1-1 @@
+
+```
+# DiscDock Initial Release Readiness Checklist
+
+Status: **Not release-ready**
+
+Related: [Roadmap & Release Plan](11-roadmap.md), [Functional Requirements](03-functional-requirements.md), [Non-Functional Requirements](04-non-functional-requirements.md), [Packaging & Deployment](09-packaging-deployment.md), [Security & Privacy](10-security-privacy.md)
+
+## Purpose
+
+This document is the working gate for the first public Linux release of DiscDock. It records the remaining work found during the holistic application audit and defines the evidence required before release.
+
+The initial release is Linux-first and targets `.deb` and `.AppImage`. Post-MVP enhancements and explicitly deferred ideas are not release blockers unless they affect the MVP workflows or release safety.
+
+## Status Legend
+
+- [ ] Not started
+- [~] In progress or partially implemented
+- [x] Complete and verified with evidence
+- [!] Blocked or requires a product decision
+
+## Release Gate Summary
+
+### Must complete before initial release
+
+- [ ] Automated tests and CI quality gates
+- [ ] Scan cancellation and partial-scan semantics
+- [ ] Large-scan reliability and main-process workload decision
+- [ ] Backup, restore, and migration safety
+- [ ] IPC input validation and path safety review
+- [ ] Logging and unhandled-error reporting
+- [ ] Offline/network policy alignment
+- [ ] MVP workflow acceptance testing
+- [ ] Package build and clean-environment QA
+- [ ] User-facing documentation and release notes
+
+### Can follow shortly after release
+
+These are useful improvements, but should not delay the first release if the MVP acceptance criteria remain clear:
+
+- [ ] Full Dashboard recent-activity panel
+- [ ] Additional Search filters such as modified date and verification state
+- [ ] Filtered search-result export
+- [ ] Directory aggregate statistics
+- [ ] udisks2 event-driven device watching
+- [ ] Background progress and cancellation for export
+
+### Explicitly outside the initial-release gate
+
+- Windows and macOS builds
+- Cloud sync
+- Backing up original file contents
+- Disc writing or burning
+- In-app media previews
+- Printable QR labels, unless the current release scope is expanded
+- Advanced multi-device concurrency beyond the supported configured queue
+
+## P0 - Release Blockers
+
+### P0.1 Automated verification and CI
+
+- [ ] Add unit tests for hash modes, glob exclusions, symlink behavior, file-kind classification, scan diffing, and cancellation.
+- [ ] Add database integration tests for migrations, FTS search, tags, collections, backup, restore, and foreign-key behavior.
+- [ ] Add IPC tests for malformed payloads and structured error responses.
+- [ ] Add renderer tests for the primary registration, scan, search, backup, restore, and Help workflows.
+- [ ] Add `lint`, `typecheck`, and `test` scripts that fail on errors.
+- [ ] Add a CI workflow that runs `npm ci`, dependency audit, lint, typecheck, tests, renderer build, Electron build, and packaging.
+- [ ] Keep the lockfile committed and fail CI on new high or critical dependency vulnerabilities, with documented exceptions when necessary.
+
+**Exit evidence:** A clean checkout passes every required command without manual intervention.
+
+### P0.2 Scanning correctness and reliability
+
+- [ ] Mark cancelled scans as `incomplete` or otherwise clearly partial, matching FR-2.8 and NFR-2.4. Do not present a partial snapshot as a completed scan.
+- [ ] Verify that partial results, removed-file pruning, scan history, and `lastScannedAt` remain consistent after cancellation.
+- [ ] Decide whether the initial release accepts the current yielding main-process scanner or requires a worker/utility process. The documented NFR requires filesystem scanning and hashing off the Electron UI thread.
+- [ ] If keeping the current architecture temporarily, establish measured limits and test responsiveness during large metadata and full-hash scans.
+- [ ] Add progress timing that meets the documented update expectation and exposes enough information for long scans.
+- [ ] Test permission failures, disappearing files, unreadable files, symlink loops, disconnected media, and hash-read failures.
+- [ ] Verify duplicate results distinguish full hashes, quick hashes, and files with no hash.
+
+**Exit evidence:** A large-media test matrix produces correct completed, incomplete, and failed states without freezing or corrupting the application.
+
+### P0.3 Database, backup, restore, and migration safety
+
+- [ ] Create an automatic safety backup before migrations, not only before restore.
+- [ ] Validate a restore source before replacing the live database: readable SQLite file, expected schema, compatible migration state, and required tables.
+- [ ] Restore through a temporary destination and atomic rename rather than copying directly over the active database.
+- [ ] Define rollback behavior if reopening or migrating the restored database fails.
+- [ ] Ensure WAL and SHM sidecars are handled safely for both backup and restore.
+- [ ] Provide a clear recovery path to the generated pre-restore backup.
+- [ ] Test upgrades from every supported prior schema version, including populated FTS data and user annotations.
+- [ ] Verify foreign-key enforcement and transactional behavior under interruption or simulated failure.
+- [ ] Add a database integrity check to diagnostics or recovery tooling.
+
+**Exit evidence:** A corrupted, incompatible, interrupted, and valid restore are each tested, with no loss of the pre-restore catalog.
+
+### P0.4 Security and IPC hardening
+
+- [ ] Validate every IPC payload with shared schemas or explicit type guards instead of unchecked casts.
+- [ ] Validate numeric IDs, enum values, strings, array contents, paths, pagination values, and settings ranges.
+- [ ] Validate and normalize scan roots before traversal; require an existing directory where appropriate.
+- [ ] Recheck that file open/reveal paths remain inside the linked media mount after symlink and case-related edge cases.
+- [ ] Validate backup/export destinations and selected restore files in the main process, even though the renderer uses native dialogs.
+- [ ] Validate IPC sender origins and reject unexpected renderer senders.
+- [ ] Replace the current permissive CSP with the strictest policy compatible with the renderer bundle, documenting any required exceptions.
+- [ ] Audit all remote calls and external process invocations, including MusicBrainz, Cover Art Archive, updater services, `lsblk`, `udisksctl`, and `eject`.
+
+**Exit evidence:** A malformed-input and path-traversal test suite passes, and the security checklist is reviewed against the packaged application.
+
+### P0.5 Offline and network policy
+
+- [ ] Make network activity opt-in and visible to the user.
+- [ ] Disable automatic update checks by default for v1, or update the product/security documentation to explicitly approve the current behavior.
+- [ ] Make MusicBrainz and Cover Art Archive enrichment optional during audio-CD scans.
+- [ ] Ensure offline scanning succeeds without delays or failures caused by metadata lookup timeouts.
+- [ ] Document every external endpoint and the data sent to it.
+- [ ] Confirm that file names, paths, hashes, and catalog contents never leave the machine.
+
+**Exit evidence:** A network-disabled test run completes the core registration, scan, search, backup, restore, and export workflows.
+
+### P0.6 Logging and failure visibility
+
+- [ ] Configure rotating local main-process logs under the documented user-data directory.
+- [ ] Log application startup, shutdown, migrations, scan lifecycle, per-job failures, device detection failures, backup/restore, exports, and updater errors.
+- [ ] Add main-process handlers for uncaught exceptions and unhandled promise rejections.
+- [ ] Add renderer error-boundary handling and a non-blocking user-visible error path.
+- [ ] Avoid silently swallowing failures except where the fallback and user impact are documented.
+- [ ] Include a support-friendly diagnostics path that reports app version, platform, database schema, and recent error summaries without exposing catalog data unnecessarily.
+
+**Exit evidence:** Simulated failures appear in logs and produce an actionable UI or notification message.
+
+## P1 - MVP Completion and Product Quality
+
+### P1.1 Core workflow acceptance
+
+- [ ] Register media manually with all required fields, including tags and optional metadata.
+- [ ] Detect and link removable devices on a supported Linux distribution.
+- [ ] Gracefully fall back to manual folder selection when automatic device detection is unavailable.
+- [ ] Scan metadata-only and full-hash media, cancel a scan, rescan it, and inspect the diff summary.
+- [ ] Search across multiple disconnected media items.
+- [ ] Browse cataloged folders while the physical media is disconnected.
+- [ ] Open or reveal a file only when the linked media is currently connected and the path is valid.
+- [ ] Back up and restore the catalog without losing tags, collections, annotations, scan history, or custom fields.
+- [ ] Verify the Help system across all views, including keyboard navigation, resizing, persistence, and reduced-motion behavior.
+
+### P1.2 Dashboard and search coverage
+
+- [ ] Add recent scan activity to the Dashboard.
+- [ ] Add a clear attention area for media needing verification, scan errors, incomplete scans, and failed operations.
+- [ ] Add Search filters required by FR-3.3: specific media item, size range, modified date range, and scan/verification status.
+- [ ] Add filtered search-result export or explicitly remove that promise from the release scope and documentation.
+- [ ] Ensure empty states provide actionable guidance for first launch, no media, no devices, no results, and failed scans.
+
+### P1.3 Catalog fidelity and scale
+
+- [ ] Compute and display directory aggregate file counts and sizes.
+- [ ] Verify pagination or virtualization for every potentially large table and folder listing.
+- [ ] Measure search performance at 500,000 file rows.
+- [ ] Measure usability and memory behavior at 1,000 media items and 2,000,000 file rows.
+- [ ] Verify FTS indexes are rebuilt or repaired when upgrading existing databases.
+
+### P1.4 Device and optical-media behavior
+
+- [ ] Test mounted USB, external disk, SD card, DVD, Blu-ray, and audio CD scenarios.
+- [ ] Test device insertion, removal, replacement, duplicate fingerprints, and stale device links.
+- [ ] Test systems without `udisks2`, `lsblk`, audio-CD utilities, or network access.
+- [ ] Confirm audio-CD metadata enrichment is optional and that raw TOC cataloging remains useful without it.
+- [ ] Verify eject and safe-remove failures provide actionable guidance without claiming success prematurely.
+
+## P1 - Packaging and Distribution QA
+
+- [ ] Confirm `electron-builder` produces valid `.deb` and `.AppImage` artifacts from a clean checkout.
+- [ ] Add and verify the application icon referenced by the package configuration.
+- [ ] Add and verify the license file referenced by the AppImage configuration.
+- [ ] Test `.deb` installation on a current Ubuntu LTS image with `apt install ./package.deb` and `dpkg -i`.
+- [ ] Test desktop menu entry, icon, protocol registration, single-instance behavior, and deep links.
+- [ ] Test `.AppImage` on a non-Debian distribution with FUSE.
+- [ ] Test the documented `--appimage-extract-and-run` fallback without FUSE.
+- [ ] Verify correct native-module ABI packaging for `better-sqlite3`.
+- [ ] Verify first-run data directories, permissions, migration behavior, uninstall behavior, and retained user data.
+- [ ] Decide whether updates are disabled for v1 or fully tested against signed published artifacts.
+- [ ] Produce versioned release artifacts and release notes using semantic versioning.
+
+**Exit evidence:** The same artifacts pass the clean-install and launch checklist on the supported test environments.
+
+## P2 - Documentation and Support Readiness
+
+- [ ] Update [README.md](../../README.md) to describe the current product instead of the foundational shell status.
+- [ ] Document Linux prerequisites, optional audio-CD utilities, device detection fallback behavior, and offline behavior.
+- [ ] Document that DiscDock catalogs metadata and does not back up original file contents.
+- [ ] Document backup/restore recovery behavior and where safety backups are stored.
+- [ ] Document known limitations and supported package formats.
+- [ ] Add a first-run workflow guide or make the in-app empty states sufficient for a new user.
+- [ ] Add release notes covering schema migrations, data location, and upgrade expectations.
+- [ ] Confirm the Help topics match the final UI and release scope.
+
+## Recommended Execution Order
+
+1. Establish tests, linting, type checking, and CI so later changes have a reliable signal.
+2. Fix scan state semantics and database/restore safety before exercising destructive or long-running workflows.
+3. Add IPC validation, logging, and error boundaries.
+4. Resolve the offline/network policy and decide the v1 updater scope.
+5. Complete the remaining MVP Dashboard, Search, export, and directory-stat requirements.
+6. Run real-media and failure-mode acceptance tests.
+7. Package and test clean artifacts on supported Linux environments.
+8. Update documentation, version metadata, and release notes.
+
+## Ready-to-Address Status
+
+The project is ready to begin this checklist now. The first work package should be **P0.1 Automated verification and CI**, followed by **P0.2 Scanning correctness and reliability**. No product decision is required to start those items.
+
+The following decisions should be made before implementation reaches them:
+
+- Whether v1 strictly requires worker-thread scanning or accepts a measured interim limitation.
+- Whether automatic update checks remain in v1.
+- Whether filtered search export is a release requirement or a documented post-release feature.
+- Whether the current audio-CD metadata network enrichment is enabled by default.
+
+Initial release readiness should be declared only when every P0 item is checked, the P1 core workflow acceptance suite passes, and the packaging QA checklist has been completed with recorded evidence.
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **README.md**</summary>
+
+@@ lines 1-38 @@
+
+```
+# DiscDock — Planning Documentation
+
+DiscDock is a cross-platform-ready (Linux-first) Electron desktop application for cataloging external and removable media — optical discs (CD/DVD/Blu-ray), USB flash drives, external HDD/SSD drives, SD cards, and disc images (ISO) — so users can search "what's on that drive/disc?" without physically connecting it.
+
+This directory contains the full planning package for handoff to a development team.
+
+## Document Index
+
+| # | Document | Purpose |
+|---|----------|---------|
+| 01 | [Product Requirements Document](01-product-requirements.md) | Vision, goals, target users, scope, success metrics |
+| 02 | [User Stories & Epics](02-user-stories.md) | Backlog of user stories with acceptance criteria |
+| 03 | [Functional Requirements](03-functional-requirements.md) | Detailed feature-by-feature requirements |
+| 04 | [Non-Functional Requirements](04-non-functional-requirements.md) | Performance, reliability, compatibility, accessibility |
+| 05 | [Technical Specification](05-technical-specification.md) | Architecture, stack, module design, IPC, scanning engine |
+| 06 | [Data Model](06-data-model.md) | Database schema, ERD, entity definitions |
+| 07 | [UI/UX Specification](07-ui-ux-specification.md) | Screens, navigation, layout, interaction design |
+| 08 | [Internal API / IPC Contract](08-api-internal-spec.md) | Main↔renderer IPC channels and payload contracts |
+| 09 | [Packaging & Deployment](09-packaging-deployment.md) | electron-builder config, deb/AppImage build & release |
+| 10 | [Security & Privacy](10-security-privacy.md) | Threat model, hardening, data handling |
+| 11 | [Roadmap & Release Plan](11-roadmap.md) | MVP scope, phased releases, future ideas |
+| 12 | [Glossary](12-glossary.md) | Terminology reference |
+| 13 | [Help System Specification](13-help-system.md) | In-app contextual help panel: layout, content model, topics |
+| 14 | [Initial Release Readiness Checklist](14-release-readiness-checklist.md) | Release blockers, acceptance evidence, and execution order |
+
+## Product Snapshot
+
+- **Name:** DiscDock
+- **Platform (v1):** Linux only, packaged as `.deb` and `.AppImage`
+- **Framework:** Electron (Chromium + Node.js)
+- **Primary Use Case:** Catalog the contents of removable/external media so it can be searched, tagged, and located later without re-inserting the physical media.
+- **Primary Users:** Home archivists, IT hobbyists, photographers/videographers with large backup collections, small offices/labs managing physical media libraries.
+
+## How to Use This Package
+
+Start with the [PRD](01-product-requirements.md) for context, then [User Stories](02-user-stories.md) for scope, then the [Technical Specification](05-technical-specification.md) and [Data Model](06-data-model.md) for implementation design. The [UI/UX Specification](07-ui-ux-specification.md) and [IPC Contract](08-api-internal-spec.md) are the primary references for building the renderer and main process respectively.
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The checklist is now captured as `docs/planning-docs/14-release-readiness-checklist.md` and indexed from the planning README. It separates P0 release blockers, P1 MVP completion, packaging QA, documentation, and explicit post-release scope; I’m checking the new document and patch formatting before closing out.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git diff --check && git status --short`
+
+Validate the new planning document and show the resulting worktree changes.
+
+```bash
+git diff --check && git status --short
+```
+
+**Result:**
+
+```
+.specstory/history/2026-08-14_17-18-26Z-implement-help-system-from.md:12808: tra
+iling whitespace.
++The first pass already surfaces several release-level gaps beyond packaging: no
+ automated test suite or lint gate, no CSP, likely incomplete logging/exception
+surfacing, and network behavior that may exceed the offline-by-default contract.
+ I’m checking the database/scan and export/backup paths now to distinguish docum
+ented requirements that are truly missing from features that are merely planned
+for 
+.specstory/history/2026-08-14_17-18-26Z-implement-help-system-from.md:13630: tra
+iling whitespace.
++      return { ok: false, error: { code: 'invalid_input', message: 'A numeric m
+ediaId is required' } 
+.specstory/history/2026-08-14_17-18-26Z-implement-help-system-from.md:13683: tra
+iling whitespace.
++83:            Restore from
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `14-release-readiness-checklist.md`
+
+**Input:**
+
+- endLine: `280`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/14-release-readiness-checklist.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# DiscDock Initial Release Readiness Checklist
+
+Status: **Not release-ready**
+
+Related: [Roadmap & Release Plan](11-roadmap.md), [Functional Requirements](03-functional-requirements.md), [Non-Functional Requirements](04-non-functional-requirements.md), [Packaging & Deployment](09-packaging-deployment.md), [Security & Privacy](10-security-privacy.md)
+
+## Purpose
+
+This document is the working gate for the first public Linux release of DiscDock. It records the remaining work found during the holistic application audit and defines the evidence required before release.
+
+The initial release is Linux-first and targets `.deb` and `.AppImage`. Post-MVP enhancements and explicitly deferred ideas are not release blockers unless they affect the MVP workflows or release safety.
+
+## Status Legend
+
+- [ ] Not started
+- [~] In progress or partially implemented
+- [x] Complete and verified with evidence
+- [!] Blocked or requires a product decision
+
+## Release Gate Summary
+
+### Must complete before initial release
+
+- [ ] Automated tests and CI quality gates
+- [ ] Scan cancellation and partial-scan semantics
+- [ ] Large-scan reliability and main-process workload decision
+- [ ] Backup, restore, and migration safety
+- [ ] IPC input validation and path safety review
+- [ ] Logging and unhandled-error reporting
+- [ ] Offline/network policy alignment
+- [ ] MVP workflow acceptance testing
+- [ ] Package build and clean-environment QA
+- [ ] User-facing documentation and release notes
+
+### Can follow shortly after release
+
+These are useful improvements, but should not delay the first release if the MVP acceptance criteria remain clear:
+
+- [ ] Full Dashboard recent-activity panel
+- [ ] Additional Search filters such as modified date and verification state
+- [ ] Filtered search-result export
+- [ ] Directory aggregate statistics
+- [ ] udisks2 event-driven device watching
+- [ ] Background progress and cancellation for export
+
+### Explicitly outside the initial-release gate
+
+- Windows and macOS builds
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git diff --check -- docs/planning-docs/README.md docs/planning-docs/14-relea...`
+
+Check only the new planning files so unrelated session artifacts do not obscure the result.
+
+```bash
+git diff --check -- docs/planning-docs/README.md docs/planning-docs/14-release-readiness-checklist.md
+```
+
+**Result:**
+
+```
+
+
+Command produced no output
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Created and indexed the release checklist:
+
+- `docs/planning-docs/14-release-readiness-checklist.md`
+- Added it to planning-docs/README.md
+
+The document includes:
+
+- P0 release blockers
+- P1 MVP completion and product-quality work
+- Packaging and distribution QA
+- Documentation and support readiness
+- Explicit post-release items
+- Exit evidence for each major work package
+- Recommended implementation order
+- Decisions that need to be made before reaching certain items
+
+We are ready to start addressing it now. The recommended first work package is **P0.1 Automated verification and CI**, followed by **P0.2 Scanning correctness and reliability**. Those can begin without any product decisions.
+
+The decisions we should settle before later work are:
+
+- Whether v1 requires worker-thread scanning
+- Whether automatic update checks remain in v1
+- Whether filtered search export is required for release
+- Whether audio-CD metadata enrichment is enabled by default
+
+The new planning files pass their formatting check. A repository-wide `git diff --check` still reports pre-existing whitespace in generated `.specstory` artifacts, which I left untouched.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>

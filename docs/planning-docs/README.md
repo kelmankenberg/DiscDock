@@ -21,6 +21,7 @@ This directory contains the full planning package for handoff to a development t
 | 11 | [Roadmap & Release Plan](11-roadmap.md) | MVP scope, phased releases, future ideas |
 | 12 | [Glossary](12-glossary.md) | Terminology reference |
 | 13 | [Help System Specification](13-help-system.md) | In-app contextual help panel: layout, content model, topics |
+| 14 | [Initial Release Readiness Checklist](14-release-readiness-checklist.md) | Release blockers, acceptance evidence, and execution order |
 
 ## Product Snapshot
 
