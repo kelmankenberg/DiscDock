@@ -62,7 +62,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [ ] Add IPC tests for malformed payloads and structured error responses.
 - [ ] Add renderer tests for the primary registration, scan, search, backup, restore, and Help workflows.
 - [!] Add `lint`, `typecheck`, and `test` scripts that fail on errors. `typecheck` and `test` pass. Decision: retain TypeScript 7; ESLint remains blocked until a compatible parser is available, or an alternative lint strategy is selected.
-- [ ] Add a CI workflow that runs `npm ci`, dependency audit, lint, typecheck, tests, renderer build, Electron build, and packaging.
+- [~] Add a CI workflow that runs `npm ci`, dependency audit, lint, typecheck, tests, renderer build, Electron build, and packaging. A GitHub Actions workflow now runs `npm ci`, `npm test`, `npm run typecheck`, and `npm run build` on Node 24; audit, lint, and package smoke-test jobs remain blocked or open.
 - [ ] Keep the lockfile committed and fail CI on new high or critical dependency vulnerabilities, with documented exceptions when necessary.
 
 **Exit evidence:** A clean checkout passes every required command without manual intervention.
