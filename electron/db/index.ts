@@ -166,6 +166,7 @@ const MIGRATIONS: { version: number; sql: string }[] = [
 export const CURRENT_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version
 
 function runMigrations(database: Database.Database): void {
+  database.pragma('foreign_keys = ON')
   database.pragma('journal_mode = WAL')
   database.exec('CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY)')
 

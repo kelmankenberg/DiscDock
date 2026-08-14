@@ -14,6 +14,8 @@ moduleLoader._load = (request, parent, isMain) => {
 }
 
 const { closeDb, CURRENT_SCHEMA_VERSION, getDb } = require('../db') as typeof import('../db')
+const { setTagsForMedia, getTagsForMedia } = require('../db/tagRepository') as typeof import('../db/tagRepository')
+const { createCollection, addMemberToCollection, getCollectionMembers } = require('../db/collectionRepository') as typeof import('../db/collectionRepository')
 
 async function main(): Promise<void> {
   const db = getDb()
@@ -23,6 +25,7 @@ async function main(): Promise<void> {
   const journalMode = db.pragma('journal_mode') as { journal_mode: string }[]
   assert.equal(journalMode[0]?.journal_mode, 'wal')
   assert.equal(db.pragma('integrity_check', { simple: true }), 'ok')
+  assert.equal(db.pragma('foreign_keys', { simple: true }), 1)
 
   const media = db.prepare("INSERT INTO media_item (label, media_type) VALUES ('Integration Test', 'other')").run()
   const mediaId = Number(media.lastInsertRowid)
@@ -31,6 +34,14 @@ async function main(): Promise<void> {
 
   db.prepare('DELETE FROM file_record WHERE media_item_id = ?').run(mediaId)
   assert.equal(db.prepare("SELECT rowid FROM file_record_fts WHERE file_record_fts MATCH 'readme'").get(), undefined)
+
+  assert.deepEqual(setTagsForMedia(mediaId, ['archive', 'work', 'archive']), ['archive', 'work'])
+  assert.deepEqual(getTagsForMedia(mediaId), ['archive', 'work'])
+
+  const collection = createCollection({ name: 'Integration Collection', description: null })
+  addMemberToCollection(collection.id, mediaId)
+  assert.equal(getCollectionMembers(collection.id)[0]?.id, mediaId)
+  assert.throws(() => db.prepare('INSERT INTO collection_media_item (collection_id, media_item_id) VALUES (?, ?)').run(collection.id, 999999))
   console.log('Database integration checks passed')
 }
 

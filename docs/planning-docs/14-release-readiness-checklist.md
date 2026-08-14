@@ -58,7 +58,7 @@ These are useful improvements, but should not delay the first release if the MVP
 ### P0.1 Automated verification and CI
 
 - [~] Add unit tests for hash modes, glob exclusions, symlink behavior, file-kind classification, scan diffing, and cancellation. Scan-engine coverage now verifies hash modes, exclusions, symlink behavior, file-kind classification, scan errors, and cancellation; database, diffing, and broader integration coverage remain.
-- [~] Add database integration tests for migrations, FTS search, tags, collections, backup, restore, and foreign-key behavior. An Electron-runtime runner now verifies migrations, WAL, integrity, and FTS trigger synchronization against the native SQLite ABI; tags, collections, backup/restore, and foreign-key coverage remain.
+- [~] Add database integration tests for migrations, FTS search, tags, collections, backup, restore, and foreign-key behavior. An Electron-runtime runner now verifies migrations, WAL, integrity, FTS trigger synchronization, tags, collections, and foreign-key rejection against the native SQLite ABI; backup/restore and interruption coverage remain.
 - [ ] Add IPC tests for malformed payloads and structured error responses.
 - [ ] Add renderer tests for the primary registration, scan, search, backup, restore, and Help workflows.
 - [~] Add `lint`, `typecheck`, and `test` scripts that fail on errors. `typecheck` and `test` now pass; lint is still unconfigured.
@@ -88,7 +88,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [ ] Ensure WAL and SHM sidecars are handled safely for both backup and restore.
 - [ ] Provide a clear recovery path to the generated pre-restore backup.
 - [ ] Test upgrades from every supported prior schema version, including populated FTS data and user annotations.
-- [ ] Verify foreign-key enforcement and transactional behavior under interruption or simulated failure.
+- [~] Verify foreign-key enforcement and transactional behavior under interruption or simulated failure. Foreign-key enforcement is now enabled and covered by the integration runner; interruption and rollback simulation remain.
 - [ ] Add a database integrity check to diagnostics or recovery tooling.
 
 **Exit evidence:** A corrupted, incompatible, interrupted, and valid restore are each tested, with no loss of the pre-restore catalog.
