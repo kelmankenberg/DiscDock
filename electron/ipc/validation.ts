@@ -17,6 +17,10 @@ export function isPositiveInteger(value: unknown): value is number {
   return isNonNegativeInteger(value) && value > 0
 }
 
+export function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === 'string')
+}
+
 export function isHashMode(value: unknown): value is HashMode {
   return value === 'none' || value === 'quick' || value === 'full'
 }

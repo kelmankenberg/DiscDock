@@ -8,6 +8,7 @@ import {
   removeMemberFromCollection
 } from '../db/collectionRepository'
 import type { Collection, CollectionInput, IpcResult, MediaItem } from '../../shared/types'
+import { isNonEmptyString, isPositiveInteger, isRecord } from './validation'
 
 export function registerCollectionsIpc(): void {
   ipcMain.handle('collections:list', (): IpcResult<Collection[]> => {
@@ -15,8 +16,10 @@ export function registerCollectionsIpc(): void {
   })
 
   ipcMain.handle('collections:create', (_event, payload: unknown): IpcResult<Collection> => {
-    const { name, description } = (payload ?? {}) as { name?: unknown; description?: unknown }
-    if (typeof name !== 'string' || !name.trim()) {
+    const candidate = isRecord(payload) ? payload : null
+    const name = candidate?.name
+    const description = candidate?.description
+    if (!isNonEmptyString(name)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A name is required' } }
     }
     const input: CollectionInput = {
@@ -27,8 +30,8 @@ export function registerCollectionsIpc(): void {
   })
 
   ipcMain.handle('collections:delete', (_event, payload: unknown): IpcResult<{ deleted: true }> => {
-    const id = (payload as { id?: unknown })?.id
-    if (typeof id !== 'number') {
+    const id = isRecord(payload) ? payload.id : undefined
+    if (!isPositiveInteger(id)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric id is required' } }
     }
     deleteCollection(id)
@@ -36,16 +39,17 @@ export function registerCollectionsIpc(): void {
   })
 
   ipcMain.handle('collections:members', (_event, payload: unknown): IpcResult<MediaItem[]> => {
-    const collectionId = (payload as { collectionId?: unknown })?.collectionId
-    if (typeof collectionId !== 'number') {
+    const collectionId = isRecord(payload) ? payload.collectionId : undefined
+    if (!isPositiveInteger(collectionId)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric collectionId is required' } }
     }
     return { ok: true, data: getCollectionMembers(collectionId) }
   })
 
   ipcMain.handle('collections:addMember', (_event, payload: unknown): IpcResult<{ ok: true }> => {
-    const { collectionId, mediaId } = (payload ?? {}) as { collectionId?: unknown; mediaId?: unknown }
-    if (typeof collectionId !== 'number' || typeof mediaId !== 'number') {
+    const candidate = isRecord(payload) ? payload : {}
+    const { collectionId, mediaId } = candidate
+    if (!isPositiveInteger(collectionId) || !isPositiveInteger(mediaId)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric collectionId and mediaId are required' } }
     }
     addMemberToCollection(collectionId, mediaId)
@@ -53,8 +57,9 @@ export function registerCollectionsIpc(): void {
   })
 
   ipcMain.handle('collections:removeMember', (_event, payload: unknown): IpcResult<{ ok: true }> => {
-    const { collectionId, mediaId } = (payload ?? {}) as { collectionId?: unknown; mediaId?: unknown }
-    if (typeof collectionId !== 'number' || typeof mediaId !== 'number') {
+    const candidate = isRecord(payload) ? payload : {}
+    const { collectionId, mediaId } = candidate
+    if (!isPositiveInteger(collectionId) || !isPositiveInteger(mediaId)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric collectionId and mediaId are required' } }
     }
     removeMemberFromCollection(collectionId, mediaId)

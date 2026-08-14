@@ -95,7 +95,7 @@ These are useful improvements, but should not delay the first release if the MVP
 
 ### P0.4 Security and IPC hardening
 
-- [~] Validate every IPC payload with shared schemas or explicit type guards instead of unchecked casts. A shared validation module now covers the settings, search, export, and backup channels; remaining handlers are still open.
+- [~] Validate every IPC payload with shared schemas or explicit type guards instead of unchecked casts. A shared validation module now covers settings, search, export, backup, duplicates, collections, tags, and custom fields; media, files, devices, and dialogs remain open.
 - [~] Validate numeric IDs, enum values, strings, array contents, paths, pagination values, and settings ranges. The selected channels now reject malformed IDs, enums, arrays, ranges, paths, and pagination values; broader channel coverage remains.
 - [~] Validate and normalize scan roots before traversal; require an existing directory where appropriate. The scan IPC handler now resolves the path and rejects missing, unreadable, or non-directory roots; broader IPC validation remains.
 - [ ] Recheck that file open/reveal paths remain inside the linked media mount after symlink and case-related edge cases.
