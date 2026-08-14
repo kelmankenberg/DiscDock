@@ -7,7 +7,9 @@ const EMPTY_SUMMARY: DashboardSummary = {
   totalMediaItems: 0,
   totalFiles: 0,
   totalSizeBytes: 0,
-  mediaNeedingVerification: 0
+  mediaNeedingVerification: 0,
+  recentScans: [],
+  attention: []
 }
 
 function formatBytes(bytes: number): string {
@@ -188,6 +190,30 @@ export default function Dashboard({
           <span className="card__value">{summary.mediaNeedingVerification}</span>
           <span className="card__label">Media Needing Verification</span>
         </div>
+      </div>
+
+      <div className="dashboard__panels">
+        <section className="dashboard__panel">
+          <h2>Recent Scan Activity</h2>
+          {summary.recentScans.length === 0 ? <p className="dashboard__empty-devices">No scans yet.</p> : (
+            <ul className="dashboard__activity-list">
+              {summary.recentScans.map((scan) => (
+                <li key={scan.jobId}>
+                  <strong>{scan.mediaLabel}</strong>
+                  <span>{scan.status} · {scan.filesAdded} added · {scan.filesModified} modified · {scan.filesRemoved} removed</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <section className="dashboard__panel">
+          <h2>Needs Attention</h2>
+          {summary.attention.length === 0 ? <p className="dashboard__empty-devices">Nothing needs attention.</p> : (
+            <ul className="dashboard__attention-list">
+              {summary.attention.map((item) => <li key={`${item.kind}-${item.mediaItemId}`}><strong>{item.mediaLabel}</strong><span>{item.detail}</span></li>)}
+            </ul>
+          )}
+        </section>
       </div>
 
       <h2>Detected Devices</h2>

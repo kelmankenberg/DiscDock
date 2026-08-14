@@ -74,6 +74,27 @@ export interface DashboardSummary {
   totalFiles: number
   totalSizeBytes: number
   mediaNeedingVerification: number
+  recentScans: DashboardScanActivity[]
+  attention: DashboardAttention[]
+}
+
+export interface DashboardScanActivity {
+  jobId: number
+  mediaItemId: number
+  mediaLabel: string
+  status: ScanStatus
+  startedAt: string
+  filesAdded: number
+  filesModified: number
+  filesRemoved: number
+  errorCount: number
+}
+
+export interface DashboardAttention {
+  mediaItemId: number
+  mediaLabel: string
+  kind: 'verification' | 'scan'
+  detail: string
 }
 
 export type HashMode = 'none' | 'quick' | 'full'

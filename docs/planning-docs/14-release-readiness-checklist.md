@@ -144,8 +144,8 @@ These are useful improvements, but should not delay the first release if the MVP
 
 ### P1.2 Dashboard and search coverage
 
-- [ ] Add recent scan activity to the Dashboard.
-- [ ] Add a clear attention area for media needing verification, scan errors, incomplete scans, and failed operations.
+- [x] Add recent scan activity to the Dashboard.
+- [x] Add a clear attention area for media needing verification, scan errors, incomplete scans, and failed operations.
 - [ ] Add Search filters required by FR-3.3: specific media item, size range, modified date range, and scan/verification status.
 - [ ] Add filtered search-result export or explicitly remove that promise from the release scope and documentation.
 - [ ] Ensure empty states provide actionable guidance for first launch, no media, no devices, no results, and failed scans.

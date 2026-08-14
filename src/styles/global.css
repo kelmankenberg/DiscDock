@@ -259,6 +259,54 @@ body {
   opacity: 0.7;
 }
 
+.dashboard__panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.dashboard__panel {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.dashboard__panel h2 {
+  margin-top: 0;
+  font-size: 16px;
+}
+
+.dashboard__activity-list,
+.dashboard__attention-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.dashboard__activity-list li,
+.dashboard__attention-list li {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dashboard__activity-list span,
+.dashboard__attention-list span {
+  opacity: 0.7;
+}
+
+@media (max-width: 700px) {
+  .dashboard__panels {
+    grid-template-columns: 1fr;
+  }
+}
+
 .dashboard__empty-devices {
   margin-top: 12px;
   opacity: 0.7;
