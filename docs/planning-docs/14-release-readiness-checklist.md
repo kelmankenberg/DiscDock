@@ -61,7 +61,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [~] Add database integration tests for migrations, FTS search, tags, collections, backup, restore, and foreign-key behavior. An Electron-runtime runner now verifies migrations, WAL, integrity, FTS trigger synchronization, tags, collections, and foreign-key rejection against the native SQLite ABI; backup/restore and interruption coverage remain.
 - [ ] Add IPC tests for malformed payloads and structured error responses.
 - [ ] Add renderer tests for the primary registration, scan, search, backup, restore, and Help workflows.
-- [~] Add `lint`, `typecheck`, and `test` scripts that fail on errors. `typecheck` and `test` now pass; lint is still unconfigured.
+- [!] Add `lint`, `typecheck`, and `test` scripts that fail on errors. `typecheck` and `test` pass; ESLint is blocked because the current TypeScript ESLint releases, including the canary, require TypeScript `<6.1` while this repository uses TypeScript 7.
 - [ ] Add a CI workflow that runs `npm ci`, dependency audit, lint, typecheck, tests, renderer build, Electron build, and packaging.
 - [ ] Keep the lockfile committed and fail CI on new high or critical dependency vulnerabilities, with documented exceptions when necessary.
 
