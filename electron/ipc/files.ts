@@ -10,6 +10,7 @@ import {
   setTagsForFile
 } from '../db/fileAnnotationRepository'
 import type { FileAnnotation, FileEntry, IpcResult } from '../../shared/types'
+import { isNonEmptyString, isPositiveInteger, isRecord, isStringArray } from './validation'
 
 const invalidInput = (message: string): IpcResult<never> => ({
   ok: false,
@@ -41,11 +42,13 @@ async function resolveLivePath(mediaId: number, filePath: string): Promise<strin
 
 export function registerFilesIpc(): void {
   ipcMain.handle('files:list', (_event, payload: unknown): IpcResult<FileEntry[]> => {
-    const { mediaId, folderPath } = (payload ?? {}) as { mediaId?: unknown; folderPath?: unknown }
-    if (typeof mediaId !== 'number') {
+    const candidate = isRecord(payload) ? payload : {}
+    const { mediaId, folderPath } = candidate
+    if (!isPositiveInteger(mediaId)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
     }
-    const path = typeof folderPath === 'string' ? folderPath : ''
+    if (folderPath !== undefined && typeof folderPath !== 'string') return invalidInput('folderPath must be a string')
+    const path = folderPath ?? ''
     try {
       return { ok: true, data: listFolderContents(mediaId, path) }
     } catch (err) {
@@ -56,8 +59,8 @@ export function registerFilesIpc(): void {
   ipcMain.handle(
     'files:annotations',
     (_event, payload: unknown): IpcResult<Record<string, FileAnnotation>> => {
-      const { mediaId } = (payload ?? {}) as { mediaId?: unknown }
-      if (typeof mediaId !== 'number') return invalidInput('A numeric mediaId is required')
+      const mediaId = isRecord(payload) ? payload.mediaId : undefined
+      if (!isPositiveInteger(mediaId)) return invalidInput('A positive numeric mediaId is required')
       try {
         return { ok: true, data: getFileAnnotations(mediaId) }
       } catch (err) {
@@ -67,31 +70,24 @@ export function registerFilesIpc(): void {
   )
 
   ipcMain.handle('files:setTags', (_event, payload: unknown): IpcResult<FileAnnotation> => {
-    const { mediaId, filePath, tagNames } = (payload ?? {}) as {
-      mediaId?: unknown
-      filePath?: unknown
-      tagNames?: unknown
-    }
-    if (typeof mediaId !== 'number') return invalidInput('A numeric mediaId is required')
-    if (typeof filePath !== 'string' || !filePath) return invalidInput('A file path is required')
-    const names = Array.isArray(tagNames)
-      ? tagNames.filter((name): name is string => typeof name === 'string')
-      : []
+    const candidate = isRecord(payload) ? payload : {}
+    const { mediaId, filePath, tagNames } = candidate
+    if (!isPositiveInteger(mediaId)) return invalidInput('A positive numeric mediaId is required')
+    if (!isNonEmptyString(filePath)) return invalidInput('A file path is required')
+    if (!isStringArray(tagNames)) return invalidInput('tagNames must be an array of strings')
     try {
-      return { ok: true, data: setTagsForFile(mediaId, filePath, names) }
+      return { ok: true, data: setTagsForFile(mediaId, filePath, tagNames) }
     } catch (err) {
       return { ok: false, error: { code: 'files_error', message: (err as Error).message } }
     }
   })
 
   ipcMain.handle('files:setNote', (_event, payload: unknown): IpcResult<FileAnnotation> => {
-    const { mediaId, filePath, note } = (payload ?? {}) as {
-      mediaId?: unknown
-      filePath?: unknown
-      note?: unknown
-    }
-    if (typeof mediaId !== 'number') return invalidInput('A numeric mediaId is required')
-    if (typeof filePath !== 'string' || !filePath) return invalidInput('A file path is required')
+    const candidate = isRecord(payload) ? payload : {}
+    const { mediaId, filePath, note } = candidate
+    if (!isPositiveInteger(mediaId)) return invalidInput('A positive numeric mediaId is required')
+    if (!isNonEmptyString(filePath)) return invalidInput('A file path is required')
+    if (note !== undefined && note !== null && typeof note !== 'string') return invalidInput('note must be a string or null')
     const value = typeof note === 'string' ? note : null
     try {
       return { ok: true, data: setNoteForFile(mediaId, filePath, value) }
@@ -101,9 +97,10 @@ export function registerFilesIpc(): void {
   })
 
   ipcMain.handle('files:open', async (_event, payload: unknown): Promise<IpcResult<{ opened: true }>> => {
-    const { mediaId, filePath } = (payload ?? {}) as { mediaId?: unknown; filePath?: unknown }
-    if (typeof mediaId !== 'number') return invalidInput('A numeric mediaId is required')
-    if (typeof filePath !== 'string' || !filePath) return invalidInput('A file path is required')
+    const candidate = isRecord(payload) ? payload : {}
+    const { mediaId, filePath } = candidate
+    if (!isPositiveInteger(mediaId)) return invalidInput('A positive numeric mediaId is required')
+    if (!isNonEmptyString(filePath)) return invalidInput('A file path is required')
     try {
       const resolved = await resolveLivePath(mediaId, filePath)
       const error = await shell.openPath(resolved)
@@ -115,9 +112,10 @@ export function registerFilesIpc(): void {
   })
 
   ipcMain.handle('files:reveal', async (_event, payload: unknown): Promise<IpcResult<{ revealed: true }>> => {
-    const { mediaId, filePath } = (payload ?? {}) as { mediaId?: unknown; filePath?: unknown }
-    if (typeof mediaId !== 'number') return invalidInput('A numeric mediaId is required')
-    if (typeof filePath !== 'string' || !filePath) return invalidInput('A file path is required')
+    const candidate = isRecord(payload) ? payload : {}
+    const { mediaId, filePath } = candidate
+    if (!isPositiveInteger(mediaId)) return invalidInput('A positive numeric mediaId is required')
+    if (!isNonEmptyString(filePath)) return invalidInput('A file path is required')
     try {
       shell.showItemInFolder(await resolveLivePath(mediaId, filePath))
       return { ok: true, data: { revealed: true } }

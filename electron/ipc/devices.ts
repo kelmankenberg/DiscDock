@@ -2,6 +2,7 @@ import { BrowserWindow, ipcMain } from 'electron'
 import { DeviceWatcher } from '../devices/DeviceWatcher'
 import { ejectDevice } from '../devices/deviceEject'
 import type { DetectedDevice, IpcResult } from '../../shared/types'
+import { isNonEmptyString, isRecord } from './validation'
 
 let watcher: DeviceWatcher | null = null
 
@@ -25,12 +26,14 @@ export function registerDeviceIpc(): void {
   })
 
   ipcMain.handle('devices:eject', async (_event, payload: unknown): Promise<IpcResult<{ message: string }>> => {
-    const { devicePath, isOptical } = (payload ?? {}) as { devicePath?: unknown; isOptical?: unknown }
-    if (typeof devicePath !== 'string' || !devicePath.trim()) {
+    const candidate = isRecord(payload) ? payload : {}
+    const { devicePath, isOptical } = candidate
+    if (!isNonEmptyString(devicePath)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A devicePath is required' } }
     }
+    if (typeof isOptical !== 'boolean') return { ok: false, error: { code: 'invalid_input', message: 'isOptical must be a boolean' } }
     try {
-      const message = await ejectDevice(devicePath, Boolean(isOptical))
+      const message = await ejectDevice(devicePath, isOptical)
       return { ok: true, data: { message } }
     } catch (err) {
       return { ok: false, error: { code: 'eject_error', message: (err as Error).message } }
