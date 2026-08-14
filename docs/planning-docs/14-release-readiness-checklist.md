@@ -73,7 +73,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [~] Verify that partial results, removed-file pruning, scan history, and `lastScannedAt` remain consistent after cancellation. Active cancellation now skips unseen-file pruning and leaves scan timestamps unchanged; database integration coverage remains.
 - [ ] Decide whether the initial release accepts the current yielding main-process scanner or requires a worker/utility process. The documented NFR requires filesystem scanning and hashing off the Electron UI thread.
 - [ ] If keeping the current architecture temporarily, establish measured limits and test responsiveness during large metadata and full-hash scans.
-- [ ] Add progress timing that meets the documented update expectation and exposes enough information for long scans.
+- [~] Add progress timing that meets the documented update expectation and exposes enough information for long scans. Progress events now include elapsed milliseconds and emit at least every 250ms during active work; estimated time and worker-thread execution remain.
 - [ ] Test permission failures, disappearing files, unreadable files, symlink loops, disconnected media, and hash-read failures.
 - [ ] Verify duplicate results distinguish full hashes, quick hashes, and files with no hash.
 

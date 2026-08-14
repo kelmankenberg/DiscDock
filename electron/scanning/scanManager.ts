@@ -228,8 +228,8 @@ async function runScan(jobId: number, mediaItemId: number, rootPath: string, has
           else if (outcome === 'modified') filesModified += 1
           else filesUnchanged += 1
         },
-        onProgress: (filesProcessed, bytesProcessed, currentPath) => {
-          const progress: ScanProgress = { jobId, filesProcessed, bytesProcessed, currentPath }
+        onProgress: (filesProcessed, bytesProcessed, currentPath, elapsedMs) => {
+          const progress: ScanProgress = { jobId, filesProcessed, bytesProcessed, currentPath, elapsedMs }
           win?.webContents.send('scan:progress', progress)
         },
         onError: (relativePath, errorType, message) => {

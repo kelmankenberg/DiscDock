@@ -17,7 +17,7 @@ export interface ScanOptions {
 
 export interface ScanCallbacks {
   onFile: (file: WalkedFile) => void
-  onProgress: (filesProcessed: number, bytesProcessed: number, currentPath: string) => void
+  onProgress: (filesProcessed: number, bytesProcessed: number, currentPath: string, elapsedMs: number) => void
   onError: (relativePath: string, errorType: string, message: string) => void
   isCancelled: () => boolean
 }
@@ -86,6 +86,8 @@ export async function walkAndScan(
   let filesProcessed = 0
   let bytesProcessed = 0
   let sinceYield = 0
+  const startedAt = Date.now()
+  let lastProgressAt = startedAt
 
   while (stack.length > 0) {
     if (callbacks.isCancelled()) break
@@ -158,14 +160,16 @@ export async function walkAndScan(
       bytesProcessed += stat.size
       sinceYield += 1
 
-      if (sinceYield >= PROGRESS_YIELD_EVERY) {
+      const now = Date.now()
+      if (sinceYield >= PROGRESS_YIELD_EVERY || now - lastProgressAt >= 250) {
         sinceYield = 0
-        callbacks.onProgress(filesProcessed, bytesProcessed, relativePath)
+        lastProgressAt = now
+        callbacks.onProgress(filesProcessed, bytesProcessed, relativePath, now - startedAt)
         await new Promise((resolve) => setImmediate(resolve))
       }
     }
   }
 
-  callbacks.onProgress(filesProcessed, bytesProcessed, rootPath)
+  callbacks.onProgress(filesProcessed, bytesProcessed, rootPath, Date.now() - startedAt)
   return { filesProcessed, bytesProcessed }
 }

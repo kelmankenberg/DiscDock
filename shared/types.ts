@@ -120,6 +120,7 @@ export interface ScanProgress {
   filesProcessed: number
   bytesProcessed: number
   currentPath: string
+  elapsedMs: number
 }
 
 export interface ScanStartInput {
