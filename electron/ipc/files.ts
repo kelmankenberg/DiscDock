@@ -37,7 +37,15 @@ async function resolveLivePath(mediaId: number, filePath: string): Promise<strin
   }
   if (!fs.existsSync(resolved)) throw new Error('That file no longer exists on the media')
 
-  return resolved
+  const [realMountPoint, realResolved] = await Promise.all([
+    fs.promises.realpath(mountPoint),
+    fs.promises.realpath(resolved)
+  ])
+  if (realResolved !== realMountPoint && !realResolved.startsWith(`${realMountPoint}${nodePath.sep}`)) {
+    throw new Error('Resolved path is outside the mounted media')
+  }
+
+  return realResolved
 }
 
 export function registerFilesIpc(): void {
