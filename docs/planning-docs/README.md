@@ -20,6 +20,7 @@ This directory contains the full planning package for handoff to a development t
 | 10 | [Security & Privacy](10-security-privacy.md) | Threat model, hardening, data handling |
 | 11 | [Roadmap & Release Plan](11-roadmap.md) | MVP scope, phased releases, future ideas |
 | 12 | [Glossary](12-glossary.md) | Terminology reference |
+| 13 | [Help System Specification](13-help-system.md) | In-app contextual help panel: layout, content model, topics |
 
 ## Product Snapshot
 

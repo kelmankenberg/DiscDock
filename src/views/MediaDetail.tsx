@@ -44,6 +44,13 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
   const [editingCell, setEditingCell] = useState<{ path: string; field: 'tags' | 'note' } | null>(null)
   const [editingValue, setEditingValue] = useState('')
   const [fileActionMessage, setFileActionMessage] = useState<string | null>(null)
+  const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    void window.discdock.media.cover(mediaId).then((result) => {
+      setCoverDataUrl(result.ok ? result.data : null)
+    })
+  }, [mediaId, item?.coverPath])
 
   const openFile = (filePath: string): void => {
     setFileActionMessage(null)
@@ -187,6 +194,9 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
 
       {tab === 'overview' && (
         <div className="media-detail__overview">
+          {coverDataUrl && (
+            <img className="media-detail__cover" src={coverDataUrl} alt={`${item.label} cover art`} />
+          )}
           <p>Capacity: {item.capacityBytes ? formatBytes(item.capacityBytes) : 'Unknown'}</p>
           <p>Last scanned: {item.lastScannedAt ?? 'Never'}</p>
           <p>Last verified: {item.lastVerifiedAt ?? 'Never'}</p>

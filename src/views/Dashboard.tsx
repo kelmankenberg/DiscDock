@@ -16,7 +16,11 @@ function formatBytes(bytes: number): string {
   return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
 }
 
-export default function Dashboard(): JSX.Element {
+export default function Dashboard({
+  onShowInLibrary
+}: {
+  onShowInLibrary: (mediaId: number) => void
+}): JSX.Element {
   const [summary, setSummary] = useState<DashboardSummary>(EMPTY_SUMMARY)
   const [devices, setDevices] = useState<DetectedDevice[]>([])
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
@@ -240,7 +244,16 @@ export default function Dashboard(): JSX.Element {
                       <span className="status-badge">Registered</span>
                     )}
                   </td>
-                  <td>
+                  <td className="dashboard__device-actions">
+                    {matched && (
+                      <button
+                        type="button"
+                        className="button button--small"
+                        onClick={() => onShowInLibrary(matched.id)}
+                      >
+                        Show in Media Library
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="button button--small"

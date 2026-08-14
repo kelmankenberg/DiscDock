@@ -21,6 +21,7 @@ const SIDEBAR_COLLAPSED_STORAGE_KEY = 'discdock:sidebar-collapsed'
 export default function App(): JSX.Element {
   const [activeView, setActiveView] = useState('dashboard')
   const [selectedMediaId, setSelectedMediaId] = useState<number | null>(null)
+  const [libraryFocusId, setLibraryFocusId] = useState<number | null>(null)
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(
     () => localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true'
   )
@@ -66,7 +67,14 @@ export default function App(): JSX.Element {
 
   const handleSelectNav = (key: string): void => {
     setSelectedMediaId(null)
+    setLibraryFocusId(null)
     setActiveView(key)
+  }
+
+  const handleShowInLibrary = (mediaId: number): void => {
+    setSelectedMediaId(null)
+    setLibraryFocusId(mediaId)
+    setActiveView('media-library')
   }
 
   const renderView = (): JSX.Element => {
@@ -75,9 +83,15 @@ export default function App(): JSX.Element {
     }
     switch (activeView) {
       case 'dashboard':
-        return <Dashboard />
+        return <Dashboard onShowInLibrary={handleShowInLibrary} />
       case 'media-library':
-        return <MediaLibrary onOpenDetail={setSelectedMediaId} />
+        return (
+          <MediaLibrary
+            onOpenDetail={setSelectedMediaId}
+            focusMediaId={libraryFocusId}
+            onFocusHandled={() => setLibraryFocusId(null)}
+          />
+        )
       case 'search':
         return <Search />
       case 'duplicates':

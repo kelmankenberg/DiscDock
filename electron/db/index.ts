@@ -154,6 +154,12 @@ const MIGRATIONS: { version: number; sql: string }[] = [
     sql: `
       ALTER TABLE file_record ADD COLUMN duration_seconds INTEGER;
     `
+  },
+  {
+    version: 6,
+    sql: `
+      ALTER TABLE media_item ADD COLUMN cover_path TEXT;
+    `
   }
 ]
 

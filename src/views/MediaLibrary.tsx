@@ -47,9 +47,18 @@ interface ActiveScan {
   filesProcessed: number
   currentPath: string
   queued: boolean
+  isAudioCd?: boolean
 }
 
-export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
+export default function MediaLibrary({
+  onOpenDetail,
+  focusMediaId = null,
+  onFocusHandled
+}: {
+  onOpenDetail: (mediaId: number) => void
+  focusMediaId?: number | null
+  onFocusHandled?: () => void
+}): JSX.Element {
   const [items, setItems] = useState<MediaItem[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingItemId, setEditingItemId] = useState<number | null>(null)
@@ -102,6 +111,39 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
 
   const [labelItems, setLabelItems] = useState<MediaItem[] | null>(null)
   const [pendingAudioCdPath, setPendingAudioCdPath] = useState<string | null>(null)
+  const [coversByMedia, setCoversByMedia] = useState<Record<number, string>>({})
+  const focusedRowRef = useRef<HTMLTableRowElement>(null)
+
+  useEffect(() => {
+    const withCovers = items.filter((item) => item.coverPath)
+    if (withCovers.length === 0) return
+    void Promise.all(
+      withCovers.map(async (item) => [item.id, await window.discdock.media.cover(item.id)] as const)
+    ).then((entries) => {
+      setCoversByMedia(
+        Object.fromEntries(
+          entries
+            .filter(([, result]) => result.ok && result.data)
+            .map(([id, result]) => [id, (result as { ok: true; data: string }).data])
+        )
+      )
+    })
+  }, [items])
+
+  // Selecting from another view (e.g. the Dashboard) highlights and scrolls to that row.
+  useEffect(() => {
+    if (focusMediaId === null) return
+    setSelectedIds(new Set([focusMediaId]))
+    setContainerFilter('')
+    setTagFilter('')
+  }, [focusMediaId])
+
+  useEffect(() => {
+    if (focusMediaId === null || !focusedRowRef.current) return
+    focusedRowRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    onFocusHandled?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusMediaId, items])
 
   const knownLocations = Array.from(
     new Set(items.map((item) => item.physicalLocation).filter((loc): loc is string => Boolean(loc)))
@@ -391,6 +433,8 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
         delete next[jobId]
         return next
       })
+      // Leave any warning the scan produced; only retire the in-progress notice.
+      setEjectMessage((prev) => (prev?.startsWith('Reading disc') ? null : prev))
       loadItems()
     }
 
@@ -433,6 +477,8 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   const handleStartAdd = (): void => {
     setEditingItemId(null)
     setForm(EMPTY_FORM)
+    setDeviceMountPoint(null)
+    setPendingAudioCdPath(null)
     setError(null)
     setShowForm(true)
   }
@@ -449,6 +495,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     })
     setError(null)
     setDeviceMountPoint(null)
+    setPendingAudioCdPath(null)
     setShowForm(true)
   }
 
@@ -478,18 +525,26 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
 
     void window.discdock.media.create(form).then((result) => {
       if (result.ok) {
+        const created = result.data
         setForm(EMPTY_FORM)
         setShowForm(false)
         loadItems()
+        setSelectedIds(new Set([created.id]))
 
-        const mediaId = result.data.id
-        if (window.confirm(`"${result.data.label}" was added. Scan it now?`)) {
-          if (pendingAudioCdPath) {
-            handleScanAudioCd(mediaId, pendingAudioCdPath)
+        // Resolve the source device from the saved fingerprint so the scan target can't go stale.
+        const device = devices.find(
+          (d) => created.deviceFingerprint && (d.uuid ?? d.devicePath) === created.deviceFingerprint
+        )
+
+        if (window.confirm(`"${created.label}" was added. Scan it now?`)) {
+          if (device?.isAudioCd) {
+            handleScanAudioCd(created.id, device.devicePath)
+          } else if (device?.mountPoint) {
+            beginScanWithPath(created.id, device.mountPoint)
           } else if (deviceMountPoint) {
-            beginScanWithPath(mediaId, deviceMountPoint)
+            beginScanWithPath(created.id, deviceMountPoint)
           } else {
-            handleScan(mediaId)
+            handleScan(created.id)
           }
         }
         setDeviceMountPoint(null)
@@ -500,19 +555,48 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     })
   }
 
+  const deviceToInput = (device: DetectedDevice): MediaItemInput => ({
+    label: device.isAudioCd
+      ? (device.label ?? 'Audio CD')
+      : (device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath),
+    mediaType: device.isAudioCd ? 'cd' : device.isOptical ? 'dvd' : 'external_hdd',
+    capacityBytes: device.sizeBytes,
+    physicalLocation: null,
+    notes: null,
+    deviceFingerprint: device.uuid ?? device.devicePath
+  })
+
   const handleUseDevice = (device: DetectedDevice): void => {
-    setForm({
-      label: device.isAudioCd
-        ? (device.label ?? 'Audio CD')
-        : (device.label ?? device.mountPoint.split('/').pop() ?? device.devicePath),
-      mediaType: device.isAudioCd ? 'cd' : device.isOptical ? 'dvd' : 'external_hdd',
-      capacityBytes: device.sizeBytes,
-      physicalLocation: null,
-      notes: null,
-      deviceFingerprint: device.uuid ?? device.devicePath
-    })
+    setForm(deviceToInput(device))
     setDeviceMountPoint(device.mountPoint || null)
     setPendingAudioCdPath(device.isAudioCd ? device.devicePath : null)
+  }
+
+  /** One-click equivalent of the Dashboard flow: register the device and start its scan. */
+  const handleRegisterAndScan = (device: DetectedDevice): void => {
+    setError(null)
+    setEjectMessage(`Registering ${device.label ?? device.devicePath}…`)
+
+    void window.discdock.media.create(deviceToInput(device)).then((result) => {
+      if (!result.ok) {
+        setEjectMessage(`Could not register this media: ${result.error.message}`)
+        return
+      }
+      const created = result.data
+      closeForm()
+      loadItems()
+      setSelectedIds(new Set([created.id]))
+
+      if (device.isAudioCd) {
+        handleScanAudioCd(created.id, device.devicePath)
+      } else if (device.mountPoint) {
+        setEjectMessage(null)
+        beginScanWithPath(created.id, device.mountPoint)
+      } else {
+        setEjectMessage(null)
+        handleScan(created.id)
+      }
+    })
   }
 
   const handleRetire = (id: number): void => {
@@ -554,6 +638,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
   }
 
   const handleScanAudioCd = (mediaId: number, devicePath: string): void => {
+    setEjectMessage('Reading disc and looking up track titles and cover art…')
     void window.discdock.scan.startAudioCd(mediaId, devicePath).then((result) => {
       if (!result.ok) {
         setEjectMessage(result.error.message)
@@ -563,7 +648,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
       setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
       setScansByMedia((prev) => ({
         ...prev,
-        [mediaId]: { jobId, filesProcessed: 0, currentPath: '', queued: false }
+        [mediaId]: { jobId, filesProcessed: 0, currentPath: '', queued: false, isAudioCd: true }
       }))
     })
   }
@@ -622,9 +707,16 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
               <button
                 type="button"
                 className="button button--small button--primary"
+                onClick={() => handleRegisterAndScan(device)}
+              >
+                Register &amp; Scan
+              </button>
+              <button
+                type="button"
+                className="button button--small"
                 onClick={() => handleAddDetectedDevice(device)}
               >
-                Add Media
+                Add with Details…
               </button>
             </div>
           ))}
@@ -638,13 +730,19 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
 
           {editingItemId === null && devices.length > 0 && (
             <div className="detected-devices-picker">
-              <span className="detected-devices-picker__label">Detected media (click to fill in the form):</span>
+              <span className="detected-devices-picker__label">
+                Detected media — click one to fill in the form below, then press Save:
+              </span>
               <div className="detected-devices-picker__list">
                 {devices.map((device) => (
                   <button
                     type="button"
                     key={device.devicePath}
-                    className="button button--small"
+                    className={
+                      form.deviceFingerprint === (device.uuid ?? device.devicePath)
+                        ? 'button button--small button--primary'
+                        : 'button button--small'
+                    }
                     onClick={() => handleUseDevice(device)}
                   >
                     {device.isOptical ? <Disc3 size={14} aria-hidden="true" /> : <Usb size={14} aria-hidden="true" />}{' '}
@@ -809,6 +907,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                   aria-label="Select all"
                 />
               </th>
+              <th className="media-table__cover-header">Cover</th>
               {COLUMNS.map((col) => (
                 <th key={col.key}>
                   <button type="button" className="media-table__sort-header" onClick={() => handleSort(col.key)}>
@@ -833,6 +932,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
               return (
                 <tr
                   key={item.id}
+                  ref={item.id === focusMediaId ? focusedRowRef : undefined}
                   className={rowClasses}
                   onClick={(e) => handleRowClick(e, item, index)}
                   onContextMenu={(e) => handleRowContextMenu(e, item, index)}
@@ -845,6 +945,19 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                       onClick={(e) => handleRowCheckboxClick(e, item, index)}
                       aria-label={`Select ${item.label}`}
                     />
+                  </td>
+                  <td className="media-table__cover-cell">
+                    {coversByMedia[item.id] ? (
+                      <img
+                        className="media-table__cover"
+                        src={coversByMedia[item.id]}
+                        alt={`${item.label} cover`}
+                      />
+                    ) : (
+                      <span className="media-table__cover media-table__cover--placeholder" aria-hidden="true">
+                        <Disc3 size={14} />
+                      </span>
+                    )}
                   </td>
                   <td>
                     <button type="button" className="link-button" onClick={() => onOpenDetail(item.id)}>
@@ -915,7 +1028,11 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                   <td>
                     {scan ? (
                       <span className="scan-progress">
-                        {scan.queued ? 'Queued…' : `Scanning… ${scan.filesProcessed} files`}
+                        {scan.queued
+                          ? 'Queued…'
+                          : scan.isAudioCd
+                            ? 'Reading disc…'
+                            : `Scanning… ${scan.filesProcessed} files`}
                       </span>
                     ) : (
                       item.lastScannedAt ?? 'Never'

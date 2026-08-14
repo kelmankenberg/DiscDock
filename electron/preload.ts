@@ -50,6 +50,7 @@ const api = {
     retire: (id: number): Promise<IpcResult<MediaItem>> => ipcRenderer.invoke('media:retire', { id }),
     markVerified: (id: number): Promise<IpcResult<MediaItem>> =>
       ipcRenderer.invoke('media:markVerified', { id }),
+    cover: (id: number): Promise<IpcResult<string | null>> => ipcRenderer.invoke('media:cover', { id }),
     delete: (id: number): Promise<IpcResult<{ deleted: true }>> =>
       ipcRenderer.invoke('media:delete', { id })
   },

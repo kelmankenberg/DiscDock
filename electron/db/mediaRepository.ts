@@ -13,6 +13,7 @@ interface MediaItemRow {
   created_at: string
   last_scanned_at: string | null
   last_verified_at: string | null
+  cover_path: string | null
 }
 
 function toMediaItem(row: MediaItemRow): MediaItem {
@@ -27,7 +28,8 @@ function toMediaItem(row: MediaItemRow): MediaItem {
     status: row.status as MediaItem['status'],
     createdAt: row.created_at,
     lastScannedAt: row.last_scanned_at,
-    lastVerifiedAt: row.last_verified_at
+    lastVerifiedAt: row.last_verified_at,
+    coverPath: row.cover_path
   }
 }
 
@@ -102,6 +104,10 @@ export function countMediaNeedingVerification(thresholdMonths: number): number {
     )
     .get(`-${months} months`) as { count: number }
   return count
+}
+
+export function setMediaCoverPath(id: number, coverPath: string | null): void {
+  getDb().prepare('UPDATE media_item SET cover_path = ? WHERE id = ?').run(coverPath, id)
 }
 
 export function markMediaVerified(id: number): MediaItem {

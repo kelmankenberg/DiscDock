@@ -1,7 +1,9 @@
-import { BrowserWindow, Notification } from 'electron'
+import { BrowserWindow, Notification, app } from 'electron'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { walkAndScan } from './scanEngine'
-import { computeDiscId, fetchAudioCdMetadata, readAudioCdToc } from './audioCd'
-import { getMediaItem, updateMediaItem } from '../db/mediaRepository'
+import { computeDiscId, fetchAudioCdMetadata, fetchCoverArtPng, readAudioCdToc } from './audioCd'
+import { getMediaItem, setMediaCoverPath, updateMediaItem } from '../db/mediaRepository'
 import {
   createScanJob,
   finalizeScanJob,
@@ -135,6 +137,11 @@ async function runAudioCdScan(jobId: number, mediaItemId: number, devicePath: st
       applyAudioCdLabel(mediaItemId, audioCdLabel(metadata))
     }
 
+    if (metadata?.releaseId) {
+      const coverWarning = await saveCoverArt(mediaItemId, metadata.releaseId)
+      if (coverWarning && !metadataWarning) metadataWarning = coverWarning
+    }
+
     // Non-fatal: the tracks are cataloged either way, but the user should see why titles are missing.
     let errorCount = 0
     if (metadataWarning) {
@@ -177,6 +184,23 @@ function audioCdLabel(metadata: AudioCdMetadata): string {
   }
   if (metadata.discNumber && metadata.discNumber > 1) return `${base} (Disc ${metadata.discNumber})`
   return base
+}
+
+/** Stores the cover under userData/covers; returns a warning message when it could not be fetched. */
+async function saveCoverArt(mediaItemId: number, releaseId: string): Promise<string | null> {
+  try {
+    const png = await fetchCoverArtPng(releaseId)
+    if (!png) return null
+
+    const coversDir = path.join(app.getPath('userData'), 'covers')
+    await fs.mkdir(coversDir, { recursive: true })
+    const coverPath = path.join(coversDir, `${mediaItemId}.png`)
+    await fs.writeFile(coverPath, png)
+    setMediaCoverPath(mediaItemId, coverPath)
+    return null
+  } catch (err) {
+    return `Cover art unavailable: ${(err as Error).message}`
+  }
 }
 
 async function runScan(jobId: number, mediaItemId: number, rootPath: string, hashMode: HashMode): Promise<void> {

@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { promisify } from 'node:util'
+import { nativeImage } from 'electron'
 import type { AudioCdMetadata, AudioCdToc, AudioCdTrack } from '../../shared/types'
 
 const execFileAsync = promisify(execFile)
@@ -234,10 +235,33 @@ export async function fetchAudioCdMetadata(discId: string): Promise<AudioCdMetad
 
   return {
     discId,
+    releaseId: release.id ?? null,
     albumTitle: release.title ?? null,
     artist: release['artist-credit']?.[0]?.name ?? null,
     discNumber,
     discTotal,
     trackTitles
   }
+}
+
+/**
+ * Downloads the release's front cover from the Cover Art Archive and normalises it to PNG
+ * (the archive serves JPEG for most releases). Returns null when the release has no cover.
+ */
+export async function fetchCoverArtPng(releaseId: string): Promise<Buffer | null> {
+  const response = await fetch(`https://coverartarchive.org/release/${encodeURIComponent(releaseId)}/front`, {
+    headers: MUSICBRAINZ_HEADERS,
+    redirect: 'follow'
+  })
+  if (response.status === 404) return null
+  if (!response.ok) {
+    throw new Error(`Cover Art Archive returned ${response.status} ${response.statusText}`)
+  }
+
+  const source = Buffer.from(await response.arrayBuffer())
+  if (source.subarray(1, 4).toString('ascii') === 'PNG') return source
+
+  const image = nativeImage.createFromBuffer(source)
+  if (image.isEmpty()) throw new Error('Downloaded cover art could not be decoded')
+  return image.toPNG()
 }

@@ -124,6 +124,12 @@ body {
   color: var(--color-accent);
 }
 
+.dashboard__device-actions {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
 .device-table {
   width: 100%;
   border-collapse: collapse;

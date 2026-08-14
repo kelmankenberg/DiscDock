@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import fs from 'node:fs/promises'
 import {
   createMediaItem,
   deleteMediaItem,
@@ -130,6 +131,20 @@ export function registerMediaIpc(): void {
       return { ok: true, data: markMediaVerified(id) }
     } catch (err) {
       return toErrorResult(err)
+    }
+  })
+
+  // Covers live outside the app bundle, so they are returned as a data URL rather than a file path.
+  ipcMain.handle('media:cover', async (_event, payload: unknown): Promise<IpcResult<string | null>> => {
+    try {
+      const id = (payload as { id?: unknown })?.id
+      if (typeof id !== 'number') throw new Error('A numeric id is required')
+      const item = getMediaItem(id)
+      if (!item?.coverPath) return { ok: true, data: null }
+      const png = await fs.readFile(item.coverPath)
+      return { ok: true, data: `data:image/png;base64,${png.toString('base64')}` }
+    } catch {
+      return { ok: true, data: null }
     }
   })
 }

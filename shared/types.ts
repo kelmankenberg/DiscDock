@@ -46,6 +46,7 @@ export interface MediaItem {
   createdAt: string
   lastScannedAt: string | null
   lastVerifiedAt: string | null
+  coverPath: string | null
 }
 
 export interface MediaItemInput {
@@ -122,6 +123,7 @@ export interface AudioCdToc {
 
 export interface AudioCdMetadata {
   discId: string
+  releaseId: string | null
   albumTitle: string | null
   artist: string | null
   discNumber: number | null
