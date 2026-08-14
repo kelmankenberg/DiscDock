@@ -21,25 +21,25 @@ The initial release is Linux-first and targets `.deb` and `.AppImage`. Post-MVP 
 
 ### Must complete before initial release
 
-- [ ] Automated tests and CI quality gates
-- [ ] Scan cancellation and partial-scan semantics
+- [~] Automated tests and CI quality gates
+- [~] Scan cancellation and partial-scan semantics
 - [ ] Large-scan reliability and main-process workload decision
-- [ ] Backup, restore, and migration safety
-- [ ] IPC input validation and path safety review
-- [ ] Logging and unhandled-error reporting
-- [ ] Offline/network policy alignment
+- [~] Backup, restore, and migration safety
+- [~] IPC input validation and path safety review
+- [~] Logging and unhandled-error reporting
+- [~] Offline/network policy alignment
 - [ ] MVP workflow acceptance testing
-- [ ] Package build and clean-environment QA
-- [ ] User-facing documentation and release notes
+- [~] Package build and clean-environment QA
+- [~] User-facing documentation and release notes
 
 ### Can follow shortly after release
 
 These are useful improvements, but should not delay the first release if the MVP acceptance criteria remain clear:
 
-- [ ] Full Dashboard recent-activity panel
-- [ ] Additional Search filters such as modified date and verification state
-- [ ] Filtered search-result export
-- [ ] Directory aggregate statistics
+- [x] Full Dashboard recent-activity panel
+- [x] Additional Search filters such as modified date and verification state
+- [x] Filtered search-result export
+- [x] Directory aggregate statistics
 - [ ] udisks2 event-driven device watching
 - [~] Background progress and cancellation for export. Backup, restore, and export now show operation-specific status and emit completion notifications; background execution, progress percentages, and safe cancellation remain.
 
