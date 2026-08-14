@@ -116,6 +116,7 @@ const MIGRATIONS: { version: number; sql: string }[] = [
         INSERT INTO file_record_fts(file_record_fts, rowid, name, path) VALUES('delete', old.id, old.name, old.path);
         INSERT INTO file_record_fts(rowid, name, path) VALUES (new.id, new.name, new.path);
       END;
+      INSERT INTO file_record_fts(file_record_fts) VALUES('rebuild');
     `
   },
   {

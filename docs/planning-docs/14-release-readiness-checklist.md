@@ -156,7 +156,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [ ] Verify pagination or virtualization for every potentially large table and folder listing.
 - [ ] Measure search performance at 500,000 file rows.
 - [ ] Measure usability and memory behavior at 1,000 media items and 2,000,000 file rows.
-- [ ] Verify FTS indexes are rebuilt or repaired when upgrading existing databases.
+- [~] Verify FTS indexes are rebuilt or repaired when upgrading existing databases. Migration 2 now rebuilds the external-content FTS index after creating synchronization triggers; a populated pre-migration fixture remains.
 
 ### P1.4 Device and optical-media behavior
 
