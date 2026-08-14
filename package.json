@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit && tsc -p electron/tsconfig.json --noEmit",
     "test:unit": "vitest run --config vitest.config.ts",
     "test:integration": "npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/dbIntegration.js",
+    "benchmark:scan": "npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/scanPerformance.js",
     "test": "npm run test:unit && npm run test:integration",
     "start": "electron .",
     "package": "npm run build && electron-builder",
