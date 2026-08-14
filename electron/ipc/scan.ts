@@ -1,11 +1,13 @@
 import { ipcMain } from 'electron'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { cancelScan, startAudioCdScan, startScan } from '../scanning/scanManager'
 import { getErrorsForMedia, listScanJobsForMedia } from '../db/scanRepository'
 import { getSettings } from '../settings/settingsStore'
 import type { HashMode, IpcResult, ScanErrorEntry, ScanJob } from '../../shared/types'
 
 export function registerScanIpc(): void {
-  ipcMain.handle('scan:start', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
+  ipcMain.handle('scan:start', async (_event, payload: unknown): Promise<IpcResult<{ jobId: number }>> => {
     const { mediaId, rootPath, hashMode } = (payload ?? {}) as {
       mediaId?: unknown
       rootPath?: unknown
@@ -18,10 +20,19 @@ export function registerScanIpc(): void {
     if (typeof rootPath !== 'string' || !rootPath.trim()) {
       return { ok: false, error: { code: 'invalid_input', message: 'A rootPath is required' } }
     }
+    const resolvedRoot = path.resolve(rootPath)
+    try {
+      const stat = await fs.stat(resolvedRoot)
+      if (!stat.isDirectory()) {
+        return { ok: false, error: { code: 'invalid_input', message: 'rootPath must be a directory' } }
+      }
+    } catch {
+      return { ok: false, error: { code: 'invalid_input', message: 'rootPath does not exist or cannot be read' } }
+    }
     const validModes: HashMode[] = ['none', 'quick', 'full']
     const mode = validModes.includes(hashMode as HashMode) ? (hashMode as HashMode) : getSettings().defaultHashMode
 
-    const jobId = startScan(mediaId, rootPath, mode)
+    const jobId = startScan(mediaId, resolvedRoot, mode)
     return { ok: true, data: { jobId } }
   })
 

@@ -41,10 +41,19 @@ async function hashFile(absolutePath: string, mode: HashMode, size: number): Pro
   if (mode === 'quick') {
     const handle = await fs.open(absolutePath, 'r')
     try {
-      const buffer = Buffer.alloc(Math.min(QUICK_HASH_SAMPLE_BYTES, size))
-      await handle.read(buffer, 0, buffer.length, 0)
       const hash = crypto.createHash('sha256')
-      hash.update(buffer)
+      const firstLength = Math.min(QUICK_HASH_SAMPLE_BYTES, size)
+      const firstBuffer = Buffer.alloc(firstLength)
+      const firstRead = await handle.read(firstBuffer, 0, firstLength, 0)
+      hash.update(firstBuffer.subarray(0, firstRead.bytesRead))
+
+      if (size > QUICK_HASH_SAMPLE_BYTES) {
+        const lastLength = Math.min(QUICK_HASH_SAMPLE_BYTES, size)
+        const lastBuffer = Buffer.alloc(lastLength)
+        const lastRead = await handle.read(lastBuffer, 0, lastLength, size - lastLength)
+        hash.update(lastBuffer.subarray(0, lastRead.bytesRead))
+      }
+
       hash.update(String(size))
       return hash.digest('hex')
     } finally {

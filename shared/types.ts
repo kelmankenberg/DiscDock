@@ -225,6 +225,7 @@ export interface AppSettings {
   verificationThresholdMonths: number
   maxConcurrentScans: number
   autoUpdateEnabled: boolean
+  audioCdMetadataEnabled: boolean
   helpPanelOpen: boolean
   helpPanelWidthPercent: number
 }

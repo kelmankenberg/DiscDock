@@ -26,7 +26,7 @@ export default function Dashboard({
   const [devices, setDevices] = useState<DetectedDevice[]>([])
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
   const [scanningDevices, setScanningDevices] = useState<Set<string>>(new Set())
-  const [jobToDevice, setJobToDevice] = useState<Record<number, string>>({})
+  const [, setJobToDevice] = useState<Record<number, string>>({})
   const [promptedDevices, setPromptedDevices] = useState<Set<string>>(new Set())
   const [ejectingDevices, setEjectingDevices] = useState<Set<string>>(new Set())
   const [ejectMessage, setEjectMessage] = useState<string | null>(null)

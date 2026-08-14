@@ -66,7 +66,7 @@ export default function MediaLibrary({
   const [form, setForm] = useState<MediaItemInput>(EMPTY_FORM)
   const [error, setError] = useState<string | null>(null)
   const [scansByMedia, setScansByMedia] = useState<Record<number, ActiveScan>>({})
-  const [jobToMedia, setJobToMedia] = useState<Record<number, number>>({})
+  const [, setJobToMedia] = useState<Record<number, number>>({})
   const [sortKey, setSortKey] = useState<SortKey>('label')
   const [sortAsc, setSortAsc] = useState(true)
 
@@ -111,7 +111,7 @@ export default function MediaLibrary({
   }
 
   const [labelItems, setLabelItems] = useState<MediaItem[] | null>(null)
-  const [pendingAudioCdPath, setPendingAudioCdPath] = useState<string | null>(null)
+  const [, setPendingAudioCdPath] = useState<string | null>(null)
   const [coversByMedia, setCoversByMedia] = useState<Record<number, string>>({})
   const focusedRowRef = useRef<HTMLTableRowElement>(null)
 

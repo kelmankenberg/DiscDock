@@ -73,6 +73,20 @@ body {
   height: 100vh;
 }
 
+.renderer-error {
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  height: 100%;
+  padding: 24px;
+  text-align: center;
+}
+
+.renderer-error h1,
+.renderer-error p {
+  margin: 0;
+}
+
 .app-body {
   display: flex;
   flex: 1;

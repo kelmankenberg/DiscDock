@@ -21,6 +21,7 @@ import { countMediaNeedingVerification } from './db/mediaRepository'
 import { getSettings } from './settings/settingsStore'
 import { getDb, closeDb } from './db'
 import type { IpcResult } from '../shared/types'
+import { initializeLogging, log, logShutdown } from './logging'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -78,7 +79,10 @@ if (!app.requestSingleInstanceLock()) {
   })
 }
 
+initializeLogging()
+
 app.whenReady().then(() => {
+  log.info('Electron ready')
   getDb() // initialize database + run migrations before the window is shown
 
   mainWindow = createMainWindow()
@@ -118,6 +122,7 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  logShutdown()
   stopDeviceWatcher()
   closeDb()
   if (process.platform !== 'darwin') {

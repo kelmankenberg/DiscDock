@@ -57,11 +57,11 @@ These are useful improvements, but should not delay the first release if the MVP
 
 ### P0.1 Automated verification and CI
 
-- [ ] Add unit tests for hash modes, glob exclusions, symlink behavior, file-kind classification, scan diffing, and cancellation.
+- [~] Add unit tests for hash modes, glob exclusions, symlink behavior, file-kind classification, scan diffing, and cancellation. Scan-engine coverage now verifies hash modes, exclusions, symlink behavior, file-kind classification, scan errors, and cancellation; database, diffing, and broader integration coverage remain.
 - [ ] Add database integration tests for migrations, FTS search, tags, collections, backup, restore, and foreign-key behavior.
 - [ ] Add IPC tests for malformed payloads and structured error responses.
 - [ ] Add renderer tests for the primary registration, scan, search, backup, restore, and Help workflows.
-- [ ] Add `lint`, `typecheck`, and `test` scripts that fail on errors.
+- [~] Add `lint`, `typecheck`, and `test` scripts that fail on errors. `typecheck` and `test` now pass; lint is still unconfigured.
 - [ ] Add a CI workflow that runs `npm ci`, dependency audit, lint, typecheck, tests, renderer build, Electron build, and packaging.
 - [ ] Keep the lockfile committed and fail CI on new high or critical dependency vulnerabilities, with documented exceptions when necessary.
 
@@ -69,8 +69,8 @@ These are useful improvements, but should not delay the first release if the MVP
 
 ### P0.2 Scanning correctness and reliability
 
-- [ ] Mark cancelled scans as `incomplete` or otherwise clearly partial, matching FR-2.8 and NFR-2.4. Do not present a partial snapshot as a completed scan.
-- [ ] Verify that partial results, removed-file pruning, scan history, and `lastScannedAt` remain consistent after cancellation.
+- [~] Mark cancelled scans as `incomplete` or otherwise clearly partial, matching FR-2.8 and NFR-2.4. Active and queued cancellation now finalize as `incomplete`; renderer history already surfaces the status. End-to-end manager coverage remains.
+- [~] Verify that partial results, removed-file pruning, scan history, and `lastScannedAt` remain consistent after cancellation. Active cancellation now skips unseen-file pruning and leaves scan timestamps unchanged; database integration coverage remains.
 - [ ] Decide whether the initial release accepts the current yielding main-process scanner or requires a worker/utility process. The documented NFR requires filesystem scanning and hashing off the Electron UI thread.
 - [ ] If keeping the current architecture temporarily, establish measured limits and test responsiveness during large metadata and full-hash scans.
 - [ ] Add progress timing that meets the documented update expectation and exposes enough information for long scans.
@@ -82,9 +82,9 @@ These are useful improvements, but should not delay the first release if the MVP
 ### P0.3 Database, backup, restore, and migration safety
 
 - [ ] Create an automatic safety backup before migrations, not only before restore.
-- [ ] Validate a restore source before replacing the live database: readable SQLite file, expected schema, compatible migration state, and required tables.
-- [ ] Restore through a temporary destination and atomic rename rather than copying directly over the active database.
-- [ ] Define rollback behavior if reopening or migrating the restored database fails.
+- [~] Validate a restore source before replacing the live database: readable SQLite file, expected schema, compatible migration state, and required tables. Integrity, DiscDock schema identity, and supported-version checks are now performed before replacement.
+- [~] Restore through a temporary destination and atomic rename rather than copying directly over the active database. The restore now stages and swaps the database file.
+- [~] Define rollback behavior if reopening or migrating the restored database fails. The live database is restored from the displaced file when reopening fails; failure-path integration coverage remains.
 - [ ] Ensure WAL and SHM sidecars are handled safely for both backup and restore.
 - [ ] Provide a clear recovery path to the generated pre-restore backup.
 - [ ] Test upgrades from every supported prior schema version, including populated FTS data and user annotations.
@@ -97,7 +97,7 @@ These are useful improvements, but should not delay the first release if the MVP
 
 - [ ] Validate every IPC payload with shared schemas or explicit type guards instead of unchecked casts.
 - [ ] Validate numeric IDs, enum values, strings, array contents, paths, pagination values, and settings ranges.
-- [ ] Validate and normalize scan roots before traversal; require an existing directory where appropriate.
+- [~] Validate and normalize scan roots before traversal; require an existing directory where appropriate. The scan IPC handler now resolves the path and rejects missing, unreadable, or non-directory roots; broader IPC validation remains.
 - [ ] Recheck that file open/reveal paths remain inside the linked media mount after symlink and case-related edge cases.
 - [ ] Validate backup/export destinations and selected restore files in the main process, even though the renderer uses native dialogs.
 - [ ] Validate IPC sender origins and reject unexpected renderer senders.
@@ -108,9 +108,9 @@ These are useful improvements, but should not delay the first release if the MVP
 
 ### P0.5 Offline and network policy
 
-- [ ] Make network activity opt-in and visible to the user.
-- [ ] Disable automatic update checks by default for v1, or update the product/security documentation to explicitly approve the current behavior.
-- [ ] Make MusicBrainz and Cover Art Archive enrichment optional during audio-CD scans.
+- [x] Make network activity opt-in and visible to the user. Audio-CD enrichment is now explicitly controlled in Settings and the UI explains the network behavior.
+- [x] Disable automatic update checks by default for v1, or update the product/security documentation to explicitly approve the current behavior. New installations now default automatic update checks to off.
+- [x] Make MusicBrainz and Cover Art Archive enrichment optional during audio-CD scans.
 - [ ] Ensure offline scanning succeeds without delays or failures caused by metadata lookup timeouts.
 - [ ] Document every external endpoint and the data sent to it.
 - [ ] Confirm that file names, paths, hashes, and catalog contents never leave the machine.
@@ -119,10 +119,10 @@ These are useful improvements, but should not delay the first release if the MVP
 
 ### P0.6 Logging and failure visibility
 
-- [ ] Configure rotating local main-process logs under the documented user-data directory.
-- [ ] Log application startup, shutdown, migrations, scan lifecycle, per-job failures, device detection failures, backup/restore, exports, and updater errors.
-- [ ] Add main-process handlers for uncaught exceptions and unhandled promise rejections.
-- [ ] Add renderer error-boundary handling and a non-blocking user-visible error path.
+- [~] Configure rotating local main-process logs under the documented user-data directory. `electron-log` now writes the main log under the app user-data `logs` directory; rotation and retention still need an explicit QA check.
+- [~] Log application startup, shutdown, migrations, scan lifecycle, per-job failures, device detection failures, backup/restore, exports, and updater errors. Startup, Electron-ready, and shutdown events are wired; operation-specific logging remains.
+- [x] Add main-process handlers for uncaught exceptions and unhandled promise rejections.
+- [x] Add renderer error-boundary handling and a non-blocking user-visible error path.
 - [ ] Avoid silently swallowing failures except where the fallback and user impact are documented.
 - [ ] Include a support-friendly diagnostics path that reports app version, platform, database schema, and recent error summaries without exposing catalog data unnecessarily.
 

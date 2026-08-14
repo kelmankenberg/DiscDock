@@ -60,6 +60,7 @@ export default function Settings(): JSX.Element {
   }
 
   const addMediaType = (): void => {
+    if (!settings) return
     const value = newMediaType.trim()
     if (!value || settings.customMediaTypes.includes(value)) return
     save({ customMediaTypes: [...settings.customMediaTypes, value] })
@@ -67,6 +68,7 @@ export default function Settings(): JSX.Element {
   }
 
   const addFieldName = (): void => {
+    if (!settings) return
     const value = newFieldName.trim()
     if (!value || settings.customFieldNames.includes(value)) return
     save({ customFieldNames: [...settings.customFieldNames, value] })
@@ -289,6 +291,19 @@ export default function Settings(): JSX.Element {
             </button>
           )}
         </div>
+      </section>
+
+      <section className="settings-section">
+        <h2>Network Enrichment</h2>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.audioCdMetadataEnabled}
+            onChange={(e) => save({ audioCdMetadataEnabled: e.target.checked })}
+          />
+          Look up audio CD titles and cover art online during scans
+        </label>
+        <p>DiscDock does not make network requests during scans unless this option is enabled.</p>
       </section>
 
       <section className="settings-section">

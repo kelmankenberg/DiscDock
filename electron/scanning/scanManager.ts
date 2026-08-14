@@ -60,7 +60,7 @@ export function cancelScan(jobId: number): boolean {
   if (queuedIndex === -1) return false
 
   queue.splice(queuedIndex, 1)
-  finalizeScanJob(jobId, 'cancelled', {
+  finalizeScanJob(jobId, 'incomplete', {
     filesAdded: 0,
     filesRemoved: 0,
     filesModified: 0,
@@ -98,7 +98,7 @@ async function runAudioCdScan(jobId: number, mediaItemId: number, devicePath: st
 
     let metadata: AudioCdMetadata | null = null
     let metadataWarning: string | null = null
-    if (discId) {
+    if (discId && getSettings().audioCdMetadataEnabled) {
       try {
         metadata = await fetchAudioCdMetadata(discId, toc.tracks.length)
         if (!metadata) metadataWarning = `This disc (${discId}) is not in the MusicBrainz database.`
@@ -236,11 +236,13 @@ async function runScan(jobId: number, mediaItemId: number, rootPath: string, has
       }
     )
 
-    const filesRemoved = pruneUnseenFiles(mediaItemId, jobId)
-    const status = state.cancelled ? 'cancelled' : 'completed'
+    const status = state.cancelled ? 'incomplete' : 'completed'
+    const filesRemoved = status === 'completed' ? pruneUnseenFiles(mediaItemId, jobId) : 0
     const counts = { filesAdded, filesRemoved, filesModified, filesUnchanged, errorCount }
     finalizeScanJob(jobId, status, counts)
-    markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0 && !state.cancelled)
+    if (status === 'completed') {
+      markMediaScanned(mediaItemId, hashMode !== 'none' && errorCount === 0)
+    }
 
     if (status === 'completed') {
       win?.webContents.send('scan:completed', { jobId, summary: counts })

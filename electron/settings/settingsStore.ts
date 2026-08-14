@@ -17,7 +17,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   customFieldNames: [],
   verificationThresholdMonths: 12,
   maxConcurrentScans: 1,
-  autoUpdateEnabled: true,
+  autoUpdateEnabled: false,
+  audioCdMetadataEnabled: false,
   helpPanelOpen: false,
   helpPanelWidthPercent: 30
 }
