@@ -1,15 +1,21 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
   AppSettings,
+  Collection,
+  CollectionInput,
+  CustomFieldValue,
   DashboardSummary,
   DetectedDevice,
   DuplicateReport,
   DuplicateReportFilters,
+  ExportFormat,
+  ExportScope,
   FileEntry,
   HashMode,
   IpcResult,
   MediaItem,
   MediaItemInput,
+  ScanErrorEntry,
   ScanJob,
   ScanProgress,
   SearchFilters,
@@ -72,6 +78,8 @@ const api = {
       ipcRenderer.invoke('scan:cancel', { jobId }),
     history: (mediaId: number): Promise<IpcResult<ScanJob[]>> =>
       ipcRenderer.invoke('scan:history', { mediaId }),
+    errors: (mediaId: number): Promise<IpcResult<ScanErrorEntry[]>> =>
+      ipcRenderer.invoke('scan:errors', { mediaId }),
     onProgress: (callback: (progress: ScanProgress) => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent, progress: ScanProgress): void => callback(progress)
       ipcRenderer.on('scan:progress', listener)
@@ -122,6 +130,33 @@ const api = {
       ipcRenderer.invoke('backup:run', { destinationPath }),
     restore: (sourcePath: string): Promise<IpcResult<{ safetyBackupPath: string }>> =>
       ipcRenderer.invoke('backup:restore', { sourcePath })
+  },
+  tags: {
+    list: (): Promise<IpcResult<string[]>> => ipcRenderer.invoke('tags:list'),
+    allForMedia: (): Promise<IpcResult<Record<number, string[]>>> => ipcRenderer.invoke('tags:allForMedia'),
+    setForMedia: (mediaId: number, tagNames: string[]): Promise<IpcResult<string[]>> =>
+      ipcRenderer.invoke('tags:setForMedia', { mediaId, tagNames })
+  },
+  collections: {
+    list: (): Promise<IpcResult<Collection[]>> => ipcRenderer.invoke('collections:list'),
+    create: (input: CollectionInput): Promise<IpcResult<Collection>> => ipcRenderer.invoke('collections:create', input),
+    delete: (id: number): Promise<IpcResult<{ deleted: true }>> => ipcRenderer.invoke('collections:delete', { id }),
+    members: (collectionId: number): Promise<IpcResult<MediaItem[]>> =>
+      ipcRenderer.invoke('collections:members', { collectionId }),
+    addMember: (collectionId: number, mediaId: number): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('collections:addMember', { collectionId, mediaId }),
+    removeMember: (collectionId: number, mediaId: number): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('collections:removeMember', { collectionId, mediaId })
+  },
+  export: {
+    run: (scope: ExportScope, format: ExportFormat, destinationPath: string): Promise<IpcResult<{ fileCount: number }>> =>
+      ipcRenderer.invoke('export:run', { scope, format, destinationPath })
+  },
+  customFields: {
+    getForMedia: (mediaId: number): Promise<IpcResult<CustomFieldValue[]>> =>
+      ipcRenderer.invoke('customFields:getForMedia', { mediaId }),
+    setForMedia: (mediaId: number, fieldName: string, fieldValue: string | null): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('customFields:setForMedia', { mediaId, fieldName, fieldValue })
   }
 }
 

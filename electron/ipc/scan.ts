@@ -1,8 +1,8 @@
 import { ipcMain } from 'electron'
 import { cancelScan, startScan } from '../scanning/scanManager'
-import { listScanJobsForMedia } from '../db/scanRepository'
+import { getErrorsForMedia, listScanJobsForMedia } from '../db/scanRepository'
 import { getSettings } from '../settings/settingsStore'
-import type { HashMode, IpcResult, ScanJob } from '../../shared/types'
+import type { HashMode, IpcResult, ScanErrorEntry, ScanJob } from '../../shared/types'
 
 export function registerScanIpc(): void {
   ipcMain.handle('scan:start', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
@@ -39,5 +39,13 @@ export function registerScanIpc(): void {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
     }
     return { ok: true, data: listScanJobsForMedia(mediaId) }
+  })
+
+  ipcMain.handle('scan:errors', (_event, payload: unknown): IpcResult<ScanErrorEntry[]> => {
+    const mediaId = (payload as { mediaId?: unknown })?.mediaId
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    return { ok: true, data: getErrorsForMedia(mediaId) }
   })
 }

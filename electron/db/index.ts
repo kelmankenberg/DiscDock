@@ -116,6 +116,17 @@ const MIGRATIONS: { version: number; sql: string }[] = [
         INSERT INTO file_record_fts(rowid, name, path) VALUES (new.id, new.name, new.path);
       END;
     `
+  },
+  {
+    version: 3,
+    sql: `
+      CREATE TABLE IF NOT EXISTS media_item_custom_field (
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        field_name TEXT NOT NULL,
+        field_value TEXT,
+        PRIMARY KEY (media_item_id, field_name)
+      );
+    `
   }
 ]
 

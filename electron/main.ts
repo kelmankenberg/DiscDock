@@ -11,6 +11,10 @@ import { registerDuplicatesIpc } from './ipc/duplicates'
 import { registerFilesIpc } from './ipc/files'
 import { registerSettingsIpc } from './ipc/settings'
 import { registerBackupIpc } from './ipc/backup'
+import { registerTagsIpc } from './ipc/tags'
+import { registerCollectionsIpc } from './ipc/collections'
+import { registerExportIpc } from './ipc/export'
+import { registerCustomFieldsIpc } from './ipc/customFields'
 import { initScanManager } from './scanning/scanManager'
 import { getDb, closeDb } from './db'
 import type { IpcResult } from '../shared/types'
@@ -39,6 +43,10 @@ app.whenReady().then(() => {
   registerFilesIpc()
   registerSettingsIpc()
   registerBackupIpc()
+  registerTagsIpc()
+  registerCollectionsIpc()
+  registerExportIpc()
+  registerCustomFieldsIpc()
   initScanManager(mainWindow)
   startDeviceWatcher(mainWindow)
 

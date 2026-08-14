@@ -1,5 +1,5 @@
 import { getDb } from './index'
-import type { HashMode, ScanJob, ScanStatus } from '../../shared/types'
+import type { HashMode, ScanErrorEntry, ScanJob, ScanStatus } from '../../shared/types'
 
 interface ScanJobRow {
   id: number
@@ -80,6 +80,19 @@ export function recordScanError(scanJobId: number, path: string, errorType: stri
   getDb()
     .prepare('INSERT INTO scan_error (scan_job_id, path, error_type, message) VALUES (?, ?, ?, ?)')
     .run(scanJobId, path, errorType, message)
+}
+
+export function getErrorsForMedia(mediaItemId: number): ScanErrorEntry[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT se.path as path, se.error_type as errorType, se.message as message, sj.started_at as scanStartedAt
+       FROM scan_error se
+       JOIN scan_job sj ON sj.id = se.scan_job_id
+       WHERE sj.media_item_id = ?
+       ORDER BY sj.started_at DESC`
+    )
+    .all(mediaItemId) as { path: string; errorType: string; message: string | null; scanStartedAt: string }[]
+  return rows
 }
 
 export function markMediaScanned(mediaItemId: number, verified: boolean): void {

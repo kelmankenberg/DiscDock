@@ -16,18 +16,10 @@ export interface WindowState {
   maximized: boolean
 }
 
-export type MediaType =
-  | 'cd'
-  | 'dvd'
-  | 'bluray'
-  | 'usb_drive'
-  | 'external_hdd'
-  | 'external_ssd'
-  | 'sd_card'
-  | 'network_share'
-  | 'other'
+// Not a strict union: custom media types (user-defined in Settings) are arbitrary strings too.
+export type MediaType = string
 
-export const MEDIA_TYPES: { value: MediaType; label: string }[] = [
+export const BUILTIN_MEDIA_TYPES: { value: MediaType; label: string }[] = [
   { value: 'cd', label: 'CD' },
   { value: 'dvd', label: 'DVD' },
   { value: 'bluray', label: 'Blu-ray' },
@@ -38,6 +30,9 @@ export const MEDIA_TYPES: { value: MediaType; label: string }[] = [
   { value: 'network_share', label: 'Network Share' },
   { value: 'other', label: 'Other' }
 ]
+
+// Kept for backwards compatibility with existing imports; prefer BUILTIN_MEDIA_TYPES + settings.customMediaTypes.
+export const MEDIA_TYPES = BUILTIN_MEDIA_TYPES
 
 export interface MediaItem {
   id: number
@@ -192,4 +187,40 @@ export interface AppSettings {
   followSymlinks: boolean
   theme: Theme
   notifications: NotificationSettings
+  customMediaTypes: string[]
+  customFieldNames: string[]
+}
+
+export interface Tag {
+  id: number
+  name: string
+}
+
+export interface Collection {
+  id: number
+  name: string
+  description: string | null
+  memberCount: number
+  totalSizeBytes: number
+  totalFiles: number
+}
+
+export interface CollectionInput {
+  name: string
+  description: string | null
+}
+
+export interface ScanErrorEntry {
+  path: string
+  errorType: string
+  message: string | null
+  scanStartedAt: string
+}
+
+export type ExportScope = { type: 'all' } | { type: 'media'; mediaId: number }
+export type ExportFormat = 'json' | 'csv'
+
+export interface CustomFieldValue {
+  fieldName: string
+  fieldValue: string
 }

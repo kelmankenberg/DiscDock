@@ -12,7 +12,9 @@ const DEFAULT_SETTINGS: AppSettings = {
     scanCompleted: true,
     scanFailed: true,
     verificationReminders: true
-  }
+  },
+  customMediaTypes: [],
+  customFieldNames: []
 }
 
 let cached: AppSettings | null = null

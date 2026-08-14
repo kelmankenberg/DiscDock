@@ -42962,10 +42962,71 @@ now when the app window is resized or its location moved, we need to persist tho
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `createWindow.ts`, lines 1 to 50
+
+**Input:**
+
+- endLine: `50`
+- filePath: `/home/kel/dev/DiscDock/electron/window/createWindow.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, shell } from 'electron'
+import path from 'node:path'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export function createMainWindow(): BrowserWindow {
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 800,
+    minWidth: 900,
+    minHeight: 600,
+    // Frameless: DiscDock renders its own title bar/toolbar and window controls.
+    frame: false,
+    backgroundColor: '#1e1e1e',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => win.show())
+
+  // Never allow navigation to or opening of remote content from the renderer.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  // DevTools are not opened automatically; toggle manually with Ctrl+Shift+I.
+  // Restart is bound to Ctrl+Shift+R. Only react to keyDown — before-input-event also fires
+  // on keyUp, which would otherwise double-fire (e.g. toggle open then immediately close again).
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type !== 'keyDown' || !input.control || !input.shift) return
+    const key = input.key.toLowerCase()
+    if (key === 'i') {
+      win.webContents.toggleDevTools()
+    } else if (key === 'r') {
+      app.relaunch()
+      app.exit(0)
+    }
+  })
+
+  if (isDev) {
+    void win.loadURL('http://localhost:5173')
+  } else {
+    void win.loadFile(path.join(__dirname, '../../../dist/index.html'))
+  }
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -42974,10 +43035,102 @@ Let's create a small window-state persistence module:
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
-<summary>Tool use: **copilot_createFile**</summary>
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
 
 Created `windowState.ts`
+
+**Input:**
+
+- content:
+
+```
+import { app, screen } from 'electron'
+import type { BrowserWindow } from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
+
+interface SavedWindowState {
+  width: number
+  height: number
+  x?: number
+  y?: number
+  maximized: boolean
+}
+
+const DEFAULT_STATE: SavedWindowState = { width: 1280, height: 800, maximized: false }
+const SAVE_DEBOUNCE_MS = 400
+
+function statePath(): string {
+  return path.join(app.getPath('userData'), 'window-state.json')
+}
+
+function isOnScreen(x: number, y: number, width: number, height: number): boolean {
+  return screen.getAllDisplays().some((display) => {
+    const area = display.workArea
+    return x >= area.x && y >= area.y && x + width <= area.x + area.width && y + height <= area.y + area.height
+  })
+}
+
+export function loadWindowState(): SavedWindowState {
+  try {
+    const raw = fs.readFileSync(statePath(), 'utf-8')
+    const parsed = JSON.parse(raw) as Partial<SavedWindowState>
+    const state: SavedWindowState = { ...DEFAULT_STATE, ...parsed }
+
+    // Ignore stale bounds from a display that's no longer connected (e.g. laptop undocked).
+    if (state.x !== undefined && state.y !== undefined && !isOnScreen(state.x, state.y, state.width, state.height)) {
+      return { ...state, x: undefined, y: undefined }
+    }
+    return state
+  } catch {
+    return DEFAULT_STATE
+  }
+}
+
+/** Debounced persistence of window bounds/maximized state, called on resize/move/maximize/unmaximize. */
+export function trackWindowState(win: BrowserWindow): void {
+  let saveTimer: NodeJS.Timeout | null = null
+
+  const save = (): void => {
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      const maximized = win.isMaximized()
+      // While maximized, getBounds() reflects the maximized size — persist the last known
+      // restored bounds instead so un-maximizing later returns to the expected size/position.
+      const bounds = maximized ? win.getNormalBounds() : win.getBounds()
+      const state: SavedWindowState = {
+        width: bounds.width,
+        height: bounds.height,
+        x: bounds.x,
+        y: bounds.y,
+        maximized
+      }
+      try {
+        fs.mkdirSync(path.dirname(statePath()), { recursive: true })
+        fs.writeFileSync(statePath(), JSON.stringify(state, null, 2))
+      } catch {
+        // best-effort persistence — not critical if a write occasionally fails
+      }
+    }, SAVE_DEBOUNCE_MS)
+  }
+
+  win.on('resize', save)
+  win.on('move', save)
+  win.on('maximize', save)
+  win.on('unmaximize', save)
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/window/windowState.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/window/windowState.ts
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -43120,10 +43273,33 @@ Let's check for errors, verify integrity/sync, and build.
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
-<summary>Tool use: **copilot_getErrors**</summary>
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
 
 Checked `createWindow.ts`, `windowState.ts`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/electron/window/createWindow.ts",
+  "/home/kel/dev/DiscDock/electron/window/windowState.ts"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/electron/window/createWindow.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/electron/window/windowState.ts">
+No errors found
+</errors>
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -43144,6 +43320,25 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` wc -c electron/window/createWindow.ts electron/window/windowState.ts && git ...`
+
+Verify edited files have content and check for concurrent commits before building
+
+```bash
+cd /home/kel/dev/DiscDock && wc -c electron/window/createWindow.ts electron/window/windowState.ts && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` wc -c electron/window/createWindow.ts electron/window/windowState.ts && git fetch origin 2>&1 | tail -5 && git log --oneline origin/main -1 && git log --oneline -1` (terminal ID=bd76d53c-148c-40ff-bef2-3d17b7cf5cd0). This is the output of running that command instead:
+1874 electron/window/createWindow.ts
+2525 electron/window/windowState.ts
+4399 total
+58453ed (HEAD -> main, origin/main) Add More menu (kebab) to title bar with Rest
+art DiscDock (Ctrl+Shift+R) and Show Dev Tools (Ctrl+Shift+I)
+58453ed (HEAD -> main, origin/main) Add More menu (kebab) to title bar with Rest
+art DiscDock (Ctrl+Shift+R) and Show Dev Tools (Ctrl+Shift+I)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -43156,6 +43351,43 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60`
+
+Clean rebuild with window state persistence
+
+```bash
+cd /home/kel/dev/DiscDock && rm -rf dist dist-electron && npm run build 2>&1 | tail -60
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` rm -rf dist dist-electron && npm run build 2>&1 | tail -60` (terminal ID=4977727a-91df-45bc-abae-2b0cb0ef864a). This is the output of running that command instead:
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+transforming...✓ 1813 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-DIit3s4N.css   11.61 kB │ gzip:  2.49 kB
+dist/assets/index-CvCIsn7o.js   234.38 kB │ gzip: 71.90 kB
+
+✓ built in 180ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -43169,6 +43401,63 @@ _**Agent (copilot/auto)**_
 
 Running ` rm -f /home/kel/.config/discdock/window-state.json
 cat > /home/kel/dev/DiscD...`
+
+Programmatically resize/move the window and verify the debounced save writes correct bounds to disk
+
+```bash
+rm -f /home/kel/.config/discdock/window-state.json
+cat > /home/kel/dev/DiscDock/test-window-state.js << 'EOF'
+const { app, BrowserWindow } = require('electron')
+const { createMainWindow } = require('./dist-electron/electron/window/createWindow')
+
+app.whenReady().then(() => {
+  const win = createMainWindow()
+  win.once('ready-to-show', () => {
+    setTimeout(() => {
+      win.setBounds({ x: 123, y: 45, width: 950, height: 700 })
+      setTimeout(() => {
+        console.log('Bounds set, waiting for debounced save...')
+        setTimeout(() => {
+          const fs = require('fs')
+          const content = fs.readFileSync('/home/kel/.config/discdock/window-state.json', 'utf-8')
+          console.log('Saved window-state.json:', content)
+          app.quit()
+        }, 700)
+      }, 100)
+    }, 300)
+  })
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-window-state.js --no-sandbox 2>&1
+rm -f test-window-state.js
+```
+
+**Result:**
+
+```
+Error occurred in handler for 'window:isMaximized': Error: No handler registered for 'window:isMaximized'
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:116469)
+    at Session.emit (node:events:509:28)
+Error occurred in handler for 'dashboard:summary': Error: No handler registered for 'dashboard:summary'
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:116469)
+    at Session.emit (node:events:509:28)
+Error occurred in handler for 'media:list': Error: No handler registered for 'media:list'
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:116469)
+    at Session.emit (node:events:509:28)
+Error occurred in handler for 'devices:list': Error: No handler registered for 'devices:list'
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:116469)
+    at Session.emit (node:events:509:28)
+Error occurred in handler for 'settings:get': Error: No handler registered for 'settings:get'
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:116469)
+    at Session.emit (node:events:509:28)
+Bounds set, waiting for debounced save...
+Error occurred in handler for 'window:close': Error: No handler registered for 'window:close'
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:116469)
+    at Session.emit (node:events:509:28)
+Error occurred in handler for 'window:close': Error: No handler registered for 'window:close'
+    at Session.<anonymous> (node:electron/js2c/browser_init:2:116469)
+    at Session.emit (node:events:509:28)
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -43177,6 +43466,18 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` cat /home/kel/.config/discdock/window-state.json 2>&1`
+
+Check if the window state file was written despite the unrelated IPC errors in the test script
+
+```bash
+cat /home/kel/.config/discdock/window-state.json 2>&1
+```
+
+**Result:**
+
+```
+cat: /home/kel/.config/discdock/window-state.json: No such file or directory
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -43186,14 +43487,139 @@ _**Agent (copilot/auto)**_
 
 Running ` cat > /home/kel/dev/DiscDock/test-window-state.js << 'EOF'
 const \{ app \} = r...`
+
+Retest with explicit event logging and error handling to diagnose why the save didn't occur
+
+```bash
+cat > /home/kel/dev/DiscDock/test-window-state.js << 'EOF'
+const { app } = require('electron')
+const { createMainWindow } = require('./dist-electron/electron/window/createWindow')
+const fs = require('fs')
+
+app.whenReady().then(() => {
+  const win = createMainWindow()
+  win.once('ready-to-show', () => {
+    win.on('resize', () => console.log('resize event fired'))
+    win.on('move', () => console.log('move event fired'))
+    setTimeout(() => {
+      console.log('Setting bounds...')
+      win.setBounds({ x: 123, y: 45, width: 950, height: 700 })
+      setTimeout(() => {
+        try {
+          const content = fs.readFileSync('/home/kel/.config/discdock/window-state.json', 'utf-8')
+          console.log('Saved window-state.json:', content)
+        } catch (e) {
+          console.log('Read failed:', e.message)
+        }
+        app.quit()
+      }, 1000)
+    }, 500)
+  })
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-window-state.js --no-sandbox 2>&1 | grep -viE "no handler registered|Session\.<anonymous>|Session\.emit"
+rm -f test-window-state.js
+```
+
+**Result:**
+
+```
+kel@kel-EQ-Mint:~/dev/DiscDock$  cat > /home/kel/dev/DiscDock/test-window-state.
+js << 'EOF'
+const { app } = require('electron')
+const { createMainWindow } = require('./dist-electron/electron/window/createWind
+ow')
+const fs = require('fs')
+
+app.whenReady().then(() => {
+  const win = createMainWindow()
+  win.once('ready-to-show', () => {
+    win.on('resize', () => console.log('resize event fired'))
+    win.on('move', () => console.log('move event fired'))
+    setTimeout(() => {
+      console.log('Setting bounds...')
+      win.setBounds({ x: 123, y: 45, width: 950, height: 700 })
+      setTimeout(() => {
+        try {
+          const content = fs.readFileSync('/home/kel/.config/discdock/window-sta
+te.json', 'utf-8')
+          console.log('Saved window-state.json:', content)
+        } catch (e) {
+          console.log('Read failed:', e.message)
+        }
+        app.quit()
+      }, 1000)
+    }, 500)
+  })
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-window-state.js --no-sandbox 2>&1
+rm -f test-window-state.jsegistered|Session\.<anonymous>|Session\.emit"
+Setting bounds...
+move event fired
+move event fired
+Read failed: ENOENT: no such file or directory, open '/home/kel/.config/discdock
+/window-state.json'
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `createWindow.ts`, lines 1 to 40
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/home/kel/dev/DiscDock/electron/window/createWindow.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, shell } from 'electron'
+import path from 'node:path'
+import { loadWindowState, trackWindowState } from './windowState'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export function createMainWindow(): BrowserWindow {
+  const savedState = loadWindowState()
+
+  const win = new BrowserWindow({
+    width: savedState.width,
+    height: savedState.height,
+    x: savedState.x,
+    y: savedState.y,
+    minWidth: 900,
+    minHeight: 600,
+    // Frameless: DiscDock renders its own title bar/toolbar and window controls.
+    frame: false,
+    backgroundColor: '#1e1e1e',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => {
+    if (savedState.maximized) win.maximize()
+    win.show()
+  })
+
+  trackWindowState(win)
+
+  // Never allow navigation to or opening of remote content from the renderer.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -43202,6 +43628,24 @@ _**Agent (copilot/auto)**_
 <summary>Tool use: **run_in_terminal**</summary>
 
 Running ` cat /home/kel/.config/Electron/window-state.json 2>&1`
+
+Check if the file was written to the default Electron userData path instead, due to the app-name resolution quirk of ad-hoc script testing
+
+```bash
+cat /home/kel/.config/Electron/window-state.json 2>&1
+```
+
+**Result:**
+
+```
+{
+  "width": 950,
+  "height": 700,
+  "x": 123,
+  "y": 45,
+  "maximized": false
+}kel@kel-EQ-Mint:~/dev/DiscDock$
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -43215,6 +43659,88 @@ _**Agent (copilot/auto)**_
 
 Running ` rm -rf /home/kel/.config/Electron
 cat > /home/kel/dev/DiscDock/test-window-s...`
+
+Test the full round trip: save bounds, close window, create a new window and verify it restores the saved bounds
+
+```bash
+rm -rf /home/kel/.config/Electron
+cat > /home/kel/dev/DiscDock/test-window-state.js << 'EOF'
+const { app } = require('electron')
+app.setName('discdock')
+const { createMainWindow } = require('./dist-electron/electron/window/createWindow')
+const fs = require('fs')
+
+app.whenReady().then(() => {
+  const win = createMainWindow()
+  win.once('ready-to-show', () => {
+    setTimeout(() => {
+      win.setBounds({ x: 200, y: 100, width: 1000, height: 750 })
+      setTimeout(() => {
+        const content = fs.readFileSync('/home/kel/.config/discdock/window-state.json', 'utf-8')
+        console.log('Round 1 saved state:', content)
+        win.close()
+      }, 700)
+    }, 300)
+  })
+
+  app.on('window-all-closed', () => {
+    // Second window: verify it opens with the persisted bounds.
+    const win2 = createMainWindow()
+    win2.once('ready-to-show', () => {
+      const b = win2.getBounds()
+      console.log('Round 2 (relaunched) window bounds:', JSON.stringify(b))
+      app.quit()
+    })
+  })
+})
+EOF
+cd /home/kel/dev/DiscDock && npx electron test-window-state.js --no-sandbox 2>&1 | grep -viE "no handler registered|Session\.<anonymous>|Session\.emit"
+rm -f test-window-state.js
+```
+
+**Result:**
+
+```
+}kel@kel-EQ-Mint:~/dev/DiscDock$  rm -rf /home/kel/.config/Electron
+cat > /home/kel/dev/DiscDock/test-window-state.js << 'EOF'
+const { app } = require('electron')
+app.setName('discdock')
+const { createMainWindow } = require('./dist-electron/electron/window/createWind
+ow')
+const fs = require('fs')
+
+app.whenReady().then(() => {
+  const win = createMainWindow()
+  win.once('ready-to-show', () => {
+    setTimeout(() => {
+      win.setBounds({ x: 200, y: 100, width: 1000, height: 750 })
+      setTimeout(() => {
+        const content = fs.readFileSync('/home/kel/.config/discdock/window-state
+.json', 'utf-8')
+        console.log('Round 1 saved state:', content)
+        win.close()
+      }, 700)
+    }, 300)
+  })
+
+  app.on('window-all-closed', () => {
+    // Second window: verify it opens with the persisted bounds.
+    const win2 = createMainWindow()
+    win2.once('ready-to-show', () => {
+      const b = win2.getBounds()
+      console.log('Round 2 (relaunched) window bounds:', JSON.stringify(b))
+      app.quit()
+    })
+rm -f test-window-state.jsegistered|Session\.<anonymous>|Session\.emit"dbox 2>&1
+Round 1 saved state: {
+  "width": 1000,
+  "height": 750,
+  "x": 200,
+  "y": 100,
+  "maximized": false
+}
+Round 2 (relaunched) window bounds: {"x":200,"y":100,"width":1000,"height":750}
+```
 </details></tool-use>
 
 _**Agent (copilot/auto)**_
@@ -43228,4 +43754,1911 @@ _**Agent (copilot/auto)**_
 
 Running ` rm -f /home/kel/.config/discdock/window-state.json
 cd /home/kel/dev/DiscDock...`
+
+Clean up test artifact and launch the real app for a final smoke test
+
+```bash
+rm -f /home/kel/.config/discdock/window-state.json
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+
+**Result:**
+
+```
+Command is running in terminal with ID=7b81f027-b853-4070-8d86-c060cb0622ff
+ The command became idle with output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  rm -f /home/kel/.config/discdock/window-state.json
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="7b81f027-b853-4070-8d86-c060cb0622ff" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="7b81f027-b853-4070-8d86-c060cb0622ff" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+No errors on launch. Closing and committing.      
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `7b81f027-b853-4070-8d86-c060cb0622ff`
+
+**Result:**
+
+```
+Successfully killed persistent terminal 7b81f027-b853-4070-8d86-c060cb0622ff. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  rm -f /home/kel/.config/discdock/window-state.json
+cd /home/kel/dev/DiscDock && npx electron . --no-sandbox 2>&1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` rm -f /home/kel/.config/discdock/window-state.json
+cd /home/kel/dev/DiscDock...`
+
+Final cleanup of test artifact and review staged changes before commit
+
+```bash
+rm -f /home/kel/.config/discdock/window-state.json
+cd /home/kel/dev/DiscDock && df -h / | tail -1 && git add -A && git status --short
+```
+
+**Result:**
+
+```
+/dev/nvme1n1p2  457G  387G   47G  90% /
+M  .specstory/history/2026-08-13_16-36-15Z-electron-app-planning-for.md
+M  .specstory/statistics.json
+M  electron/window/createWindow.ts
+A  electron/window/windowState.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+47G free, healthy.             
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git commit -m "Persist window size/position/maximized state across sessions"...`
+
+Commit and push the window state persistence feature
+
+```bash
+cd /home/kel/dev/DiscDock && git commit -m "Persist window size/position/maximized state across sessions" 2>&1 | tail -20 && git push 2>&1
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` git commit -m "Persist window size/position/maximized state across sessions" 2>&1 | tail -20 && git push 2>&1` (terminal ID=cafb8fe5-b653-448e-b4cb-0b4c73ce5610). This is the output of running that command instead:
+[main 4e573a3] Persist window size/position/maximized state across sessions
+ 4 files changed, 1068 insertions(+), 63 deletions(-)
+ create mode 100644 electron/window/windowState.ts
+Enumerating objects: 18, done.
+Counting objects: 100% (18/18), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (10/10), done.
+Writing objects: 100% (10/10), 6.60 KiB | 450.00 KiB/s, done.
+Total 10 (delta 5), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (5/5), completed with 5 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   58453ed..4e573a3  main -> main
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Committed and pushed (47G free, healthy).
+
+**Implemented: Window state persistence**
+- `windowState.ts` — new module storing `window-state.json` in the app's userData dir
+- Tracks `resize`, `move`, ,  events with a 400ms debounce to avoid excessive disk writes during dragging/resizing
+- Saves the **restored** (non-maximized) bounds even while maximized, so un-maximizing later returns to the expected size — matches standard OS window behavior
+- Validates saved position against currently connected displays (`screen.getAllDisplays()`) so a window position saved on a since-disconnected monitor doesn't put the window off-screen
+- On startup, `createWindow.ts` loads the saved state and applies it (size/position via  constructor options, maximize called after `ready-to-show` if it was previously maximized)
+
+**Verified end-to-end** (not just code review): programmatically set window bounds, confirmed the debounced save wrote the exact correct values to disk, then created a fresh window and confirmed it opened with those exact persisted bounds — full round-trip proven working.
+
+Restart your `npm run dev` session to pick this up (main-process change).
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Completed: *Create window state persistence module* (1/3)
+</details></tool-use>
+
+---
+
+_**User (2026-08-14 12:54:42Z)**_
+
+so where are we in the development plan?
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `11-roadmap.md`
+
+**Input:**
+
+- endLine: `70`
+- filePath: `/home/kel/dev/DiscDock/docs/planning-docs/11-roadmap.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# Roadmap & Release Plan
+
+## Phase 0 — Foundations (Pre-MVP)
+- Project scaffolding: Electron + React + TypeScript + Vite, electron-builder pipeline producing installable `.deb`/`.AppImage` (even with a blank window) to de-risk packaging early.
+- SQLite integration with migration runner and base schema (`media_item`, `file_record`, `scan_job`).
+- Preload/contextBridge IPC skeleton with the discriminated result pattern.
+
+## Phase 1 — MVP
+
+Scope: the minimum feature set that makes DiscDock genuinely useful end-to-end.
+
+- Media registration (manual) — FR-1.1, FR-1.5, FR-1.6
+- Linux device detection (udisks2 + fallback) and linking to media — FR-1.2–1.4
+- Scanning engine: metadata-only and full-hash modes, progress, cancel — FR-2.1–2.10
+- Re-scan with diff summary — FR-2.11, FR-2.12
+- Global search with core filters — FR-3.1–3.4, FR-3.6
+- Media Library list + Media Detail (Overview, Browse, Scan History) — UI spec §2.2–2.3
+- Dashboard with summary stats and attention panel — FR-8.1
+- Settings: scan defaults, theme, notifications — FR-8.2
+- Backup/restore of the whole database — FR-7.2
+- `.deb` + `.AppImage` packaging finalized with QA checklist passed — Packaging doc §7
+
+**MVP exit criteria:** a user can register a drive, scan it, search across multiple scanned drives without connecting them, and back up/restore their catalog.
+
+## Phase 2 — Post-MVP Enhancements
+
+- Duplicate file detection & report — FR-4.1–4.4
+- Tags on media + Collections — FR-5.1, 5.3, 5.4
+- Media health/lifecycle tracking (verification threshold alerts, error logs, retire status) — FR-6.1–6.4
+- CSV/JSON export of catalog/search results — FR-7.1
+- Custom media types & custom metadata fields — FR-8.3
+
+## Phase 3 — Stretch / Future Ideas
+
+- File-level tagging (FR-5.2) and per-file notes.
+- Printable labels/QR codes linking a physical media item to its DiscDock record (scan QR to jump straight to Media Detail).
+- Optical media raw audio CD track listing support (FR-1.7 non-filesystem case).
+- Auto-update
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Here's where DiscDock stands against the roadmap:
+
+## Phase 0 — Foundations ✅ Complete
+Electron + React/TS/Vite scaffolding, SQLite + migrations, IPC skeleton, `.deb`/`.AppImage` build pipeline.
+
+## Phase 1 — MVP ✅ Complete (and exceeded)
+| Item | Status |
+|---|---|
+| Media registration (manual + device auto-fill) | ✅ |
+| Linux device detection (lsblk fallback, optical + USB) | ✅ |
+| Scanning engine (none/quick/full hash, progress, cancel) | ✅ |
+| Re-scan with diff (added/modified/removed) | ✅ |
+| Global search with filters | ✅ (plus live-filter UX, LIKE fallback fix) |
+| Media Library + Media Detail (Overview/Browse/Scan History) | ✅ (plus multi-select, batch actions, container filtering, presence highlighting) |
+| Dashboard | ✅ (plus reconnect-to-unscanned prompts, eject) |
+| Settings | ✅ (plus keyboard shortcuts section) |
+| Backup/restore | ✅ (verified with real backup→mutate→restore cycle) |
+| `.deb`/`.AppImage` packaging | ✅ config in place, **not yet QA-tested** (see below) |
+
+**MVP exit criteria** (register → scan → cross-media search → backup/restore) is functionally met.
+
+## Phase 2 — Post-MVP: partially started
+- ✅ Duplicate detection (FR-4.1–4.4)
+- ❌ Tags on media + Collections (FR-5.1/5.3/5.4) — Collections nav item exists but is still a placeholder view
+- ❌ Media health/lifecycle tracking beyond basic verification prompts (FR-6.1–6.4)
+- ❌ CSV/JSON export (FR-7.1) — only DB backup exists, not per-media/filtered export
+- ❌ Custom media types & custom fields (FR-8.3)
+
+## Phase 3 — Stretch: not started
+None of these yet (file-level tags, QR labels, audio CD track listing, auto-update, Windows/macOS, in-app preview, multi-concurrent scanning).
+
+## Extras beyond the original plan
+A fair amount of polish wasn't originally scoped but got built along the way: lucide-react icon system throughout, collapsible sidebar, title bar More-menu (restart/devtools), window state persistence, and several real bugs found/fixed via direct DB/hardware testing (optical drive detection, FTS search substring gap, eject busy-mount detection, devtools double-toggle).
+
+**Biggest remaining gap before calling this release-ready:** the packaging QA checklist ([09-packaging-deployment.md §7](docs/planning-docs/09-packaging-deployment.md)) — we've never actually run `npm run package:linux` to produce a real `.deb`/`.AppImage` and test-install it. Want to do that next, or continue with Phase 2 features (Collections/tags would be the natural next one)?
+
+---
+
+_**User (2026-08-14 13:07:58Z)**_
+
+ok, continue with pahse 2. try to complete it autonomously if possible.
+
+---
+
+_**User (2026-08-14 13:11:45Z)**_
+
+@agent Try Again
+
+---
+
+_**Agent (copilot/auto)**_
+
+Understood — I'll work through Phase 2 systematically: Tags, Collections, Media health (error viewer + verification list), CSV/JSON export, and custom media types/fields. Let's start with **Tags**. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 175 to 196
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 195-195 @@
+
+```
+  customMediaTypes: string[]
+  customFieldNames: string[]
+}
+
+export interface Tag {
+  id: number
+  name: string
+}
+
+export interface Collection {
+  id: number
+  name: string
+  description: string | null
+  memberCount: number
+  totalSizeBytes: number
+  totalFiles: number
+}
+
+export interface CollectionInput {
+  name: string
+  description: string | null
+}
+
+export interface ScanErrorEntry {
+  path: string
+  errorType: string
+  message: string | null
+  scanStartedAt: string
+}
+
+export type ExportScope = { type: 'all' } | { type: 'media'; mediaId: number }
+export type ExportFormat = 'json' | 'csv'
+
+export interface CustomFieldValue {
+  fieldName: string
+  fieldValue: string
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `export type MediaType` (`**/shared/types.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `types.ts`, lines 19 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 195-195 @@
+
+```
+  customMediaTypes: string[]
+  customFieldNames: string[]
+}
+
+export interface Tag {
+  id: number
+  name: string
+}
+
+export interface Collection {
+  id: number
+  name: string
+  description: string | null
+  memberCount: number
+  totalSizeBytes: number
+  totalFiles: number
+}
+
+export interface CollectionInput {
+  name: string
+  description: string | null
+}
+
+export interface ScanErrorEntry {
+  path: string
+  errorType: string
+  message: string | null
+  scanStartedAt: string
+}
+
+export type ExportScope = { type: 'all' } | { type: 'media'; mediaId: number }
+export type ExportFormat = 'json' | 'csv'
+
+export interface CustomFieldValue {
+  fieldName: string
+  fieldValue: string
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 19-40 @@
+
+```
+// Not a strict union: custom media types (user-defined in Settings) are arbitrary strings too.
+export type MediaType = string
+
+export const BUILTIN_MEDIA_TYPES: { value: MediaType; label: string }[] = [
+  { value: 'cd', label: 'CD' },
+  { value: 'dvd', label: 'DVD' },
+  { value: 'bluray', label: 'Blu-ray' },
+  { value: 'usb_drive', label: 'USB Flash Drive' },
+  { value: 'external_hdd', label: 'External HDD' },
+  { value: 'external_ssd', label: 'External SSD' },
+  { value: 'sd_card', label: 'SD Card' },
+  { value: 'network_share', label: 'Network Share' },
+  { value: 'other', label: 'Other' }
+]
+
+// Kept for backwards compatibility with existing imports; prefer BUILTIN_MEDIA_TYPES + settings.customMediaTypes.
+export const MEDIA_TYPES = BUILTIN_MEDIA_TYPES
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's update the settings store with the new fields, and add the migration for custom fields table:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `settingsStore.ts`, lines 1 to 20
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **settingsStore.ts**</summary>
+
+@@ lines 15-15 @@
+
+```
+,
+  customMediaTypes: [],
+  customFieldNames: []
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 5 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's add the migration for the custom fields table:  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `version: 2` (`**/electron/db/index.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `index.ts`, lines 100 to 125
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ts**</summary>
+
+@@ lines 119-119 @@
+
+```
+,
+  {
+    version: 3,
+    sql: `
+      CREATE TABLE IF NOT EXISTS media_item_custom_field (
+        media_item_id INTEGER NOT NULL REFERENCES media_item(id),
+        field_name TEXT NOT NULL,
+        field_value TEXT,
+        PRIMARY KEY (media_item_id, field_name)
+      );
+    `
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the tag repository:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `tagRepository.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **tagRepository.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { getDb } from './index'
+
+export function listAllTagNames(): string[] {
+  const rows = getDb().prepare('SELECT name FROM tag ORDER BY name').all() as { name: string }[]
+  return rows.map((r) => r.name)
+}
+
+export function getTagsForAllMedia(): Record<number, string[]> {
+  const rows = getDb()
+    .prepare(
+      `SELECT mit.media_item_id as mediaItemId, t.name as name
+       FROM media_item_tag mit JOIN tag t ON t.id = mit.tag_id
+       ORDER BY t.name`
+    )
+    .all() as { mediaItemId: number; name: string }[]
+
+  const map: Record<number, string[]> = {}
+  for (const row of rows) {
+    if (!map[row.mediaItemId]) map[row.mediaItemId] = []
+    map[row.mediaItemId].push(row.name)
+  }
+  return map
+}
+
+export function getTagsForMedia(mediaItemId: number): string[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT t.name as name FROM tag t
+       JOIN media_item_tag mit ON mit.tag_id = t.id
+       WHERE mit.media_item_id = ? ORDER BY t.name`
+    )
+    .all(mediaItemId) as { name: string }[]
+  return rows.map((r) => r.name)
+}
+
+/** Replaces the full set of tags for a media item with the given list (creating new tags as needed). */
+export function setTagsForMedia(mediaItemId: number, tagNames: string[]): string[] {
+  const db = getDb()
+  const normalized = Array.from(new Set(tagNames.map((n) => n.trim()).filter(Boolean)))
+
+  const apply = db.transaction(() => {
+    db.prepare('DELETE FROM media_item_tag WHERE media_item_id = ?').run(mediaItemId)
+    for (const name of normalized) {
+      db.prepare('INSERT OR IGNORE INTO tag (name) VALUES (?)').run(name)
+      const tag = db.prepare('SELECT id FROM tag WHERE name = ?').get(name) as { id: number }
+      db.prepare('INSERT OR IGNORE INTO media_item_tag (media_item_id, tag_id) VALUES (?, ?)').run(
+        mediaItemId,
+        tag.id
+      )
+    }
+  })
+  apply()
+
+  return getTagsForMedia(mediaItemId)
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the IPC handler for tags:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `tags.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **tags.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { getTagsForAllMedia, listAllTagNames, setTagsForMedia } from '../db/tagRepository'
+import type { IpcResult } from '../../shared/types'
+
+export function registerTagsIpc(): void {
+  ipcMain.handle('tags:list', (): IpcResult<string[]> => {
+    return { ok: true, data: listAllTagNames() }
+  })
+
+  ipcMain.handle('tags:allForMedia', (): IpcResult<Record<number, string[]>> => {
+    return { ok: true, data: getTagsForAllMedia() }
+  })
+
+  ipcMain.handle('tags:setForMedia', (_event, payload: unknown): IpcResult<string[]> => {
+    const { mediaId, tagNames } = (payload ?? {}) as { mediaId?: unknown; tagNames?: unknown }
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    const names = Array.isArray(tagNames) ? tagNames.filter((n): n is string => typeof n === 'string') : []
+    return { ok: true, data: setTagsForMedia(mediaId, names) }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's create the collection repository:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `collectionRepository.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **collectionRepository.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { getDb } from './index'
+import type { Collection, CollectionInput, MediaItem } from '../../shared/types'
+
+interface CollectionRow {
+  id: number
+  name: string
+  description: string | null
+}
+
+interface MediaItemRow {
+  id: number
+  label: string
+  media_type: string
+  device_fingerprint: string | null
+  capacity_bytes: number | null
+  physical_location: string | null
+  notes: string | null
+  status: string
+  created_at: string
+  last_scanned_at: string | null
+  last_verified_at: string | null
+}
+
+function toMediaItem(row: MediaItemRow): MediaItem {
+  return {
+    id: row.id,
+    label: row.label,
+    mediaType: row.media_type,
+    deviceFingerprint: row.device_fingerprint,
+    capacityBytes: row.capacity_bytes,
+    physicalLocation: row.physical_location,
+    notes: row.notes,
+    status: row.status as MediaItem['status'],
+    createdAt: row.created_at,
+    lastScannedAt: row.last_scanned_at,
+    lastVerifiedAt: row.last_verified_at
+  }
+}
+
+function withStats(db: ReturnType<typeof getDb>, row: CollectionRow): Collection {
+  const stats = db
+    .prepare(
+      `SELECT COUNT(DISTINCT cmi.media_item_id) as memberCount,
+              COALESCE(SUM(f.total_size), 0) as totalSize,
+              COALESCE(SUM(f.total_files), 0) as totalFiles
+       FROM collection_media_item cmi
+       LEFT JOIN (
+         SELECT media_item_id, SUM(size_bytes) as total_size, COUNT(*) as total_files
+         FROM file_record WHERE is_directory = 0 GROUP BY media_item_id
+       ) f ON f.media_item_id = cmi.media_item_id
+       WHERE cmi.collection_id = ?`
+    )
+    .get(row.id) as { memberCount: number; totalSize: number; totalFiles: number }
+
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    memberCount: stats.memberCount,
+    totalSizeBytes: stats.totalSize,
+    totalFiles: stats.totalFiles
+  }
+}
+
+export function listCollections(): Collection[] {
+  const db = getDb()
+  const rows = db.prepare('SELECT id, name, description FROM collection ORDER BY name').all() as CollectionRow[]
+  return rows.map((row) => withStats(db, row))
+}
+
+export function createCollection(input: CollectionInput): Collection {
+  const db = getDb()
+  const result = db
+    .prepare('INSERT INTO collection (name, description) VALUES (?, ?)')
+    .run(input.name, input.description)
+  const row = db
+    .prepare('SELECT id, name, description FROM collection WHERE id = ?')
+    .get(Number(result.lastInsertRowid)) as CollectionRow
+  return withStats(db, row)
+}
+
+export function deleteCollection(id: number): void {
+  const db = getDb()
+  db.prepare('DELETE FROM collection_media_item WHERE collection_id = ?').run(id)
+  db.prepare('DELETE FROM collection WHERE id = ?').run(id)
+}
+
+export function getCollectionMembers(collectionId: number): MediaItem[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT mi.* FROM media_item mi
+       JOIN collection_media_item cmi ON cmi.media_item_id = mi.id
+       WHERE cmi.collection_id = ?
+       ORDER BY mi.label`
+    )
+    .all(collectionId) as MediaItemRow[]
+  return rows.map(toMediaItem)
+}
+
+export function addMemberToCollection(collectionId: number, mediaItemId: number): void {
+  getDb()
+    .prepare('INSERT OR IGNORE INTO collection_media_item (collection_id, media_item_id) VALUES (?, ?)')
+    .run(collectionId, mediaItemId)
+}
+
+export function removeMemberFromCollection(collectionId: number, mediaItemId: number): void {
+  getDb()
+    .prepare('DELETE FROM collection_media_item WHERE collection_id = ? AND media_item_id = ?')
+    .run(collectionId, mediaItemId)
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the IPC handler for collections:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `collections.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **collections.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import {
+  addMemberToCollection,
+  createCollection,
+  deleteCollection,
+  getCollectionMembers,
+  listCollections,
+  removeMemberFromCollection
+} from '../db/collectionRepository'
+import type { Collection, CollectionInput, IpcResult, MediaItem } from '../../shared/types'
+
+export function registerCollectionsIpc(): void {
+  ipcMain.handle('collections:list', (): IpcResult<Collection[]> => {
+    return { ok: true, data: listCollections() }
+  })
+
+  ipcMain.handle('collections:create', (_event, payload: unknown): IpcResult<Collection> => {
+    const { name, description } = (payload ?? {}) as { name?: unknown; description?: unknown }
+    if (typeof name !== 'string' || !name.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A name is required' } }
+    }
+    const input: CollectionInput = {
+      name: name.trim(),
+      description: typeof description === 'string' && description.trim() ? description.trim() : null
+    }
+    return { ok: true, data: createCollection(input) }
+  })
+
+  ipcMain.handle('collections:delete', (_event, payload: unknown): IpcResult<{ deleted: true }> => {
+    const id = (payload as { id?: unknown })?.id
+    if (typeof id !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric id is required' } }
+    }
+    deleteCollection(id)
+    return { ok: true, data: { deleted: true } }
+  })
+
+  ipcMain.handle('collections:members', (_event, payload: unknown): IpcResult<MediaItem[]> => {
+    const collectionId = (payload as { collectionId?: unknown })?.collectionId
+    if (typeof collectionId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric collectionId is required' } }
+    }
+    return { ok: true, data: getCollectionMembers(collectionId) }
+  })
+
+  ipcMain.handle('collections:addMember', (_event, payload: unknown): IpcResult<{ ok: true }> => {
+    const { collectionId, mediaId } = (payload ?? {}) as { collectionId?: unknown; mediaId?: unknown }
+    if (typeof collectionId !== 'number' || typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric collectionId and mediaId are required' } }
+    }
+    addMemberToCollection(collectionId, mediaId)
+    return { ok: true, data: { ok: true } }
+  })
+
+  ipcMain.handle('collections:removeMember', (_event, payload: unknown): IpcResult<{ ok: true }> => {
+    const { collectionId, mediaId } = (payload ?? {}) as { collectionId?: unknown; mediaId?: unknown }
+    if (typeof collectionId !== 'number' || typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric collectionId and mediaId are required' } }
+    }
+    removeMemberFromCollection(collectionId, mediaId)
+    return { ok: true, data: { ok: true } }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Create Collections functionality* (2/5)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's add the scan-errors query, custom-field repository, and export service:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `scanRepository.ts`, lines 1 to 10
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `export function recordScanError` (`**/electron/db/scanRepository.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `scanRepository.ts`, lines 79 to 86
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanRepository.ts**</summary>
+
+@@ lines 85-85 @@
+
+```
+getErrorsForMedia(mediaItemId: number): import('../../shared/types').ScanErrorEntry[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT se.path as path, se.error_type as errorType, se.message as message, sj.started_at as scanStartedAt
+       FROM scan_error se
+       JOIN scan_job sj ON sj.id = se.scan_job_id
+       WHERE sj.media_item_id = ?
+       ORDER BY sj.started_at DESC`
+    )
+    .all(mediaItemId) as { path: string; errorType: string; message: string | null; scanStartedAt: string }[]
+  return rows
+}
+
+export function 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanRepository.ts**</summary>
+
+@@ lines 2-2 @@
+
+```
+ErrorEntry, Scan
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanRepository.ts**</summary>
+
+@@ lines 85-85 @@ (deleted)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now add the IPC handler for `scan:errors` in `scan.ts`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `scan.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scan.ts**</summary>
+
+@@ lines 3-5 @@
+
+```
+getErrorsForMedia, listScanJobsForMedia } from '../db/scanRepository'
+import { getSettings } from '../settings/settingsStore'
+import type { HashMode, IpcResult, ScanErrorEntry
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scan.ts**</summary>
+
+@@ lines 3-5 @@
+
+```
+getErrorsForMedia, listScanJobsForMedia } from '../db/scanRepository'
+import { getSettings } from '../settings/settingsStore'
+import type { HashMode, IpcResult, ScanErrorEntry
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scan.ts**</summary>
+
+@@ lines 43-43 @@
+
+```
+
+  ipcMain.handle('scan:errors', (_event, payload: unknown): IpcResult<ScanErrorEntry[]> => {
+    const mediaId = (payload as { mediaId?: unknown })?.mediaId
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    return { ok: true, data: getErrorsForMedia(mediaId) }
+  })
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the custom-fields repository:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `customFieldRepository.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **customFieldRepository.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { getDb } from './index'
+import type { CustomFieldValue } from '../../shared/types'
+
+export function getCustomFieldsForMedia(mediaItemId: number): CustomFieldValue[] {
+  const rows = getDb()
+    .prepare('SELECT field_name as fieldName, field_value as fieldValue FROM media_item_custom_field WHERE media_item_id = ?')
+    .all(mediaItemId) as CustomFieldValue[]
+  return rows
+}
+
+export function setCustomFieldForMedia(mediaItemId: number, fieldName: string, fieldValue: string | null): void {
+  const db = getDb()
+  if (fieldValue === null || fieldValue.trim() === '') {
+    db.prepare('DELETE FROM media_item_custom_field WHERE media_item_id = ? AND field_name = ?').run(
+      mediaItemId,
+      fieldName
+    )
+    return
+  }
+  db.prepare(
+    `INSERT INTO media_item_custom_field (media_item_id, field_name, field_value)
+     VALUES (@mediaItemId, @fieldName, @fieldValue)
+     ON CONFLICT(media_item_id, field_name) DO UPDATE SET field_value = excluded.field_value`
+  ).run({ mediaItemId, fieldName, fieldValue })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the export service (CSV/JSON):    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `exportService.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **exportService.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import fs from 'node:fs'
+import { getDb } from '../db/index'
+import type { ExportFormat, ExportScope } from '../../shared/types'
+
+interface ExportRow {
+  media_label: string
+  path: string
+  name: string
+  extension: string | null
+  kind: string
+  size_bytes: number
+  modified_at_src: string | null
+  hash_value: string | null
+}
+
+function fetchRows(scope: ExportScope): ExportRow[] {
+  const db = getDb()
+  const base = `SELECT mi.label as media_label, fr.path, fr.name, fr.extension, fr.kind, fr.size_bytes,
+                       fr.modified_at_src, fr.hash_value
+                FROM file_record fr JOIN media_item mi ON mi.id = fr.media_item_id
+                WHERE fr.is_directory = 0`
+
+  if (scope.type === 'media') {
+    return db.prepare(`${base} AND fr.media_item_id = ? ORDER BY mi.label, fr.path`).all(scope.mediaId) as ExportRow[]
+  }
+  return db.prepare(`${base} ORDER BY mi.label, fr.path`).all() as ExportRow[]
+}
+
+function toCsv(rows: ExportRow[]): string {
+  const headers = ['Media', 'Path', 'Name', 'Extension', 'Kind', 'Size (bytes)', 'Modified', 'Hash']
+  const escape = (value: string | number | null): string => {
+    const str = value === null || value === undefined ? '' : String(value)
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+  }
+  const lines = [headers.join(',')]
+  for (const row of rows) {
+    lines.push(
+      [row.media_label, row.path, row.name, row.extension, row.kind, row.size_bytes, row.modified_at_src, row.hash_value]
+        .map(escape)
+        .join(',')
+    )
+  }
+  return lines.join('\n')
+}
+
+function toJson(rows: ExportRow[]): string {
+  return JSON.stringify(
+    rows.map((r) => ({
+      media: r.media_label,
+      path: r.path,
+      name: r.name,
+      extension: r.extension,
+      kind: r.kind,
+      sizeBytes: r.size_bytes,
+      modifiedAtSrc: r.modified_at_src,
+      hash: r.hash_value
+    })),
+    null,
+    2
+  )
+}
+
+export function exportCatalog(scope: ExportScope, format: ExportFormat, destinationPath: string): number {
+  const rows = fetchRows(scope)
+  const content = format === 'csv' ? toCsv(rows) : toJson(rows)
+  fs.writeFileSync(destinationPath, content, 'utf-8')
+  return rows.length
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Develop Media health error viewer and verification list* (3/8)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the export IPC handler:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `export.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **export.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { exportCatalog } from '../export/exportService'
+import type { ExportFormat, ExportScope, IpcResult } from '../../shared/types'
+
+export function registerExportIpc(): void {
+  ipcMain.handle('export:run', (_event, payload: unknown): IpcResult<{ fileCount: number }> => {
+    const { scope, format, destinationPath } = (payload ?? {}) as {
+      scope?: unknown
+      format?: unknown
+      destinationPath?: unknown
+    }
+
+    if (typeof destinationPath !== 'string' || !destinationPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A destinationPath is required' } }
+    }
+    if (format !== 'json' && format !== 'csv') {
+      return { ok: false, error: { code: 'invalid_input', message: 'format must be "json" or "csv"' } }
+    }
+
+    const scopeObj = scope as ExportScope
+    const validScope: ExportScope =
+      scopeObj && scopeObj.type === 'media' && typeof scopeObj.mediaId === 'number'
+        ? { type: 'media', mediaId: scopeObj.mediaId }
+        : { type: 'all' }
+
+    try {
+      const fileCount = exportCatalog(validScope, format as ExportFormat, destinationPath)
+      return { ok: true, data: { fileCount } }
+    } catch (err) {
+      return { ok: false, error: { code: 'export_error', message: (err as Error).message } }
+    }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **export.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { exportCatalog } from '../export/exportService'
+import type { ExportFormat, ExportScope, IpcResult } from '../../shared/types'
+
+export function registerExportIpc(): void {
+  ipcMain.handle('export:run', (_event, payload: unknown): IpcResult<{ fileCount: number }> => {
+    const { scope, format, destinationPath } = (payload ?? {}) as {
+      scope?: unknown
+      format?: unknown
+      destinationPath?: unknown
+    }
+
+    if (typeof destinationPath !== 'string' || !destinationPath.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A destinationPath is required' } }
+    }
+    if (format !== 'json' && format !== 'csv') {
+      return { ok: false, error: { code: 'invalid_input', message: 'format must be "json" or "csv"' } }
+    }
+
+    const scopeObj = scope as ExportScope
+    const validScope: ExportScope =
+      scopeObj && scopeObj.type === 'media' && typeof scopeObj.mediaId === 'number'
+        ? { type: 'media', mediaId: scopeObj.mediaId }
+        : { type: 'all' }
+
+    try {
+      const fileCount = exportCatalog(validScope, format as ExportFormat, destinationPath)
+      return { ok: true, data: { fileCount } }
+    } catch (err) {
+      return { ok: false, error: { code: 'export_error', message: (err as Error).message } }
+    }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the custom-fields IPC handler:    
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `customFields.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **customFields.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { ipcMain } from 'electron'
+import { getCustomFieldsForMedia, setCustomFieldForMedia } from '../db/customFieldRepository'
+import type { CustomFieldValue, IpcResult } from '../../shared/types'
+
+export function registerCustomFieldsIpc(): void {
+  ipcMain.handle('customFields:getForMedia', (_event, payload: unknown): IpcResult<CustomFieldValue[]> => {
+    const mediaId = (payload as { mediaId?: unknown })?.mediaId
+    if (typeof mediaId !== 'number') {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
+    }
+    return { ok: true, data: getCustomFieldsForMedia(mediaId) }
+  })
+
+  ipcMain.handle('customFields:setForMedia', (_event, payload: unknown): IpcResult<{ ok: true }> => {
+    const { mediaId, fieldName, fieldValue } = (payload ?? {}) as {
+      mediaId?: unknown
+      fieldName?: unknown
+      fieldValue?: unknown
+    }
+    if (typeof mediaId !== 'number' || typeof fieldName !== 'string' || !fieldName.trim()) {
+      return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId and fieldName are required' } }
+    }
+    setCustomFieldForMedia(mediaId, fieldName, typeof fieldValue === 'string' ? fieldValue : null)
+    return { ok: true, data: { ok: true } }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's wire everything into `main.ts`:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `main.ts`, lines 1 to 50
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 42-42 @@
+
+```
+registerTagsIpc()
+  registerCollectionsIpc()
+  registerExportIpc()
+  registerCustomFieldsIpc()
+  
+```
+
+@@ lines 14-14 @@
+
+```
+registerTagsIpc } from './ipc/tags'
+import { registerCollectionsIpc } from './ipc/collections'
+import { registerExportIpc } from './ipc/export'
+import { registerCustomFieldsIpc } from './ipc/customFields'
+import { 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's update `preload.ts` to expose all the new APIs:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 1 to 20
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 4-12 @@
+
+```
+Collection,
+  CollectionInput,
+  CustomFieldValue,
+  DashboardSummary,
+  DetectedDevice,
+  DuplicateReport,
+  DuplicateReportFilters,
+  ExportFormat,
+  ExportScope,
+  FileEntry,
+  HashMode,
+  IpcResult,
+  MediaItem,
+  MediaItemInput,
+  ScanErrorEntry
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `history: (mediaId` (`**/electron/preload.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 4-12 @@
+
+```
+Collection,
+  CollectionInput,
+  CustomFieldValue,
+  DashboardSummary,
+  DetectedDevice,
+  DuplicateReport,
+  DuplicateReportFilters,
+  ExportFormat,
+  ExportScope,
+  FileEntry,
+  HashMode,
+  IpcResult,
+  MediaItem,
+  MediaItemInput,
+  ScanErrorEntry
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 75 to 100
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 80-80 @@
+
+```
+
+    errors: (mediaId: number): Promise<IpcResult<ScanErrorEntry[]>> =>
+      ipcRenderer.invoke('scan:errors', { mediaId }),
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let's find the  section to add the new top-level sections after it:   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `backup: {` (`**/electron/preload.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `preload.ts`, lines 126 to 139
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 133-133 @@
+
+```
+,
+  tags: {
+    list: (): Promise<IpcResult<string[]>> => ipcRenderer.invoke('tags:list'),
+    allForMedia: (): Promise<IpcResult<Record<number, string[]>>> => ipcRenderer.invoke('tags:allForMedia'),
+    setForMedia: (mediaId: number, tagNames: string[]): Promise<IpcResult<string[]>> =>
+      ipcRenderer.invoke('tags:setForMedia', { mediaId, tagNames })
+  },
+  collections: {
+    list: (): Promise<IpcResult<Collection[]>> => ipcRenderer.invoke('collections:list'),
+    create: (input: CollectionInput): Promise<IpcResult<Collection>> => ipcRenderer.invoke('collections:create', input),
+    delete: (id: number): Promise<IpcResult<{ deleted: true }>> => ipcRenderer.invoke('collections:delete', { id }),
+    members: (collectionId: number): Promise<IpcResult<MediaItem[]>> =>
+      ipcRenderer.invoke('collections:members', { collectionId }),
+    addMember: (collectionId: number, mediaId: number): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('collections:addMember', { collectionId, mediaId }),
+    removeMember: (collectionId: number, mediaId: number): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('collections:removeMember', { collectionId, mediaId })
+  },
+  export: {
+    run: (scope: ExportScope, format: ExportFormat, destinationPath: string): Promise<IpcResult<{ fileCount: number }>> =>
+      ipcRenderer.invoke('export:run', { scope, format, destinationPath })
+  },
+  customFields: {
+    getForMedia: (mediaId: number): Promise<IpcResult<CustomFieldValue[]>> =>
+      ipcRenderer.invoke('customFields:getForMedia', { mediaId }),
+    setForMedia: (mediaId: number, fieldName: string, fieldValue: string | null): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('customFields:setForMedia', { mediaId, fieldName, fieldValue })
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 133-133 @@
+
+```
+,
+  tags: {
+    list: (): Promise<IpcResult<string[]>> => ipcRenderer.invoke('tags:list'),
+    allForMedia: (): Promise<IpcResult<Record<number, string[]>>> => ipcRenderer.invoke('tags:allForMedia'),
+    setForMedia: (mediaId: number, tagNames: string[]): Promise<IpcResult<string[]>> =>
+      ipcRenderer.invoke('tags:setForMedia', { mediaId, tagNames })
+  },
+  collections: {
+    list: (): Promise<IpcResult<Collection[]>> => ipcRenderer.invoke('collections:list'),
+    create: (input: CollectionInput): Promise<IpcResult<Collection>> => ipcRenderer.invoke('collections:create', input),
+    delete: (id: number): Promise<IpcResult<{ deleted: true }>> => ipcRenderer.invoke('collections:delete', { id }),
+    members: (collectionId: number): Promise<IpcResult<MediaItem[]>> =>
+      ipcRenderer.invoke('collections:members', { collectionId }),
+    addMember: (collectionId: number, mediaId: number): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('collections:addMember', { collectionId, mediaId }),
+    removeMember: (collectionId: number, mediaId: number): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('collections:removeMember', { collectionId, mediaId })
+  },
+  export: {
+    run: (scope: ExportScope, format: ExportFormat, destinationPath: string): Promise<IpcResult<{ fileCount: number }>> =>
+      ipcRenderer.invoke('export:run', { scope, format, destinationPath })
+  },
+  customFields: {
+    getForMedia: (mediaId: number): Promise<IpcResult<CustomFieldValue[]>> =>
+      ipcRenderer.invoke('customFields:getForMedia', { mediaId }),
+    setForMedia: (mediaId: number, fieldName: string, fieldValue: string | null): Promise<IpcResult<{ ok: true }>> =>
+      ipcRenderer.invoke('customFields:setForMedia', { mediaId, fieldName, fieldValue })
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's check for errors across all the backend changes before moving to the renderer UI work.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked `tagRepository.ts`, `collectionRepository.ts`, `customFieldRepository.ts`, `scanRepository.ts`, `exportService.ts`, `tags.ts`, `collections.ts`, `export.ts`, `customFields.ts`, `scan.ts`, `main.ts`, `preload.ts`, `settingsStore.ts`, `index.ts`, `types.ts`, no problems found
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's compile now to catch any type errors early, before writing the renderer UI.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:electron 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:renderer 2>&1 | tail -60`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Let's verify the new backend logic (tags, collections, custom fields, migration 3, export) directly against the real database before building the UI, to catch SQL bugs early.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-phase2.js << 'EOF'
+const \{ app \} = require...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Found a real bug: deleting a media item now fails with a foreign key constraint violation once it has tag associations (and likely file_record/scan_job/collection/custom-field rows too). Let me check `deleteMediaItem`.   
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `deleteMediaItem` (`**/electron/db/mediaRepository.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `mediaRepository.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `media_item_id|REFERENCES|CASCADE` (`**/electron/db/index.ts`), 15 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for regex `foreign_keys|deleteMediaItem` (`**/electron/**`), 3 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `index.ts`, lines 1 to 30
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for regex `pragma|PRAGMA` (`**/electron/db/index.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search,**/.dart_tool]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `index.ts`, lines 100 to 160
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search,**/.dart_tool]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `index.ts`, lines 155 to 172
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for regex `foreign_keys|pragma", "isRegexp": true, "includePattern": "**/*.ts`, 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search,**/.dart_tool]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for regex `DELETE FROM (file_record|scan_job|scan_error)` (`**/electron/**`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for regex `foreign_keys|pragma\(` (`**/*.ts`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `media.ts`, lines 95 to 125
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for regex `foreign_keys`, 2 results
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for regex `pragma` (`**/electron/**`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Confirmed:  never cleaned up child rows, and since better-sqlite3 enforces foreign keys by default in this setup, deletion of any media item with tags/custom-fields/collection-membership/scan-history now throws. Fixing it to cascade properly within a transaction. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `scanRepository.ts`, lines 1 to 40
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now let me update  to cascade delete all related rows in a transaction: 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **mediaRepository.ts**</summary>
+
+@@ lines 1-124 @@
+
+```
+import { getDb } from './index'
+import type { MediaItem, MediaItemInput } from '../../shared/types'
+
+interface MediaItemRow {
+  id: number
+  label: string
+  media_type: string
+  device_fingerprint: string | null
+  capacity_bytes: number | null
+  physical_location: string | null
+  notes: string | null
+  status: string
+  created_at: string
+  last_scanned_at: string | null
+  last_verified_at: string | null
+}
+
+function toMediaItem(row: MediaItemRow): MediaItem {
+  return {
+    id: row.id,
+    label: row.label,
+    mediaType: row.media_type as MediaItem['mediaType'],
+    deviceFingerprint: row.device_fingerprint,
+    capacityBytes: row.capacity_bytes,
+    physicalLocation: row.physical_location,
+    notes: row.notes,
+    status: row.status as MediaItem['status'],
+    createdAt: row.created_at,
+    lastScannedAt: row.last_scanned_at,
+    lastVerifiedAt: row.last_verified_at
+  }
+}
+
+export function listMediaItems(): MediaItem[] {
+  const rows = getDb()
+    .prepare('SELECT * FROM media_item ORDER BY created_at DESC')
+    .all() as MediaItemRow[]
+  return rows.map(toMediaItem)
+}
+
+export function getMediaItem(id: number): MediaItem | null {
+  const row = getDb().prepare('SELECT * FROM media_item WHERE id = ?').get(id) as
+    | MediaItemRow
+    | undefined
+  return row ? toMediaItem(row) : null
+}
+
+export function createMediaItem(input: MediaItemInput): MediaItem {
+  const result = getDb()
+    .prepare(
+      `INSERT INTO media_item (label, media_type, capacity_bytes, physical_location, notes, device_fingerprint)
+       VALUES (@label, @mediaType, @capacityBytes, @physicalLocation, @notes, @deviceFingerprint)`
+    )
+    .run({
+      label: input.label,
+      mediaType: input.mediaType,
+      capacityBytes: input.capacityBytes,
+      physicalLocation: input.physicalLocation,
+      notes: input.notes,
+      deviceFingerprint: input.deviceFingerprint ?? null
+    })
+
+  const created = getMediaItem(Number(result.lastInsertRowid))
+  if (!created) throw new Error('Failed to load newly created media item')
+  return created
+}
+
+export function updateMediaItem(id: number, patch: Partial<MediaItemInput>): MediaItem {
+  const existing = getMediaItem(id)
+  if (!existing) throw new Error(`Media item ${id} not found`)
+
+  const merged: MediaItemInput = {
+    label: patch.label ?? existing.label,
+    mediaType: patch.mediaType ?? existing.mediaType,
+    capacityBytes: patch.capacityBytes !== undefined ? patch.capacityBytes : existing.capacityBytes,
+    physicalLocation:
+      patch.physicalLocation !== undefined ? patch.physicalLocation : existing.physicalLocation,
+    notes: patch.notes !== undefined ? patch.notes : existing.notes
+  }
+
+  getDb()
+    .prepare(
+      `UPDATE media_item
+       SET label = @label, media_type = @mediaType, capacity_bytes = @capacityBytes,
+           physical_location = @physicalLocation, notes = @notes
+       WHERE id = @id`
+    )
+    .run({ id, ...merged })
+
+  const updated = getMediaItem(id)
+  if (!updated) throw new Error('Failed to load updated media item')
+  return updated
+}
+
+export function retireMediaItem(id: number): MediaItem {
+  getDb().prepare("UPDATE media_item SET status = 'retired' WHERE id = ?").run(id)
+  const updated = getMediaItem(id)
+  if (!updated) throw new Error('Failed to load retired media item')
+  return updated
+}
+
+export function deleteMediaItem(id: number): void {
+  const database = getDb()
+  const deleteCascade = database.transaction((mediaItemId: number) => {
+    database.prepare('DELETE FROM media_item_tag WHERE media_item_id = ?').run(mediaItemId)
+    database
+      .prepare('DELETE FROM collection_media_item WHERE media_item_id = ?')
+      .run(mediaItemId)
+    database
+      .prepare('DELETE FROM media_item_custom_field WHERE media_item_id = ?')
+      .run(mediaItemId)
+    database.prepare('DELETE FROM file_record WHERE media_item_id = ?').run(mediaItemId)
+    database
+      .prepare(
+        'DELETE FROM scan_error WHERE scan_job_id IN (SELECT id FROM scan_job WHERE media_item_id = ?)'
+      )
+      .run(mediaItemId)
+    database.prepare('DELETE FROM scan_job WHERE media_item_id = ?').run(mediaItemId)
+    database.prepare('DELETE FROM media_item WHERE id = ?').run(mediaItemId)
+  })
+  deleteCascade(id)
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:electron 2>&1 | tail -40`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Clean build. Now re-run the test script to confirm cleanup succeeds without FK errors. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-phase2b.js << 'EOF'
+const \{ app \} = requir...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Fix confirmed. Now let's clean up any leftover test data from the previous failed run and check git status/sync before committing. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` cat > /home/kel/dev/DiscDock/test-cleanup-check.js << 'EOF'
+const \{ app \} = ...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Good, database is clean now. Let's check integrity and git sync before committing. 
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Run in Terminal
 </details></tool-use>

@@ -100,5 +100,23 @@ export function retireMediaItem(id: number): MediaItem {
 }
 
 export function deleteMediaItem(id: number): void {
-  getDb().prepare('DELETE FROM media_item WHERE id = ?').run(id)
+  const database = getDb()
+  const deleteCascade = database.transaction((mediaItemId: number) => {
+    database.prepare('DELETE FROM media_item_tag WHERE media_item_id = ?').run(mediaItemId)
+    database
+      .prepare('DELETE FROM collection_media_item WHERE media_item_id = ?')
+      .run(mediaItemId)
+    database
+      .prepare('DELETE FROM media_item_custom_field WHERE media_item_id = ?')
+      .run(mediaItemId)
+    database.prepare('DELETE FROM file_record WHERE media_item_id = ?').run(mediaItemId)
+    database
+      .prepare(
+        'DELETE FROM scan_error WHERE scan_job_id IN (SELECT id FROM scan_job WHERE media_item_id = ?)'
+      )
+      .run(mediaItemId)
+    database.prepare('DELETE FROM scan_job WHERE media_item_id = ?').run(mediaItemId)
+    database.prepare('DELETE FROM media_item WHERE id = ?').run(mediaItemId)
+  })
+  deleteCascade(id)
 }
