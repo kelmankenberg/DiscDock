@@ -7339,3 +7339,1298 @@ _**Agent (copilot/auto)**_
 
 Running ` npm install --save-dev @types/qrcode 2>&1 | tail -3 && node -e "const p=requ...`
 </details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `scanManager.ts`
+
+**Input:**
+
+- endLine: `140`
+- filePath: `/home/kel/dev/DiscDock/electron/scanning/scanManager.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { BrowserWindow, Notification } from 'electron'
+import { walkAndScan } from './scanEngine'
+import {
+  createScanJob,
+  finalizeScanJob,
+  markMediaScanned,
+  pruneUnseenFiles,
+  recordScanError,
+  upsertFileRecord
+} from '../db/scanRepository'
+import { getSettings } from '../settings/settingsStore'
+import type { HashMode, ScanProgress } from '../../shared/types'
+
+interface ActiveJob {
+  cancelled: boolean
+}
+
+const activeJobs = new Map<number, ActiveJob>()
+let win: BrowserWindow | null = null
+
+export function initScanManager(mainWindow: BrowserWindow): void {
+  win = mainWindow
+}
+
+export function cancelScan(jobId: number): boolean {
+  const job = activeJobs.get(jobId)
+  if (!job) return false
+  job.cancelled = true
+  return true
+}
+
+/** Creates the scan_job row synchronously and runs the walk in the background; returns the job id immediately. */
+export function startScan(mediaItemId: number, rootPath: string, hashMode: HashMode): number {
+  const job = createScanJob(mediaItemId, hashMode)
+  void runScan(job.id, mediaItemId, rootPath, hashMode)
+  return job.id
+}
+
+async function runScan(jobId: number, mediaItemId: number, rootPath: string, hashMode: HashMode): Promise<void> {
+  const state: ActiveJob = { cancelled: false }
+  activeJobs.set(jobId, state)
+  const settings = getSettings()
+
+  let filesAdded = 0
+  let filesModified = 0
+  let filesUnchanged = 0
+  let errorCount = 0
+
+  try {
+    await walkAndScan(
+      rootPath,
+      { hashMode, excludePatterns: settings.excludePatterns, followSymlinks: settings.followSymlinks },
+      {
+        onFile: (file) => {
+          const outcome = upsertFileRecord(mediaItemId, jobId, file)
+          if (outcome === 'added') filesAdded += 1
+          else if (outcome === 'modified') filesModified += 1
+          else filesUnchanged += 1
+        },
+        onProgress: (filesProcessed, bytesProcessed, currentPath) => {
+          const progress: ScanProgress = { jobId, filesProcessed, bytesProcessed, currentPath }
+          win?.
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `scanRepository.ts`, lines 1 to 80
+
+**Input:**
+
+- endLine: `80`
+- filePath: `/home/kel/dev/DiscDock/electron/db/scanRepository.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { getDb } from './index'
+import type { HashMode, ScanErrorEntry, ScanJob, ScanStatus } from '../../shared/types'
+
+interface ScanJobRow {
+  id: number
+  media_item_id: number
+  status: string
+  hash_mode: string
+  started_at: string
+  completed_at: string | null
+  files_added: number
+  files_removed: number
+  files_modified: number
+  files_unchanged: number
+  error_count: number
+}
+
+function toScanJob(row: ScanJobRow): ScanJob {
+  return {
+    id: row.id,
+    mediaItemId: row.media_item_id,
+    status: row.status as ScanStatus,
+    hashMode: row.hash_mode as HashMode,
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    filesAdded: row.files_added,
+    filesRemoved: row.files_removed,
+    filesModified: row.files_modified,
+    filesUnchanged: row.files_unchanged,
+    errorCount: row.error_count
+  }
+}
+
+export function createScanJob(mediaItemId: number, hashMode: HashMode): ScanJob {
+  const result = getDb()
+    .prepare(
+      `INSERT INTO scan_job (media_item_id, status, hash_mode) VALUES (?, 'running', ?)`
+    )
+    .run(mediaItemId, hashMode)
+  return getScanJob(Number(result.lastInsertRowid))!
+}
+
+export function getScanJob(id: number): ScanJob | null {
+  const row = getDb().prepare('SELECT * FROM scan_job WHERE id = ?').get(id) as
+    | ScanJobRow
+    | undefined
+  return row ? toScanJob(row) : null
+}
+
+export function listScanJobsForMedia(mediaItemId: number): ScanJob[] {
+  const rows = getDb()
+    .prepare('SELECT * FROM scan_job WHERE media_item_id = ? ORDER BY started_at DESC')
+    .all(mediaItemId) as ScanJobRow[]
+  return rows.map(toScanJob)
+}
+
+export function finalizeScanJob(
+  id: number,
+  status: ScanStatus,
+  counts: {
+    filesAdded: number
+    filesRemoved: number
+    filesModified: number
+    filesUnchanged: number
+    errorCount: number
+  }
+): void {
+  getDb()
+    .prepare(
+      `UPDATE scan_job
+       SET status = @status, completed_at = datetime('now'), files_added = @filesAdded,
+           files_removed = @filesRemoved, fil
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanRepository.ts**</summary>
+
+@@ lines 37-40 @@
+
+```
+queued', ?)`
+    )
+    .run(mediaItemId, hashMode)
+  return getScanJob(Number(result.lastInsertRowid))!
+}
+
+export function markScanJobRunning(id: number): void {
+  getDb()
+    .prepare("UPDATE scan_job SET status = 'running', started_at = datetime('now') WHERE id = ?")
+    .run(id)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **scanManager.ts**</summary>
+
+@@ lines 94-94 @@
+
+```
+  pumpQueue()
+  
+```
+
+@@ lines 7-35 @@
+
+```
+markScanJobRunning,
+  pruneUnseenFiles,
+  recordScanError,
+  upsertFileRecord
+} from '../db/scanRepository'
+import { getSettings } from '../settings/settingsStore'
+import type { HashMode, ScanProgress } from '../../shared/types'
+
+interface ActiveJob {
+  cancelled: boolean
+}
+
+interface QueuedJob {
+  jobId: number
+  mediaItemId: number
+  rootPath: string
+  hashMode: HashMode
+}
+
+const activeJobs = new Map<number, ActiveJob>()
+const queue: QueuedJob[] = []
+let win: BrowserWindow | null = null
+
+export function initScanManager(mainWindow: BrowserWindow): void {
+  win = mainWindow
+}
+
+function maxConcurrentScans(): number {
+  const configured = getSettings().maxConcurrentScans
+  return Number.isFinite(configured) ? Math.max(1, Math.trunc(configured)) : 1
+}
+
+function pumpQueue(): void {
+  while (activeJobs.size < maxConcurrentScans() && queue.length > 0) {
+    const next = queue.shift() as QueuedJob
+    markScanJobRunning(next.jobId)
+    win?.webContents.send('scan:started', { jobId: next.jobId, mediaItemId: next.mediaItemId })
+    void runScan(next.jobId, next.mediaItemId, next.rootPath, next.hashMode)
+  }
+}
+
+export function cancelScan(jobId: number): boolean {
+  const job = activeJobs.get(jobId)
+  if (job) {
+    job.cancelled = true
+    return true
+  }
+
+  const queuedIndex = queue.findIndex((entry) => entry.jobId === jobId)
+  if (queuedIndex === -1) return false
+
+  queue.splice(queuedIndex, 1)
+  finalizeScanJob(jobId, 'cancelled', {
+    filesAdded: 0,
+    filesRemoved: 0,
+    filesModified: 0,
+    filesUnchanged: 0,
+    errorCount: 0
+  })
+  win?.webContents.send('scan:cancelled', { jobId })
+  return true
+}
+
+/** Creates the scan_job row synchronously and queues the walk; returns the job id immediately. */
+export function startScan(mediaItemId: number, rootPath: string, hashMode: HashMode): number {
+  const job = createScanJob(mediaItemId, hashMode)
+  queue.push({ jobId: job.id, mediaItemId, rootPath, hashMode })
+  pumpQueue(
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **settingsStore.ts**</summary>
+
+@@ lines 18-18 @@
+
+```
+,
+  maxConcurrentScans: 1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 199-199 @@
+
+```
+  maxConcurrentScans: number
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `scan:progress|onProgress|onCompleted` (`**/electron/preload.ts`), 4 results
+
+**Input:**
+
+- includePattern: `electron/preload.ts`
+- isRegexp: `true`
+- query: `scan:progress|onProgress|onCompleted`
+
+**Result:**
+
+```
+Found 4 matches in 1 file for "scan:progress|onProgress|onCompleted"
+
+electron/preload.ts
+91:    onProgress: (callback: (progress: ScanProgress) => void): (() => void) => {
+93:      ipcRenderer.on('scan:progress', listener)
+94:      return () => ipcRenderer.removeListener('scan:progress', listener)
+96:    onCompleted: (callback: (payload: { jobId: number }) => void): (() => void) => {
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `preload.ts`, lines 86 to 112
+
+**Input:**
+
+- endLine: `112`
+- filePath: `/home/kel/dev/DiscDock/electron/preload.ts`
+- startLine: `86`
+
+**Result:**
+
+```
+      ipcRenderer.invoke('scan:cancel', { jobId }),
+    history: (mediaId: number): Promise<IpcResult<ScanJob[]>> =>
+      ipcRenderer.invoke('scan:history', { mediaId }),
+    errors: (mediaId: number): Promise<IpcResult<ScanErrorEntry[]>> =>
+      ipcRenderer.invoke('scan:errors', { mediaId }),
+    onProgress: (callback: (progress: ScanProgress) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, progress: ScanProgress): void => callback(progress)
+      ipcRenderer.on('scan:progress', listener)
+      return () => ipcRenderer.removeListener('scan:progress', listener)
+    },
+    onCompleted: (callback: (payload: { jobId: number }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number }): void => callback(payload)
+      ipcRenderer.on('scan:completed', listener)
+      return () => ipcRenderer.removeListener('scan:completed', listener)
+    },
+    onFailed: (callback: (payload: { jobId: number; error: string }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number; error: string }): void =>
+        callback(payload)
+      ipcRenderer.on('scan:failed', listener)
+      return () => ipcRenderer.removeListener('scan:failed', listener)
+    },
+    onCancelled: (callback: (payload: { jobId: number }) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number }): void => callback(payload)
+      ipcRenderer.on('scan:cancelled', listener)
+      return () => ipcRenderer.removeListener('scan:cancelled', listener)
+    }
+  },
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 95-95 @@
+
+```
+
+    onStarted: (callback: (payload: { jobId: number; mediaItemId: number }) => void): (() => void) => {
+      const listener = (
+        _event: Electron.IpcRendererEvent,
+        payload: { jobId: number; mediaItemId: number }
+      ): void => callback(payload)
+      ipcRenderer.on('scan:started', listener)
+      return () => ipcRenderer.removeListener('scan:started', listener)
+    },
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the Media Library queued state and the Settings control.  
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **MediaLibrary.tsx**</summary>
+
+@@ lines 863-863 @@
+
+```
+{scan.queued ? 'Queued…' : `Scanning… ${scan.filesProcessed} files`}
+```
+
+@@ lines 511-511 @@
+
+```
+
+          ...prev,
+          [mediaId]: { jobId, filesProcessed: 0, currentPath: '', queued: true }
+       
+```
+
+@@ lines 398-402 @@
+
+```
+const unsubStarted = window.discdock.scan.onStarted(({ mediaItemId }) => {
+      setScansByMedia((prevScans) => {
+        const scan = prevScans[mediaItemId]
+        if (!scan) return prevScans
+        return { ...prevScans, [mediaItemId]: { ...scan, queued: false } }
+      })
+    })
+
+    return () => {
+      unsubProgress()
+      unsubCompleted()
+      unsubFailed()
+      unsubCancelled()
+      unsubStart
+```
+
+@@ lines 370-370 @@
+
+```
+,
+            queued: false
+```
+
+@@ lines 49-49 @@
+
+```
+  queued: boolean
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `Settings.tsx`, lines 76 to 100
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/home/kel/dev/DiscDock/src/views/Settings.tsx`
+- startLine: `76`
+
+**Result:**
+
+```
+          />
+        </label>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.followSymlinks}
+            onChange={(e) => save({ followSymlinks: e.target.checked })}
+          />
+          Follow symbolic links during scans
+        </label>
+      </section>
+
+      <section className="settings-section">
+        <h2>Appearance</h2>
+        <label>
+          Theme
+          <select value={settings.theme} onChange={(e) => save({ theme: e.target.value as Theme })}>
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+      </section>
+
+      <section className="settings-section">
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.tsx**</summary>
+
+@@ lines 86-86 @@
+
+```
+  <label className="settings-months-field">
+          Maximum simultaneous scans
+          <input
+            type="number"
+            min={1}
+            max={8}
+            value={settings.maxConcurrentScans}
+            onChange={(e) => {
+              const value = Number(e.target.value)
+              if (Number.isFinite(value) && value >= 1) save({ maxConcurrentScans: Math.trunc(value) })
+            }}
+          />
+        </label>
+      
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build 2>&1 | tail -10`
+
+Build after adding the scan queue.
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build 2>&1 | tail -10
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build 2>&1 | tail -10` (terminal ID=dfed0780-d9b5-4ca2-8731-5ca9aba8aca6). This is the output of running that command instead:
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BcGbPnvG.css   16.33 kB │ gzip:  3.32 kB
+dist/assets/index-BRahEdfL.js   280.67 kB │ gzip: 86.21 kB
+
+✓ built in 354ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.tsx**</summary>
+
+@@ lines 86-86 @@
+
+```
+  <label className="settings-months-field">
+          Maximum simultaneous scans
+          <input
+            type="number"
+            min={1}
+            max={8}
+            value={settings.maxConcurrentScans}
+            onChange={(e) => {
+              const value = Number(e.target.value)
+              if (Number.isFinite(value) && value >= 1) save({ maxConcurrentScans: Math.trunc(value) })
+            }}
+          />
+        </label>
+      
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Next Phase 3 item done: **controlled scan concurrency**.
+
+Previously  fired every job immediately with no limit, so scanning several devices thrashed I/O. Now:
+
+- **`electron/scanning/scanManager.ts`** holds a FIFO queue and only promotes jobs while `activeJobs.size < maxConcurrentScans`. The queue is pumped when a job finishes and when a new one arrives. Cancelling a still-queued job removes it from the queue, finalizes it as , and emits `scan:cancelled` — no orphaned rows.
+- **`electron/db/scanRepository.ts`** — jobs are created as  (a status that already existed but was never used) and flipped to `running` with a fresh  when they actually begin, so scan history durations are accurate.
+- **New `scan:started` event** relayed through `electron/preload.ts`; the Media Library shows "Queued…" until a job starts, then switches to live progress.
+- **Setting** —  (default 1) with a "Maximum simultaneous scans" control under Settings → Scanning Defaults, making parallel scanning the opt-in power-user feature the roadmap describes.
+
+Build passes. Phase 3 remaining: auto-update via `electron-updater`, optical audio CD track listings, and Windows/macOS device detection.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Set up deep linking for QR codes* (1/2)
+</details></tool-use>
+
+---
+
+_**User (2026-08-14 15:36:08Z)**_
+
+continue with what is the next logical step
+
+---
+
+_**Agent (copilot/auto)**_
+
+<think><details><summary>Thought Process</summary>
+Now the Settings UI section for updates.
+</details></think>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `Settings.tsx`, lines 1 to 30
+
+**Input:**
+
+- endLine: `30`
+- filePath: `/home/kel/dev/DiscDock/src/views/Settings.tsx`
+- startLine: `1`
+
+**Result:**
+
+```
+import { useEffect, useState } from 'react'
+import type { AppSettings, HashMode, Theme } from '../../shared/types'
+import './Settings.css'
+
+const HASH_MODES: { value: HashMode; label: string }[] = [
+  { value: 'none', label: 'None (metadata only, fastest)' },
+  { value: 'quick', label: 'Quick (partial hash)' },
+  { value: 'full', label: 'Full (SHA-256, most accurate)' }
+]
+
+export default function Settings(): JSX.Element {
+  const [settings, setSettings] = useState<AppSettings | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [newMediaType, setNewMediaType] = useState('')
+  const [newFieldName, setNewFieldName] = useState('')
+
+  useEffect(() => {
+    void window.discdock.settings.get().then((result) => {
+      if (result.ok) setSettings(result.data)
+    })
+  }, [])
+
+  const save = (patch: Partial<AppSettings>): void => {
+    void window.discdock.settings.update(patch).then((result) => {
+      if (result.ok) {
+        setSettings(result.data)
+        if (patch.theme) document.documentElement.dataset.theme = result.data.theme
+        setSaved(true)
+        setTimeout(() => setSaved(false), 1500)
+      }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.tsx**</summary>
+
+@@ lines 15-15 @@
+
+```
+
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ state: 'idle' })
+
+  useEffect(() => {
+    void window.discdock.updates.status().then((result) => {
+      if (result.ok) setUpdateStatus(result.data)
+    })
+    return window.discdock.updates.onStatus(setUpdateStatus)
+  }, [])
+```
+
+@@ lines 2-2 @@
+
+```
+, UpdateStatus
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created 3 todos
+
+**Input:**
+
+- content:
+
+```
+import { app, BrowserWindow, ipcMain } from 'electron'
+import electronUpdater from 'electron-updater'
+import { getSettings } from '../settings/settingsStore'
+import type { IpcResult, UpdateStatus } from '../../shared/types'
+
+const { autoUpdater } = electronUpdater
+
+let win: BrowserWindow | null = null
+let lastStatus: UpdateStatus = { state: 'idle' }
+
+function publish(status: UpdateStatus): void {
+  lastStatus = status
+  win?.webContents.send('update:status', status)
+}
+
+/** Auto-update only works against a packaged, signed artifact with a configured publish target. */
+function isSupported(): boolean {
+  return app.isPackaged
+}
+
+export function initAutoUpdater(mainWindow: BrowserWindow): void {
+  win = mainWindow
+  autoUpdater.autoDownload = false
+
+  autoUpdater.on('checking-for-update', () => publish({ state: 'checking' }))
+  autoUpdater.on('update-available', (info) => publish({ state: 'available', version: info.version }))
+  autoUpdater.on('update-not-available', () => publish({ state: 'up-to-date' }))
+  autoUpdater.on('download-progress', (progress) =>
+    publish({ state: 'downloading', percent: Math.round(progress.percent) })
+  )
+  autoUpdater.on('update-downloaded', (info) => publish({ state: 'downloaded', version: info.version }))
+  autoUpdater.on('error', (err) => publish({ state: 'error', message: err.message }))
+
+  if (isSupported() && getSettings().autoUpdateEnabled) {
+    void autoUpdater.checkForUpdates().catch(() => undefined)
+  }
+}
+
+export function registerUpdateIpc(): void {
+  ipcMain.handle('update:status', (): IpcResult<UpdateStatus> => ({ ok: true, data: lastStatus }))
+
+  ipcMain.handle('update:check', async (): Promise<IpcResult<UpdateStatus>> => {
+    if (!isSupported()) {
+      const status: UpdateStatus = {
+        state: 'error',
+        message: 'Updates are only available in an installed build.'
+      }
+      publish(status)
+      return { ok: true, data: status }
+    }
+    try {
+      await autoUpdater.checkForUpdates()
+      return { ok: true, data: lastStatus }
+    } catch (err) {
+      return { ok: false, error: { code: 'update_error', message: (err as Error).message } }
+    }
+  })
+
+  ipcMain.handle('update:download', async (): Promise<IpcResult<{ started: true }>> => {
+    if (!isSupported()) {
+      return {
+        ok: false,
+        error: { code: 'update_error', message: 'Updates are only available in an installed build.' }
+      }
+    }
+    try {
+      await autoUpdater.downloadUpdate()
+      return { ok: true, data: { started: true } }
+    } catch (err) {
+      return { ok: false, error: { code: 'update_error', message: (err as Error).message } }
+    }
+  })
+
+  ipcMain.handle('update:install', (): IpcResult<null> => {
+    if (lastStatus.state !== 'downloaded') {
+      return { ok: false, error: { code: 'update_error', message: 'No downloaded update to install' } }
+    }
+    autoUpdater.quitAndInstall()
+    return { ok: true, data: null }
+  })
+}
+
+```
+
+- filePath: `/home/kel/dev/DiscDock/electron/updates/autoUpdater.ts`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/electron/updates/autoUpdater.ts
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.tsx**</summary>
+
+@@ lines 235-235 @@
+
+```
+Updates</h2>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.autoUpdateEnabled}
+            onChange={(e) => save({ autoUpdateEnabled: e.target.checked })}
+          />
+          Check for updates automatically on startup
+        </label>
+        <p>{updateStatusMessage(updateStatus)}</p>
+        <div className="settings-list-editor">
+          <button
+            type="button"
+            className="button button--small"
+            onClick={() => void window.discdock.updates.check()}
+          >
+            Check Now
+          </button>
+          {updateStatus.state === 'available' && (
+            <button
+              type="button"
+              className="button button--small button--primary"
+              onClick={() => void window.discdock.updates.download()}
+            >
+              Download Update
+            </button>
+          )}
+          {updateStatus.state === 'downloaded' && (
+            <button
+              type="button"
+              className="button button--small button--primary"
+              onClick={() => void window.discdock.updates.install()}
+            >
+              Restart & Install
+            </button>
+          )}
+        </div>
+      </section>
+
+      <section className="settings-section">
+        <h2>
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **Settings.tsx**</summary>
+
+@@ lines 9-9 @@
+
+```
+
+
+function updateStatusMessage(status: UpdateStatus): string {
+  switch (status.state) {
+    case 'checking':
+      return 'Checking for updates…'
+    case 'up-to-date':
+      return 'DiscDock is up to date.'
+    case 'available':
+      return `Version ${status.version} is available.`
+    case 'downloading':
+      return `Downloading update… ${status.percent}%`
+    case 'downloaded':
+      return `Version ${status.version} is ready to install.`
+    case 'error':
+      return status.message
+    default:
+      return 'No update check has run yet.'
+  }
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **electron-builder.yml**</summary>
+
+@@ lines 26-26 @@
+
+```
+
+# electron-updater supports the AppImage target; .deb installs update via the distro package.
+publish:
+  provider: github
+  owner: kelmankenberg
+  repo: DiscDock
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build 2>&1 | tail -12`
+
+Build after adding auto-update.
+
+```bash
+cd /home/kel/dev/DiscDock && npm run build 2>&1 | tail -12
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` npm run build 2>&1 | tail -12` (terminal ID=32b6344d-78be-4bbc-8104-c1d10b041ecb). This is the output of running that command instead:
+transforming...✓ 1845 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BcGbPnvG.css   16.33 kB │ gzip:  3.32 kB
+dist/assets/index-C9ypHKUb.js   282.17 kB │ gzip: 86.57 kB
+
+✓ built in 401ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `autoUpdater.ts`, `Settings.tsx`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/home/kel/dev/DiscDock/electron/updates/autoUpdater.ts",
+  "/home/kel/dev/DiscDock/src/views/Settings.tsx"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/home/kel/dev/DiscDock/electron/updates/autoUpdater.ts">
+No errors found
+</errors>
+<errors path="/home/kel/dev/DiscDock/src/views/Settings.tsx">
+No errors found
+</errors>
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Next Phase 3 item done: **auto-update via `electron-updater`**.
+
+- **`electron/updates/autoUpdater.ts`** — wraps `electron-updater` with `autoDownload = false` so nothing downloads without consent. It maps updater events onto a typed  union (idle / checking / up-to-date / available / downloading / downloaded / error), caches the latest status, and pushes changes to the renderer. All entry points are gated on , so dev runs report a clear "only available in an installed build" message instead of throwing.
+- **IPC** — `update:status`, `update:check`, `update:download`, `update:install` (install refuses unless an update is actually downloaded), exposed as `updates.*` plus  in `electron/preload.ts`.
+- **Startup check** — runs only when packaged *and* the new  setting is on.
+- **Settings → Updates** — the toggle, a live status line, "Check Now", and contextual "Download Update" / "Restart & Install" buttons.
+- **`electron-builder.yml`** — GitHub publish provider configured (AppImage is the updatable target; `.deb` updates through the distro package manager).
+
+Build passes. End-to-end verification requires a published GitHub release, which I can't do from here.
+
+Phase 3 remaining: optical audio CD track listings (FR-1.7, needs `libcdio`/`cd-info` plus physical media to test) and Windows/macOS device detection (needs those platforms to test). Both need hardware or OS access I don't have, so they're better tackled with you in the loop.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="multi_replace_string_in_file"><details>
+<summary>Tool use: **multi_replace_string_in_file**</summary>
+
+Updated todo list
+
+**Input:**
+
+- explanation: `Wire the auto-updater into types, settings, main, and preload.`
+- replacements:
+
+```
+[
+  {
+    "filePath": "/home/kel/dev/DiscDock/shared/types.ts",
+    "newString": "  customFieldNames: string[]\n  verificationThresholdMonths: number\n  maxConcurrentScans: number\n  autoUpdateEnabled: boolean\n}\n\nexport type UpdateStatus =\n  | { state: 'idle' }\n  | { state: 'checking' }\n  | { state: 'up-to-date' }\n  | { state: 'available'; version: string }\n  | { state: 'downloading'; percent: number }\n  | { state: 'downloaded'; version: string }\n  | { state: 'error'; message: string }",
+    "oldString": "  customFieldNames: string[]\n  verificationThresholdMonths: number\n  maxConcurrentScans: number\n}"
+  },
+  {
+    "filePath": "/home/kel/dev/DiscDock/electron/settings/settingsStore.ts",
+    "newString": "  verificationThresholdMonths: 12,\n  maxConcurrentScans: 1,\n  autoUpdateEnabled: true\n}",
+    "oldString": "  verificationThresholdMonths: 12,\n  maxConcurrentScans: 1\n}"
+  },
+  {
+    "filePath": "/home/kel/dev/DiscDock/electron/main.ts",
+    "newString": "import { initScanManager } from './scanning/scanManager'\nimport { initAutoUpdater, registerUpdateIpc } from './updates/autoUpdater'",
+    "oldString": "import { initScanManager } from './scanning/scanManager'"
+  },
+  {
+    "filePath": "/home/kel/dev/DiscDock/electron/main.ts",
+    "newString": "  initScanManager(mainWindow)\n  startDeviceWatcher(mainWindow)\n\n  registerUpdateIpc()\n  initAutoUpdater(mainWindow)\n",
+    "oldString": "  initScanManager(mainWindow)\n  startDeviceWatcher(mainWindow)\n"
+  },
+  {
+    "filePath": "/home/kel/dev/DiscDock/electron/preload.ts",
+    "newString": "  ScanProgress,\n  SearchFilters,\n  SearchResultPage,\n  UpdateStatus,\n  WindowState\n} from '../shared/types'",
+    "oldString": "  ScanProgress,\n  SearchFilters,\n  SearchResultPage,\n  WindowState\n} from '../shared/types'"
+  },
+  {
+    "filePath": "/home/kel/dev/DiscDock/electron/preload.ts",
+    "newString": "  settings: {\n    get: (): Promise\u003cIpcResult\u003cAppSettings\u003e\u003e =\u003e ipcRenderer.invoke('settings:get'),\n    update: (patch: Partial\u003cAppSettings\u003e): Promise\u003cIpcResult\u003cAppSettings\u003e\u003e =\u003e\n      ipcRenderer.invoke('settings:update', patch)\n  },\n  updates: {\n    status: (): Promise\u003cIpcResult\u003cUpdateStatus\u003e\u003e =\u003e ipcRenderer.invoke('update:status'),\n    check: (): Promise\u003cIpcResult\u003cUpdateStatus\u003e\u003e =\u003e ipcRenderer.invoke('update:check'),\n    download: (): Promise\u003cIpcResult\u003c{ started: true }\u003e\u003e =\u003e ipcRenderer.invoke('update:download'),\n    install: (): Promise\u003cIpcResult\u003cnull\u003e\u003e =\u003e ipcRenderer.invoke('update:install'),\n    onStatus: (callback: (status: UpdateStatus) =\u003e void): (() =\u003e void) =\u003e {\n      const listener = (_event: Electron.IpcRendererEvent, status: UpdateStatus): void =\u003e callback(status)\n      ipcRenderer.on('update:status', listener)\n      return () =\u003e ipcRenderer.removeListener('update:status', listener)\n    }\n  },",
+    "oldString": "  settings: {\n    get: (): Promise\u003cIpcResult\u003cAppSettings\u003e\u003e =\u003e ipcRenderer.invoke('settings:get'),\n    update: (patch: Partial\u003cAppSettings\u003e): Promise\u003cIpcResult\u003cAppSettings\u003e\u003e =\u003e\n      ipcRenderer.invoke('settings:update', patch)\n  },"
+  }
+]
+```
+
+
+**Result:**
+
+```
+The following files were successfully edited:
+/home/kel/dev/DiscDock/shared/types.ts
+/home/kel/dev/DiscDock/electron/settings/settingsStore.ts
+/home/kel/dev/DiscDock/electron/main.ts
+/home/kel/dev/DiscDock/electron/preload.ts
+```
+</details></tool-use>
+
+---
+
+_**User (2026-08-14 15:41:01Z)**_
+
+continue with what is the next logical step
+
+---
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm install electron-updater 2>&1 | tail -4 && node -e "console.log\(require\(...`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `autoUpdater.ts`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **autoUpdater.ts**</summary>
+
+@@ lines 1-1 @@
+
+```
+import { app, BrowserWindow, ipcMain } from 'electron'
+import electronUpdater from 'electron-updater'
+import { getSettings } from '../settings/settingsStore'
+import type { IpcResult, UpdateStatus } from '../../shared/types'
+
+const { autoUpdater } = electronUpdater
+
+let win: BrowserWindow | null = null
+let lastStatus: UpdateStatus = { state: 'idle' }
+
+function publish(status: UpdateStatus): void {
+  lastStatus = status
+  win?.webContents.send('update:status', status)
+}
+
+/** Auto-update only works against a packaged, signed artifact with a configured publish target. */
+function isSupported(): boolean {
+  return app.isPackaged
+}
+
+export function initAutoUpdater(mainWindow: BrowserWindow): void {
+  win = mainWindow
+  autoUpdater.autoDownload = false
+
+  autoUpdater.on('checking-for-update', () => publish({ state: 'checking' }))
+  autoUpdater.on('update-available', (info) => publish({ state: 'available', version: info.version }))
+  autoUpdater.on('update-not-available', () => publish({ state: 'up-to-date' }))
+  autoUpdater.on('download-progress', (progress) =>
+    publish({ state: 'downloading', percent: Math.round(progress.percent) })
+  )
+  autoUpdater.on('update-downloaded', (info) => publish({ state: 'downloaded', version: info.version }))
+  autoUpdater.on('error', (err) => publish({ state: 'error', message: err.message }))
+
+  if (isSupported() && getSettings().autoUpdateEnabled) {
+    void autoUpdater.checkForUpdates().catch(() => undefined)
+  }
+}
+
+export function registerUpdateIpc(): void {
+  ipcMain.handle('update:status', (): IpcResult<UpdateStatus> => ({ ok: true, data: lastStatus }))
+
+  ipcMain.handle('update:check', async (): Promise<IpcResult<UpdateStatus>> => {
+    if (!isSupported()) {
+      const status: UpdateStatus = {
+        state: 'error',
+        message: 'Updates are only available in an installed build.'
+      }
+      publish(status)
+      return { ok: true, data: status }
+    }
+    try {
+      await autoUpdater.checkForUpdates()
+      return { ok: true, data: lastStatus }
+    } catch (err) {
+      return { ok: false, error: { code: 'update_error', message: (err as Error).message } }
+    }
+  })
+
+  ipcMain.handle('update:download', async (): Promise<IpcResult<{ started: true }>> => {
+    if (!isSupported()) {
+      return {
+        ok: false,
+        error: { code: 'update_error', message: 'Updates are only available in an installed build.' }
+      }
+    }
+    try {
+      await autoUpdater.downloadUpdate()
+      return { ok: true, data: { started: true } }
+    } catch (err) {
+      return { ok: false, error: { code: 'update_error', message: (err as Error).message } }
+    }
+  })
+
+  ipcMain.handle('update:install', (): IpcResult<null> => {
+    if (lastStatus.state !== 'downloaded') {
+      return { ok: false, error: { code: 'update_error', message: 'No downloaded update to install' } }
+    }
+    autoUpdater.quitAndInstall()
+    return { ok: true, data: null }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **types.ts**</summary>
+
+@@ lines 200-200 @@
+
+```
+  autoUpdateEnabled: boolean
+}
+
+export type UpdateStatus =
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'up-to-date' }
+  | { state: 'available'; version: string }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string 
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **settingsStore.ts**</summary>
+
+@@ lines 19-19 @@
+
+```
+,
+  autoUpdateEnabled: true
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **main.ts**</summary>
+
+@@ lines 102-102 @@
+
+```
+
+  registerUpdateIpc()
+  initAutoUpdater(mainWindow)
+
+```
+
+@@ lines 18-18 @@
+
+```
+
+import { initAutoUpdater, registerUpdateIpc } from './updates/autoUpdater'
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **preload.ts**</summary>
+
+@@ lines 153-153 @@
+
+```
+
+  updates: {
+    status: (): Promise<IpcResult<UpdateStatus>> => ipcRenderer.invoke('update:status'),
+    check: (): Promise<IpcResult<UpdateStatus>> => ipcRenderer.invoke('update:check'),
+    download: (): Promise<IpcResult<{ started: true }>> => ipcRenderer.invoke('update:download'),
+    install: (): Promise<IpcResult<null>> => ipcRenderer.invoke('update:install'),
+    onStatus: (callback: (status: UpdateStatus) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, status: UpdateStatus): void => callback(status)
+      ipcRenderer.on('update:status', listener)
+      return () => ipcRenderer.removeListener('update:status', listener)
+    }
+  },
+```
+
+@@ lines 24-24 @@
+
+```
+UpdateStatus,
+  
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Now the Settings UI section for updates.   

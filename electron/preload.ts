@@ -21,6 +21,7 @@ import type {
   ScanProgress,
   SearchFilters,
   SearchResultPage,
+  UpdateStatus,
   WindowState
 } from '../shared/types'
 
@@ -93,6 +94,14 @@ const api = {
       ipcRenderer.on('scan:progress', listener)
       return () => ipcRenderer.removeListener('scan:progress', listener)
     },
+    onStarted: (callback: (payload: { jobId: number; mediaItemId: number }) => void): (() => void) => {
+      const listener = (
+        _event: Electron.IpcRendererEvent,
+        payload: { jobId: number; mediaItemId: number }
+      ): void => callback(payload)
+      ipcRenderer.on('scan:started', listener)
+      return () => ipcRenderer.removeListener('scan:started', listener)
+    },
     onCompleted: (callback: (payload: { jobId: number }) => void): (() => void) => {
       const listener = (_event: Electron.IpcRendererEvent, payload: { jobId: number }): void => callback(payload)
       ipcRenderer.on('scan:completed', listener)
@@ -142,6 +151,17 @@ const api = {
     get: (): Promise<IpcResult<AppSettings>> => ipcRenderer.invoke('settings:get'),
     update: (patch: Partial<AppSettings>): Promise<IpcResult<AppSettings>> =>
       ipcRenderer.invoke('settings:update', patch)
+  },
+  updates: {
+    status: (): Promise<IpcResult<UpdateStatus>> => ipcRenderer.invoke('update:status'),
+    check: (): Promise<IpcResult<UpdateStatus>> => ipcRenderer.invoke('update:check'),
+    download: (): Promise<IpcResult<{ started: true }>> => ipcRenderer.invoke('update:download'),
+    install: (): Promise<IpcResult<null>> => ipcRenderer.invoke('update:install'),
+    onStatus: (callback: (status: UpdateStatus) => void): (() => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, status: UpdateStatus): void => callback(status)
+      ipcRenderer.on('update:status', listener)
+      return () => ipcRenderer.removeListener('update:status', listener)
+    }
   },
   backup: {
     run: (destinationPath: string): Promise<IpcResult<{ ok: true }>> =>

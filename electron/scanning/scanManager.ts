@@ -4,6 +4,7 @@ import {
   createScanJob,
   finalizeScanJob,
   markMediaScanned,
+  markScanJobRunning,
   pruneUnseenFiles,
   recordScanError,
   upsertFileRecord
@@ -15,24 +16,62 @@ interface ActiveJob {
   cancelled: boolean
 }
 
+interface QueuedJob {
+  jobId: number
+  mediaItemId: number
+  rootPath: string
+  hashMode: HashMode
+}
+
 const activeJobs = new Map<number, ActiveJob>()
+const queue: QueuedJob[] = []
 let win: BrowserWindow | null = null
 
 export function initScanManager(mainWindow: BrowserWindow): void {
   win = mainWindow
 }
 
+function maxConcurrentScans(): number {
+  const configured = getSettings().maxConcurrentScans
+  return Number.isFinite(configured) ? Math.max(1, Math.trunc(configured)) : 1
+}
+
+function pumpQueue(): void {
+  while (activeJobs.size < maxConcurrentScans() && queue.length > 0) {
+    const next = queue.shift() as QueuedJob
+    markScanJobRunning(next.jobId)
+    win?.webContents.send('scan:started', { jobId: next.jobId, mediaItemId: next.mediaItemId })
+    void runScan(next.jobId, next.mediaItemId, next.rootPath, next.hashMode)
+  }
+}
+
 export function cancelScan(jobId: number): boolean {
   const job = activeJobs.get(jobId)
-  if (!job) return false
-  job.cancelled = true
+  if (job) {
+    job.cancelled = true
+    return true
+  }
+
+  const queuedIndex = queue.findIndex((entry) => entry.jobId === jobId)
+  if (queuedIndex === -1) return false
+
+  queue.splice(queuedIndex, 1)
+  finalizeScanJob(jobId, 'cancelled', {
+    filesAdded: 0,
+    filesRemoved: 0,
+    filesModified: 0,
+    filesUnchanged: 0,
+    errorCount: 0
+  })
+  win?.webContents.send('scan:cancelled', { jobId })
   return true
 }
 
-/** Creates the scan_job row synchronously and runs the walk in the background; returns the job id immediately. */
+/** Creates the scan_job row synchronously and queues the walk; returns the job id immediately. */
 export function startScan(mediaItemId: number, rootPath: string, hashMode: HashMode): number {
   const job = createScanJob(mediaItemId, hashMode)
-  void runScan(job.id, mediaItemId, rootPath, hashMode)
+  queue.push({ jobId: job.id, mediaItemId, rootPath, hashMode })
+  pumpQueue()
   return job.id
 }
 
@@ -91,5 +130,6 @@ async function runScan(jobId: number, mediaItemId: number, rootPath: string, has
     }
   } finally {
     activeJobs.delete(jobId)
+    pumpQueue()
   }
 }

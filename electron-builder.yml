@@ -24,6 +24,11 @@ protocols:
   - name: DiscDock
     schemes:
       - discdock
+# electron-updater supports the AppImage target; .deb installs update via the distro package.
+publish:
+  provider: github
+  owner: kelmankenberg
+  repo: DiscDock
 deb:
   depends:
     - libnotify4

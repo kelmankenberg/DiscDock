@@ -46,6 +46,7 @@ interface ActiveScan {
   jobId: number
   filesProcessed: number
   currentPath: string
+  queued: boolean
 }
 
 export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId: number) => void }): JSX.Element {
@@ -367,7 +368,8 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
           [mediaId]: {
             jobId: progress.jobId,
             filesProcessed: progress.filesProcessed,
-            currentPath: progress.currentPath
+            currentPath: progress.currentPath,
+            queued: false
           }
         }))
         return current
@@ -395,11 +397,20 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
     const unsubFailed = window.discdock.scan.onFailed(({ jobId }) => finishScan(jobId))
     const unsubCancelled = window.discdock.scan.onCancelled(({ jobId }) => finishScan(jobId))
 
+    const unsubStarted = window.discdock.scan.onStarted(({ mediaItemId }) => {
+      setScansByMedia((prevScans) => {
+        const scan = prevScans[mediaItemId]
+        if (!scan) return prevScans
+        return { ...prevScans, [mediaItemId]: { ...scan, queued: false } }
+      })
+    })
+
     return () => {
       unsubProgress()
       unsubCompleted()
       unsubFailed()
       unsubCancelled()
+      unsubStarted()
     }
   }, [])
 
@@ -508,7 +519,10 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
       if (startResult.ok) {
         const jobId = startResult.data.jobId
         setJobToMedia((prev) => ({ ...prev, [jobId]: mediaId }))
-        setScansByMedia((prev) => ({ ...prev, [mediaId]: { jobId, filesProcessed: 0, currentPath: '' } }))
+        setScansByMedia((prev) => ({
+          ...prev,
+          [mediaId]: { jobId, filesProcessed: 0, currentPath: '', queued: true }
+        }))
       }
     })
   }
@@ -860,7 +874,7 @@ export default function MediaLibrary({ onOpenDetail }: { onOpenDetail: (mediaId:
                   <td>
                     {scan ? (
                       <span className="scan-progress">
-                        Scanning… {scan.filesProcessed} files
+                        {scan.queued ? 'Queued…' : `Scanning… ${scan.filesProcessed} files`}
                       </span>
                     ) : (
                       item.lastScannedAt ?? 'Never'

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { AppSettings, HashMode, Theme } from '../../shared/types'
+import type { AppSettings, HashMode, Theme, UpdateStatus } from '../../shared/types'
 import './Settings.css'
 
 const HASH_MODES: { value: HashMode; label: string }[] = [
@@ -8,11 +8,38 @@ const HASH_MODES: { value: HashMode; label: string }[] = [
   { value: 'full', label: 'Full (SHA-256, most accurate)' }
 ]
 
+function updateStatusMessage(status: UpdateStatus): string {
+  switch (status.state) {
+    case 'checking':
+      return 'Checking for updates…'
+    case 'up-to-date':
+      return 'DiscDock is up to date.'
+    case 'available':
+      return `Version ${status.version} is available.`
+    case 'downloading':
+      return `Downloading update… ${status.percent}%`
+    case 'downloaded':
+      return `Version ${status.version} is ready to install.`
+    case 'error':
+      return status.message
+    default:
+      return 'No update check has run yet.'
+  }
+}
+
 export default function Settings(): JSX.Element {
   const [settings, setSettings] = useState<AppSettings | null>(null)
   const [saved, setSaved] = useState(false)
   const [newMediaType, setNewMediaType] = useState('')
   const [newFieldName, setNewFieldName] = useState('')
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ state: 'idle' })
+
+  useEffect(() => {
+    void window.discdock.updates.status().then((result) => {
+      if (result.ok) setUpdateStatus(result.data)
+    })
+    return window.discdock.updates.onStatus(setUpdateStatus)
+  }, [])
 
   useEffect(() => {
     void window.discdock.settings.get().then((result) => {
@@ -82,6 +109,19 @@ export default function Settings(): JSX.Element {
             onChange={(e) => save({ followSymlinks: e.target.checked })}
           />
           Follow symbolic links during scans
+        </label>
+        <label className="settings-months-field">
+          Maximum simultaneous scans
+          <input
+            type="number"
+            min={1}
+            max={8}
+            value={settings.maxConcurrentScans}
+            onChange={(e) => {
+              const value = Number(e.target.value)
+              if (Number.isFinite(value) && value >= 1) save({ maxConcurrentScans: Math.trunc(value) })
+            }}
+          />
         </label>
       </section>
 
@@ -208,6 +248,46 @@ export default function Settings(): JSX.Element {
             }}
           />
         </label>
+      </section>
+
+      <section className="settings-section">
+        <h2>Updates</h2>
+        <label className="settings-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.autoUpdateEnabled}
+            onChange={(e) => save({ autoUpdateEnabled: e.target.checked })}
+          />
+          Check for updates automatically on startup
+        </label>
+        <p>{updateStatusMessage(updateStatus)}</p>
+        <div className="settings-list-editor">
+          <button
+            type="button"
+            className="button button--small"
+            onClick={() => void window.discdock.updates.check()}
+          >
+            Check Now
+          </button>
+          {updateStatus.state === 'available' && (
+            <button
+              type="button"
+              className="button button--small button--primary"
+              onClick={() => void window.discdock.updates.download()}
+            >
+              Download Update
+            </button>
+          )}
+          {updateStatus.state === 'downloaded' && (
+            <button
+              type="button"
+              className="button button--small button--primary"
+              onClick={() => void window.discdock.updates.install()}
+            >
+              Restart & Install
+            </button>
+          )}
+        </div>
       </section>
 
       <section className="settings-section">

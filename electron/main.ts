@@ -16,6 +16,7 @@ import { registerCollectionsIpc } from './ipc/collections'
 import { registerExportIpc } from './ipc/export'
 import { registerCustomFieldsIpc } from './ipc/customFields'
 import { initScanManager } from './scanning/scanManager'
+import { initAutoUpdater, registerUpdateIpc } from './updates/autoUpdater'
 import { countMediaNeedingVerification } from './db/mediaRepository'
 import { getSettings } from './settings/settingsStore'
 import { getDb, closeDb } from './db'
@@ -99,6 +100,9 @@ app.whenReady().then(() => {
   registerCustomFieldsIpc()
   initScanManager(mainWindow)
   startDeviceWatcher(mainWindow)
+
+  registerUpdateIpc()
+  initAutoUpdater(mainWindow)
 
   app.setAsDefaultProtocolClient('discdock')
   mainWindow.webContents.once('did-finish-load', () => handleDeepLinkFromArgv(process.argv))

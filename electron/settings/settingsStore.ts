@@ -15,7 +15,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   },
   customMediaTypes: [],
   customFieldNames: [],
-  verificationThresholdMonths: 12
+  verificationThresholdMonths: 12,
+  maxConcurrentScans: 1,
+  autoUpdateEnabled: true
 }
 
 let cached: AppSettings | null = null

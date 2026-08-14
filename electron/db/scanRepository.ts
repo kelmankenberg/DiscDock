@@ -34,10 +34,16 @@ function toScanJob(row: ScanJobRow): ScanJob {
 export function createScanJob(mediaItemId: number, hashMode: HashMode): ScanJob {
   const result = getDb()
     .prepare(
-      `INSERT INTO scan_job (media_item_id, status, hash_mode) VALUES (?, 'running', ?)`
+      `INSERT INTO scan_job (media_item_id, status, hash_mode) VALUES (?, 'queued', ?)`
     )
     .run(mediaItemId, hashMode)
   return getScanJob(Number(result.lastInsertRowid))!
+}
+
+export function markScanJobRunning(id: number): void {
+  getDb()
+    .prepare("UPDATE scan_job SET status = 'running', started_at = datetime('now') WHERE id = ?")
+    .run(id)
 }
 
 export function getScanJob(id: number): ScanJob | null {
