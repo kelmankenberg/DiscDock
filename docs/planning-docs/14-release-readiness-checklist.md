@@ -111,9 +111,9 @@ These are useful improvements, but should not delay the first release if the MVP
 - [x] Make network activity opt-in and visible to the user. Audio-CD enrichment is now explicitly controlled in Settings and the UI explains the network behavior.
 - [x] Disable automatic update checks by default for v1, or update the product/security documentation to explicitly approve the current behavior. New installations now default automatic update checks to off.
 - [x] Make MusicBrainz and Cover Art Archive enrichment optional during audio-CD scans.
-- [ ] Ensure offline scanning succeeds without delays or failures caused by metadata lookup timeouts.
-- [ ] Document every external endpoint and the data sent to it.
-- [ ] Confirm that file names, paths, hashes, and catalog contents never leave the machine.
+- [~] Ensure offline scanning succeeds without delays or failures caused by metadata lookup timeouts. Core filesystem scanning does not perform network requests; optional audio-CD enrichment is disabled by default, while a full network-disabled acceptance run remains.
+- [x] Document every external endpoint and the data sent to it. MusicBrainz disc-ID lookup, Cover Art Archive release-image lookup, and updater release metadata are documented in the Security & Privacy plan.
+- [~] Confirm that file names, paths, hashes, and catalog contents never leave the machine. The implemented network paths do not receive catalog fields; a network-capture acceptance test remains.
 
 **Exit evidence:** A network-disabled test run completes the core registration, scan, search, backup, restore, and export workflows.
 

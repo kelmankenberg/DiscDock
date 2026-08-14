@@ -4,7 +4,7 @@
 
 - DiscDock is a **local-first, offline-by-default** application. It stores only file *metadata* (names, paths, sizes, timestamps, optional hashes) — never file contents — in its local SQLite database.
 - No catalog data, file names, or hashes are transmitted off the user's machine. There is no backend service in v1.
-- Optional network activity consists of the manual/opt-in update check and optional audio-CD enrichment through MusicBrainz and Cover Art Archive. Both are disabled by default and must be clearly disclosed when enabled.
+- Optional network activity consists of the manual/opt-in update check and optional audio-CD enrichment through MusicBrainz and Cover Art Archive. Both are disabled by default and must be clearly disclosed when enabled. Audio-CD enrichment sends only the computed disc ID and track count to MusicBrainz, then a selected release ID to Cover Art Archive; it does not send file paths or catalog rows. Update checks use release metadata and do not send catalog data.
 
 ## 2. Electron Hardening
 
