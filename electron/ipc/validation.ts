@@ -1,8 +1,16 @@
 import { FILE_KINDS } from '../../shared/types'
+import { app } from 'electron'
+import type { IpcMainInvokeEvent } from 'electron'
 import type { AppSettings, HashMode, SearchFilters } from '../../shared/types'
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+export function isTrustedRendererEvent(event: IpcMainInvokeEvent): boolean {
+  const url = event.senderFrame?.url ?? ''
+  if (app.isPackaged) return url.startsWith('file://')
+  return url === 'http://localhost:5173/' || url.startsWith('http://localhost:5173/')
 }
 
 export function isNonEmptyString(value: unknown): value is string {

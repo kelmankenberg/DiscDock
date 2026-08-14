@@ -1,10 +1,11 @@
 import { ipcMain } from 'electron'
 import { exportCatalog } from '../export/exportService'
 import type { ExportFormat, ExportScope, IpcResult } from '../../shared/types'
-import { isNonEmptyString, isPositiveInteger, isRecord } from './validation'
+import { isNonEmptyString, isPositiveInteger, isRecord, isTrustedRendererEvent } from './validation'
 
 export function registerExportIpc(): void {
-  ipcMain.handle('export:run', (_event, payload: unknown): IpcResult<{ fileCount: number }> => {
+  ipcMain.handle('export:run', (event, payload: unknown): IpcResult<{ fileCount: number }> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     if (!isRecord(payload)) return { ok: false, error: { code: 'invalid_input', message: 'Invalid export payload' } }
     const { scope, format, destinationPath } = payload as {
       scope?: unknown

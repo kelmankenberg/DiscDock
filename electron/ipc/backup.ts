@@ -1,10 +1,11 @@
 import { ipcMain } from 'electron'
 import { backupNow, restoreFromBackup } from '../backup/backupService'
 import type { IpcResult } from '../../shared/types'
-import { isNonEmptyString, isRecord } from './validation'
+import { isNonEmptyString, isRecord, isTrustedRendererEvent } from './validation'
 
 export function registerBackupIpc(): void {
-  ipcMain.handle('backup:run', async (_event, payload: unknown): Promise<IpcResult<{ ok: true }>> => {
+  ipcMain.handle('backup:run', async (event, payload: unknown): Promise<IpcResult<{ ok: true }>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     const destinationPath = isRecord(payload) ? payload.destinationPath : undefined
     if (!isNonEmptyString(destinationPath)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A destinationPath is required' } }
@@ -19,7 +20,8 @@ export function registerBackupIpc(): void {
 
   ipcMain.handle(
     'backup:restore',
-    async (_event, payload: unknown): Promise<IpcResult<{ safetyBackupPath: string }>> => {
+    async (event, payload: unknown): Promise<IpcResult<{ safetyBackupPath: string }>> => {
+      if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
       const sourcePath = isRecord(payload) ? payload.sourcePath : undefined
       if (!isNonEmptyString(sourcePath)) {
         return { ok: false, error: { code: 'invalid_input', message: 'A sourcePath is required' } }

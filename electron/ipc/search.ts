@@ -1,12 +1,13 @@
 import { ipcMain } from 'electron'
 import { searchFiles } from '../db/searchRepository'
 import type { IpcResult, SearchFilters, SearchResultPage } from '../../shared/types'
-import { isNonNegativeInteger, isRecord, validateSearchFilters } from './validation'
+import { isNonNegativeInteger, isRecord, isTrustedRendererEvent, validateSearchFilters } from './validation'
 
 const DEFAULT_PAGE_SIZE = 100
 
 export function registerSearchIpc(): void {
-  ipcMain.handle('search:query', (_event, payload: unknown): IpcResult<SearchResultPage> => {
+  ipcMain.handle('search:query', (event, payload: unknown): IpcResult<SearchResultPage> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
     if (!isRecord(payload)) return { ok: false, error: { code: 'invalid_input', message: 'Invalid search payload' } }
     const { text, filters, page } = payload as {
       text?: unknown

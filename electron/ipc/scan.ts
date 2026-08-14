@@ -5,19 +5,18 @@ import { cancelScan, startAudioCdScan, startScan } from '../scanning/scanManager
 import { getErrorsForMedia, listScanJobsForMedia } from '../db/scanRepository'
 import { getSettings } from '../settings/settingsStore'
 import type { HashMode, IpcResult, ScanErrorEntry, ScanJob } from '../../shared/types'
+import { isHashMode, isNonEmptyString, isPositiveInteger, isRecord, isTrustedRendererEvent } from './validation'
 
 export function registerScanIpc(): void {
-  ipcMain.handle('scan:start', async (_event, payload: unknown): Promise<IpcResult<{ jobId: number }>> => {
-    const { mediaId, rootPath, hashMode } = (payload ?? {}) as {
-      mediaId?: unknown
-      rootPath?: unknown
-      hashMode?: unknown
-    }
+  ipcMain.handle('scan:start', async (event, payload: unknown): Promise<IpcResult<{ jobId: number }>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    const candidate = isRecord(payload) ? payload : {}
+    const { mediaId, rootPath, hashMode } = candidate
 
-    if (typeof mediaId !== 'number') {
+    if (!isPositiveInteger(mediaId)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
     }
-    if (typeof rootPath !== 'string' || !rootPath.trim()) {
+    if (!isNonEmptyString(rootPath)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A rootPath is required' } }
     }
     const resolvedRoot = path.resolve(rootPath)
@@ -29,27 +28,32 @@ export function registerScanIpc(): void {
     } catch {
       return { ok: false, error: { code: 'invalid_input', message: 'rootPath does not exist or cannot be read' } }
     }
-    const validModes: HashMode[] = ['none', 'quick', 'full']
-    const mode = validModes.includes(hashMode as HashMode) ? (hashMode as HashMode) : getSettings().defaultHashMode
+    if (hashMode !== undefined && !isHashMode(hashMode)) {
+      return { ok: false, error: { code: 'invalid_input', message: 'hashMode must be none, quick, or full' } }
+    }
+    const mode = (hashMode as HashMode | undefined) ?? getSettings().defaultHashMode
 
     const jobId = startScan(mediaId, resolvedRoot, mode)
     return { ok: true, data: { jobId } }
   })
 
-  ipcMain.handle('scan:startAudioCd', (_event, payload: unknown): IpcResult<{ jobId: number }> => {
-    const { mediaId, devicePath } = (payload ?? {}) as { mediaId?: unknown; devicePath?: unknown }
-    if (typeof mediaId !== 'number') {
+  ipcMain.handle('scan:startAudioCd', (event, payload: unknown): IpcResult<{ jobId: number }> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    const candidate = isRecord(payload) ? payload : {}
+    const { mediaId, devicePath } = candidate
+    if (!isPositiveInteger(mediaId)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric mediaId is required' } }
     }
-    if (typeof devicePath !== 'string' || !devicePath.trim()) {
+    if (!isNonEmptyString(devicePath)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A devicePath is required' } }
     }
     return { ok: true, data: { jobId: startAudioCdScan(mediaId, devicePath) } }
   })
 
-  ipcMain.handle('scan:cancel', (_event, payload: unknown): IpcResult<{ cancelled: boolean }> => {
-    const jobId = (payload as { jobId?: unknown })?.jobId
-    if (typeof jobId !== 'number') {
+  ipcMain.handle('scan:cancel', (event, payload: unknown): IpcResult<{ cancelled: boolean }> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    const jobId = isRecord(payload) ? payload.jobId : undefined
+    if (!isPositiveInteger(jobId)) {
       return { ok: false, error: { code: 'invalid_input', message: 'A numeric jobId is required' } }
     }
     return { ok: true, data: { cancelled: cancelScan(jobId) } }
