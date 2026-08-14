@@ -5,6 +5,7 @@ import type {
   CollectionInput,
   CustomFieldValue,
   DashboardSummary,
+  DesktopShortcutStatus,
   DetectedDevice,
   DuplicateReport,
   DuplicateReportFilters,
@@ -162,6 +163,11 @@ const api = {
     get: (): Promise<IpcResult<AppSettings>> => ipcRenderer.invoke('settings:get'),
     update: (patch: Partial<AppSettings>): Promise<IpcResult<AppSettings>> =>
       ipcRenderer.invoke('settings:update', patch)
+  },
+  desktopShortcut: {
+    status: (): Promise<IpcResult<DesktopShortcutStatus>> => ipcRenderer.invoke('desktopShortcut:status'),
+    create: (): Promise<IpcResult<DesktopShortcutStatus>> => ipcRenderer.invoke('desktopShortcut:create'),
+    remove: (): Promise<IpcResult<DesktopShortcutStatus>> => ipcRenderer.invoke('desktopShortcut:remove')
   },
   updates: {
     status: (): Promise<IpcResult<UpdateStatus>> => ipcRenderer.invoke('update:status'),

@@ -8,19 +8,14 @@ files:
   - dist-electron/**
   - package.json
 linux:
-  category: Utility
+  # Rendered verbatim into Categories=; the nested `desktop.entry` form is ignored by electron-builder.
+  category: Utility;FileTools
   icon: build/icon.png
   target:
     - target: deb
       arch: [x64]
     - target: AppImage
       arch: [x64]
-  desktop:
-    entry:
-      Name: DiscDock
-      Comment: Catalog and search your external media collection
-      Categories: Utility;FileTools;
-      MimeType: x-scheme-handler/discdock;
 protocols:
   - name: DiscDock
     schemes:

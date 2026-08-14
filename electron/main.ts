@@ -10,6 +10,7 @@ import { registerSearchIpc } from './ipc/search'
 import { registerDuplicatesIpc } from './ipc/duplicates'
 import { registerFilesIpc } from './ipc/files'
 import { registerSettingsIpc } from './ipc/settings'
+import { registerDesktopShortcutIpc } from './ipc/desktopShortcut'
 import { registerBackupIpc } from './ipc/backup'
 import { registerTagsIpc } from './ipc/tags'
 import { registerCollectionsIpc } from './ipc/collections'
@@ -99,6 +100,7 @@ app.whenReady().then(() => {
   registerDuplicatesIpc()
   registerFilesIpc()
   registerSettingsIpc()
+  registerDesktopShortcutIpc()
   registerBackupIpc()
   registerTagsIpc()
   registerCollectionsIpc()

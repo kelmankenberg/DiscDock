@@ -258,6 +258,12 @@ export interface AppSettings {
   helpPanelWidthPercent: number
 }
 
+export interface DesktopShortcutStatus {
+  supported: boolean
+  exists: boolean
+  path: string | null
+}
+
 export type UpdateStatus =
   | { state: 'idle' }
   | { state: 'checking' }

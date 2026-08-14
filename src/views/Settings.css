@@ -3,6 +3,11 @@
   font-size: 13px;
 }
 
+.settings-view__error {
+  color: var(--color-danger, #d33);
+  font-size: 13px;
+}
+
 .settings-section {
   margin: 20px 0;
   padding-bottom: 16px;

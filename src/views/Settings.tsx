@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { AppSettings, HashMode, Theme, UpdateStatus } from '../../shared/types'
+import type { AppSettings, DesktopShortcutStatus, HashMode, Theme, UpdateStatus } from '../../shared/types'
 import './Settings.css'
 import HelpButton from '../components/HelpButton'
 
@@ -34,6 +34,28 @@ export default function Settings(): JSX.Element {
   const [newMediaType, setNewMediaType] = useState('')
   const [newFieldName, setNewFieldName] = useState('')
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>({ state: 'idle' })
+  const [shortcut, setShortcut] = useState<DesktopShortcutStatus | null>(null)
+  const [shortcutBusy, setShortcutBusy] = useState(false)
+  const [shortcutError, setShortcutError] = useState<string | null>(null)
+
+  useEffect(() => {
+    void window.discdock.desktopShortcut.status().then((result) => {
+      if (result.ok) setShortcut(result.data)
+    })
+  }, [])
+
+  const toggleShortcut = (create: boolean): void => {
+    setShortcutBusy(true)
+    setShortcutError(null)
+    const action = create
+      ? window.discdock.desktopShortcut.create()
+      : window.discdock.desktopShortcut.remove()
+    void action.then((result) => {
+      setShortcutBusy(false)
+      if (result.ok) setShortcut(result.data)
+      else setShortcutError(result.error.message)
+    })
+  }
 
   useEffect(() => {
     void window.discdock.updates.status().then((result) => {
@@ -292,6 +314,28 @@ export default function Settings(): JSX.Element {
           )}
         </div>
       </section>
+
+      {shortcut?.supported && (
+        <section className="settings-section">
+          <h2>Desktop Shortcut</h2>
+          <p>
+            {shortcut.exists
+              ? `A DiscDock launcher is on your desktop (${shortcut.path}).`
+              : 'DiscDock is available from your applications menu. You can also add a launcher to your desktop.'}
+          </p>
+          <div className="settings-list-editor">
+            <button
+              type="button"
+              className={shortcut.exists ? 'button button--small' : 'button button--small button--primary'}
+              disabled={shortcutBusy}
+              onClick={() => toggleShortcut(!shortcut.exists)}
+            >
+              {shortcut.exists ? 'Remove Desktop Shortcut' : 'Create Desktop Shortcut'}
+            </button>
+          </div>
+          {shortcutError && <p className="settings-view__error">{shortcutError}</p>}
+        </section>
+      )}
 
       <section className="settings-section">
         <h2>Network Enrichment</h2>
