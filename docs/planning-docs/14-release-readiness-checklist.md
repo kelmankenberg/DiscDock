@@ -58,7 +58,7 @@ These are useful improvements, but should not delay the first release if the MVP
 ### P0.1 Automated verification and CI
 
 - [~] Add unit tests for hash modes, glob exclusions, symlink behavior, file-kind classification, scan diffing, and cancellation. Scan-engine coverage now verifies hash modes, exclusions, symlink behavior, file-kind classification, scan errors, and cancellation; database, diffing, and broader integration coverage remain.
-- [ ] Add database integration tests for migrations, FTS search, tags, collections, backup, restore, and foreign-key behavior.
+- [!] Add database integration tests for migrations, FTS search, tags, collections, backup, restore, and foreign-key behavior. A real SQLite test was blocked because `better-sqlite3` is rebuilt for Electron's ABI while Vitest runs under Node; this needs an Electron-runtime test command or separate native-module build step.
 - [ ] Add IPC tests for malformed payloads and structured error responses.
 - [ ] Add renderer tests for the primary registration, scan, search, backup, restore, and Help workflows.
 - [~] Add `lint`, `typecheck`, and `test` scripts that fail on errors. `typecheck` and `test` now pass; lint is still unconfigured.
