@@ -63,7 +63,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [ ] Add renderer tests for the primary registration, scan, search, backup, restore, and Help workflows.
 - [!] Add `lint`, `typecheck`, and `test` scripts that fail on errors. `typecheck` and `test` pass. Decision: retain TypeScript 7; ESLint remains blocked until a compatible parser is available, or an alternative lint strategy is selected.
 - [~] Add a CI workflow that runs `npm ci`, dependency audit, lint, typecheck, tests, renderer build, Electron build, and packaging. A GitHub Actions workflow now runs `npm ci`, `npm test`, `npm run typecheck`, `npm run build`, and a dependent Linux package job that uploads `.deb`/`.AppImage` artifacts on Node 24; audit, lint, and package smoke-test jobs remain open.
-- [ ] Keep the lockfile committed and fail CI on new high or critical dependency vulnerabilities, with documented exceptions when necessary.
+- [~] Keep the lockfile committed and fail CI on new high or critical dependency vulnerabilities, with documented exceptions when necessary. Electron 41.10.5 now produces `npm audit --audit-level=high` with zero vulnerabilities, and CI includes the audit step; future vulnerability-policy exceptions remain a release-process concern.
 
 **Exit evidence:** A clean checkout passes every required command without manual intervention.
 
@@ -175,7 +175,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [ ] Test desktop menu entry, icon, protocol registration, single-instance behavior, and deep links.
 - [ ] Test `.AppImage` on a non-Debian distribution with FUSE.
 - [~] Test the documented `--appimage-extract-and-run` fallback without FUSE. Extraction succeeded locally; clean application launch/quit did not complete within the smoke-test timeout.
-- [ ] Verify correct native-module ABI packaging for `better-sqlite3`.
+- [x] Verify correct native-module ABI packaging for `better-sqlite3`. `electron-builder` rebuilt and packaged `better-sqlite3` for Electron 41.10.5 during the successful Linux package run.
 - [ ] Verify first-run data directories, permissions, migration behavior, uninstall behavior, and retained user data.
 - [ ] Decide whether updates are disabled for v1 or fully tested against signed published artifacts.
 - [ ] Produce versioned release artifacts and release notes using semantic versioning.

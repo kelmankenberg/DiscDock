@@ -43,7 +43,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "concurrently": "^9.2.4",
     "cross-env": "^10.1.0",
-    "electron": "^41.7.1",
+    "electron": "^41.10.5",
     "electron-builder": "^26.15.3",
     "electron-log": "^5.4.4",
     "typescript": "^7.0.2",
@@ -61,7 +61,7 @@
   },
   "allowScripts": {
     "better-sqlite3@12.11.1": true,
-    "electron@41.7.1": true,
+    "electron@41.10.5": true,
     "electron-winstaller@5.4.0": true
   }
 }
