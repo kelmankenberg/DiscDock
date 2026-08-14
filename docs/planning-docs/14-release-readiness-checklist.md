@@ -184,9 +184,9 @@ These are useful improvements, but should not delay the first release if the MVP
 
 ## P2 - Documentation and Support Readiness
 
-- [ ] Update [README.md](../../README.md) to describe the current product instead of the foundational shell status.
-- [ ] Document Linux prerequisites, optional audio-CD utilities, device detection fallback behavior, and offline behavior.
-- [ ] Document that DiscDock catalogs metadata and does not back up original file contents.
+- [x] Update [README.md](../../README.md) to describe the current product instead of the foundational shell status.
+- [x] Document Linux prerequisites, optional audio-CD utilities, device detection fallback behavior, and offline behavior.
+- [x] Document that DiscDock catalogs metadata and does not back up original file contents.
 - [ ] Document backup/restore recovery behavior and where safety backups are stored.
 - [ ] Document known limitations and supported package formats.
 - [ ] Add a first-run workflow guide or make the in-app empty states sufficient for a new user.

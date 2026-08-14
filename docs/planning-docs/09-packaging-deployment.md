@@ -17,7 +17,7 @@ files:
   - package.json
 linux:
   category: Utility
-  icon: build/icons/icon.png
+  icon: build/icon.png
   target:
     - target: deb
       arch: [x64]
@@ -35,7 +35,7 @@ deb:
     - libgtk-3-0
   packageCategory: utils
 appImage:
-  license: LICENSE
+  license: LICENSE.txt
 ```
 
 Adjust `deb.depends` to match the actual Electron version's bundled Chromium runtime dependencies at implementation time.
