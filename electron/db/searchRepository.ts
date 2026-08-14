@@ -1,5 +1,6 @@
 import { getDb } from './index'
 import type { FileSearchResult, SearchFilters, SearchResultPage } from '../../shared/types'
+import { getSettings } from '../settings/settingsStore'
 
 interface FileSearchRow {
   id: number
@@ -75,6 +76,17 @@ export function searchFiles(text: string, filters: SearchFilters, page: number, 
   if (filters.modifiedBefore !== undefined) {
     conditions.push("fr.modified_at_src < datetime(@modifiedBefore, '+1 day')")
     params.modifiedBefore = filters.modifiedBefore
+  }
+  if (filters.scanStatus !== undefined) {
+    conditions.push('EXISTS (SELECT 1 FROM scan_job sj WHERE sj.media_item_id = mi.id AND sj.status = @scanStatus)')
+    params.scanStatus = filters.scanStatus
+  }
+  if (filters.verificationStatus === 'verified') {
+    conditions.push('mi.last_verified_at IS NOT NULL')
+  } else if (filters.verificationStatus === 'needs-verification') {
+    const months = Math.max(1, Math.trunc(getSettings().verificationThresholdMonths))
+    conditions.push("COALESCE(mi.last_verified_at, mi.created_at) < datetime('now', @verificationCutoff)")
+    params.verificationCutoff = `-${months} months`
   }
   if (filters.tag) {
     conditions.push(

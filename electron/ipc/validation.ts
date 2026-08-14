@@ -62,6 +62,10 @@ export function validateSearchFilters(value: unknown): SearchFilters | null {
     if (value[key] !== undefined && (typeof value[key] !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value[key]))) return null
     if (value[key] !== undefined) filters[key] = value[key]
   }
+  if (value.scanStatus !== undefined && value.scanStatus !== 'completed' && value.scanStatus !== 'incomplete' && value.scanStatus !== 'failed') return null
+  if (value.scanStatus !== undefined) filters.scanStatus = value.scanStatus
+  if (value.verificationStatus !== undefined && value.verificationStatus !== 'verified' && value.verificationStatus !== 'needs-verification') return null
+  if (value.verificationStatus !== undefined) filters.verificationStatus = value.verificationStatus
   if (filters.minSizeBytes !== undefined && filters.maxSizeBytes !== undefined && filters.minSizeBytes > filters.maxSizeBytes) {
     return null
   }

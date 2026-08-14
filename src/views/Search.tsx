@@ -26,6 +26,8 @@ export default function Search(): JSX.Element {
   const [maxSize, setMaxSize] = useState('')
   const [modifiedAfter, setModifiedAfter] = useState('')
   const [modifiedBefore, setModifiedBefore] = useState('')
+  const [scanStatus, setScanStatus] = useState('')
+  const [verificationStatus, setVerificationStatus] = useState('')
   const [results, setResults] = useState<FileSearchResult[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
@@ -53,6 +55,8 @@ export default function Search(): JSX.Element {
     if (maxSize) filters.maxSizeBytes = Number(maxSize)
     if (modifiedAfter) filters.modifiedAfter = modifiedAfter
     if (modifiedBefore) filters.modifiedBefore = modifiedBefore
+    if (scanStatus) filters.scanStatus = scanStatus as SearchFilters['scanStatus']
+    if (verificationStatus) filters.verificationStatus = verificationStatus as SearchFilters['verificationStatus']
 
     setLoading(true)
     void window.discdock.search.query(text, filters, pageToLoad).then((result) => {
@@ -72,7 +76,7 @@ export default function Search(): JSX.Element {
     const timer = setTimeout(() => runSearch(0), DEBOUNCE_MS)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, mediaType, kind, tag, mediaItemId, minSize, maxSize, modifiedAfter, modifiedBefore])
+  }, [text, mediaType, kind, tag, mediaItemId, minSize, maxSize, modifiedAfter, modifiedBefore, scanStatus, verificationStatus])
 
   const pageSize = 100
   const hasMore = (page + 1) * pageSize < total
@@ -135,6 +139,17 @@ export default function Search(): JSX.Element {
         <input type="number" min="0" placeholder="Max bytes" value={maxSize} onChange={(e) => setMaxSize(e.target.value)} />
         <label className="search-form__date">Modified after <input type="date" value={modifiedAfter} onChange={(e) => setModifiedAfter(e.target.value)} /></label>
         <label className="search-form__date">Modified before <input type="date" value={modifiedBefore} onChange={(e) => setModifiedBefore(e.target.value)} /></label>
+        <select value={scanStatus} onChange={(e) => setScanStatus(e.target.value)}>
+          <option value="">Any scan status</option>
+          <option value="completed">Completed scan</option>
+          <option value="incomplete">Incomplete scan</option>
+          <option value="failed">Failed scan</option>
+        </select>
+        <select value={verificationStatus} onChange={(e) => setVerificationStatus(e.target.value)}>
+          <option value="">Any verification status</option>
+          <option value="verified">Verified</option>
+          <option value="needs-verification">Needs verification</option>
+        </select>
       </div>
 
       {loading ? (

@@ -163,6 +163,8 @@ export interface SearchFilters {
   maxSizeBytes?: number
   modifiedAfter?: string
   modifiedBefore?: string
+  scanStatus?: 'completed' | 'incomplete' | 'failed'
+  verificationStatus?: 'verified' | 'needs-verification'
   tag?: string
 }
 
