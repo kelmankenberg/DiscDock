@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ExportFormat, MediaItem } from '../../shared/types'
 import './BackupExport.css'
+import HelpButton from '../components/HelpButton'
 
 export default function BackupExport(): JSX.Element {
   const [status, setStatus] = useState<string | null>(null)
@@ -66,7 +67,7 @@ export default function BackupExport(): JSX.Element {
 
   return (
     <div className="backup-export-view">
-      <h1>Backup / Export</h1>
+      <div className="page-header"><h1>Backup / Export</h1><HelpButton topicId="backup-export" /></div>
 
       <section className="settings-section">
         <h2>Database Backup</h2>

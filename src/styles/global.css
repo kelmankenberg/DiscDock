@@ -81,8 +81,141 @@ body {
 
 .app-content {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   padding: 24px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-header h1 {
+  margin: 0;
+  margin-right: auto;
+}
+
+.help-button {
+  flex: 0 0 auto;
+}
+
+.help-panel {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-bg);
+  transition: width 180ms ease-out;
+}
+
+.help-panel--closed {
+  border-left-color: transparent;
+  pointer-events: none;
+}
+
+.help-panel__resize {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  left: -4px;
+  width: 8px;
+  cursor: col-resize;
+}
+
+.help-panel__resize:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
+.help-panel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 12px 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.help-panel__header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.help-panel__back {
+  margin-bottom: 8px;
+}
+
+.help-panel__content {
+  height: calc(100% - 72px);
+  overflow-y: auto;
+  padding: 8px 24px 28px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.help-panel__content h3 {
+  margin: 18px 0 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.help-panel__content p {
+  margin: 0;
+}
+
+.help-panel__content ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.help-panel__content dl {
+  margin: 0;
+}
+
+.help-panel__content dl > div {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.help-panel__content dt {
+  font-weight: 700;
+}
+
+.help-panel__content dd {
+  margin: 2px 0 0;
+  opacity: 0.8;
+}
+
+.help-panel__links button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+@media (max-width: 900px) {
+  .help-panel {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 2;
+    box-shadow: -8px 0 24px rgb(0 0 0 / 22%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .help-panel {
+    transition: none;
+  }
 }
 
 .dashboard__cards {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import TitleBar from './components/TitleBar'
 import Sidebar from './components/Sidebar'
 import Dashboard from './views/Dashboard'
@@ -11,6 +11,9 @@ import SettingsView from './views/Settings'
 import Collections from './views/Collections'
 import PlaceholderView from './views/PlaceholderView'
 import { NAV_ITEMS } from './components/Sidebar'
+import HelpPanel from './components/HelpPanel'
+import { HelpProvider, useHelp } from './help/HelpContext'
+import type { ViewId } from './help/types'
 
 const VIEW_TITLES: Record<string, string> = Object.fromEntries(
   NAV_ITEMS.map((item) => [item.key, item.label])
@@ -49,7 +52,7 @@ export default function App(): JSX.Element {
     []
   )
 
-  // Global keyboard shortcuts: Ctrl+F -> Search, Ctrl+, -> Settings.
+  // Global keyboard shortcuts: Ctrl+F -> Search, Ctrl+, -> Settings, F1 -> Help.
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (!event.ctrlKey) return
@@ -108,11 +111,62 @@ export default function App(): JSX.Element {
   }
 
   return (
+    <HelpProvider>
+      <AppShell
+        sidebarCollapsed={sidebarCollapsed}
+        toggleSidebarCollapsed={toggleSidebarCollapsed}
+        activeView={activeView}
+        selectedMediaId={selectedMediaId}
+        handleSelectNav={handleSelectNav}
+        renderView={renderView}
+      />
+    </HelpProvider>
+  )
+}
+
+function AppShell({
+  sidebarCollapsed,
+  toggleSidebarCollapsed,
+  activeView,
+  selectedMediaId,
+  handleSelectNav,
+  renderView
+}: {
+  sidebarCollapsed: boolean
+  toggleSidebarCollapsed: () => void
+  activeView: string
+  selectedMediaId: number | null
+  handleSelectNav: (key: string) => void
+  renderView: () => JSX.Element
+}): JSX.Element {
+  const help = useHelp()
+  const previousHelpRoute = useRef(`${activeView}:${selectedMediaId ?? ''}`)
+
+  useEffect(() => {
+    const route = `${activeView}:${selectedMediaId ?? ''}`
+    if (route === previousHelpRoute.current) return
+    previousHelpRoute.current = route
+    if (!help.isOpen) return
+    help.show((activeView === 'media-library' && selectedMediaId !== null ? 'media-detail' : activeView) as ViewId)
+  }, [activeView, help.isOpen, selectedMediaId])
+
+  useEffect(() => {
+    const handleHelpShortcut = (event: KeyboardEvent): void => {
+      if (event.key !== 'F1') return
+      event.preventDefault()
+      help.toggle((activeView === 'media-library' && selectedMediaId !== null ? 'media-detail' : activeView) as ViewId)
+    }
+    window.addEventListener('keydown', handleHelpShortcut)
+    return () => window.removeEventListener('keydown', handleHelpShortcut)
+  }, [activeView, help, selectedMediaId])
+
+  return (
     <div className="app-shell">
       <TitleBar sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebarCollapsed} />
       <div className="app-body">
         <Sidebar active={activeView} onSelect={handleSelectNav} collapsed={sidebarCollapsed} />
         <main className="app-content">{renderView()}</main>
+        <HelpPanel />
       </div>
     </div>
   )

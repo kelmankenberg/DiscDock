@@ -4,6 +4,10 @@
   justify-content: space-between;
 }
 
+.collections-view__header h1 {
+  margin-right: auto;
+}
+
 .collections-view__layout {
   display: grid;
   grid-template-columns: 260px 1fr;

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Trash2, Plus, X } from 'lucide-react'
 import type { Collection, MediaItem } from '../../shared/types'
 import './Collections.css'
+import HelpButton from '../components/HelpButton'
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -103,6 +104,7 @@ export default function Collections(): JSX.Element {
         <button type="button" className="button button--primary" onClick={() => setShowForm(true)}>
           <Plus size={16} aria-hidden="true" /> New Collection
         </button>
+        <HelpButton topicId="collections" />
       </div>
 
       {showForm && (

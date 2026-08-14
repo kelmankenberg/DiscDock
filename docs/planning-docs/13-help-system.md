@@ -1,6 +1,6 @@
 # Help System Specification
 
-Status: **Planned** (not yet implemented)
+Status: **Implemented**
 Related: [UI/UX Specification](07-ui-ux-specification.md), [IPC Contract](08-api-internal-spec.md), [Non-Functional Requirements](04-non-functional-requirements.md)
 
 ## 1. Purpose

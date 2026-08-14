@@ -10,6 +10,7 @@ import type {
   ScanJob
 } from '../../shared/types'
 import './MediaDetail.css'
+import HelpButton from '../components/HelpButton'
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -172,6 +173,7 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
       <div className="media-detail__header">
         <h1>{item.label}</h1>
         <span className={`status-badge status-badge--${item.status}`}>{item.status}</span>
+        <HelpButton topicId="media-detail" />
       </div>
       <p className="media-detail__subtitle">
         {mediaTypeLabel} {item.physicalLocation ? `· ${item.physicalLocation}` : ''}

@@ -3,6 +3,7 @@ import { X } from 'lucide-react'
 import { FILE_KINDS, MEDIA_TYPES } from '../../shared/types'
 import type { FileSearchResult, MediaType, FileKind, SearchFilters } from '../../shared/types'
 import './Search.css'
+import HelpButton from '../components/HelpButton'
 
 const DEBOUNCE_MS = 300
 
@@ -61,7 +62,7 @@ export default function Search(): JSX.Element {
 
   return (
     <div className="search-view">
-      <h1>Search</h1>
+      <div className="page-header"><h1>Search</h1><HelpButton topicId="search" /></div>
       <div className="search-form">
         <div className="search-form__input-wrapper">
           <input

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AppSettings, HashMode, Theme, UpdateStatus } from '../../shared/types'
 import './Settings.css'
+import HelpButton from '../components/HelpButton'
 
 const HASH_MODES: { value: HashMode; label: string }[] = [
   { value: 'none', label: 'None (metadata only, fastest)' },
@@ -76,7 +77,7 @@ export default function Settings(): JSX.Element {
 
   return (
     <div className="settings-view">
-      <h1>Settings</h1>
+      <div className="page-header"><h1>Settings</h1><HelpButton topicId="settings" /></div>
       {saved && <p className="settings-view__saved">Saved</p>}
 
       <section className="settings-section">

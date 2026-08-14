@@ -17,7 +17,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   customFieldNames: [],
   verificationThresholdMonths: 12,
   maxConcurrentScans: 1,
-  autoUpdateEnabled: true
+  autoUpdateEnabled: true,
+  helpPanelOpen: false,
+  helpPanelWidthPercent: 30
 }
 
 let cached: AppSettings | null = null

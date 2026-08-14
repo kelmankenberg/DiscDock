@@ -225,6 +225,8 @@ export interface AppSettings {
   verificationThresholdMonths: number
   maxConcurrentScans: number
   autoUpdateEnabled: boolean
+  helpPanelOpen: boolean
+  helpPanelWidthPercent: number
 }
 
 export type UpdateStatus =

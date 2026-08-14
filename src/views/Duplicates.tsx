@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { DuplicateReport } from '../../shared/types'
 import './Duplicates.css'
+import HelpButton from '../components/HelpButton'
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -24,7 +25,7 @@ export default function Duplicates(): JSX.Element {
 
   return (
     <div className="duplicates-view">
-      <h1>Duplicates</h1>
+      <div className="page-header"><h1>Duplicates</h1><HelpButton topicId="duplicates" /></div>
 
       {loading ? (
         <p className="duplicates-view__status">Scanning catalog for duplicates…</p>

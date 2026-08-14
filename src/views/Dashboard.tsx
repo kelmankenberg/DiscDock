@@ -1,3 +1,4 @@
+import HelpButton from '../components/HelpButton'
 import { useEffect, useState } from 'react'
 import { Disc3, Usb } from 'lucide-react'
 import type { DashboardSummary, DetectedDevice, MediaItem } from '../../shared/types'
@@ -169,7 +170,7 @@ export default function Dashboard({
 
   return (
     <div className="dashboard">
-      <h1>Dashboard</h1>
+      <div className="page-header"><h1>Dashboard</h1><HelpButton topicId="dashboard" /></div>
       <div className="dashboard__cards">
         <div className="card">
           <span className="card__value">{summary.totalMediaItems}</span>

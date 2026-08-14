@@ -17,6 +17,7 @@ import { MEDIA_TYPES } from '../../shared/types'
 import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
 import LabelSheet from '../components/LabelSheet'
 import './MediaLibrary.css'
+import HelpButton from '../components/HelpButton'
 
 const EMPTY_FORM: MediaItemInput = {
   label: '',
@@ -693,6 +694,7 @@ export default function MediaLibrary({
         <button type="button" className="button button--primary" onClick={handleStartAdd}>
           Add Media
         </button>
+        <HelpButton topicId="media-library" />
       </div>
 
       {!showForm && unregisteredDevices.length > 0 && (
