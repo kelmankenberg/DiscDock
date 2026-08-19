@@ -52,6 +52,12 @@ const api = {
     markVerified: (id: number): Promise<IpcResult<MediaItem>> =>
       ipcRenderer.invoke('media:markVerified', { id }),
     cover: (id: number): Promise<IpcResult<string | null>> => ipcRenderer.invoke('media:cover', { id }),
+    setCoverFromFile: (id: number, sourcePath: string): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:setCoverFromFile', { id, sourcePath }),
+    setCoverFromUrl: (id: number, imageUrl: string): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:setCoverFromUrl', { id, imageUrl }),
+    clearCover: (id: number): Promise<IpcResult<MediaItem>> =>
+      ipcRenderer.invoke('media:clearCover', { id }),
     delete: (id: number): Promise<IpcResult<{ deleted: true }>> =>
       ipcRenderer.invoke('media:delete', { id })
   },
@@ -135,7 +141,8 @@ const api = {
     pickFolder: (): Promise<IpcResult<{ path: string | null }>> => ipcRenderer.invoke('dialog:pickFolder'),
     pickSaveFile: (defaultName?: string): Promise<IpcResult<{ path: string | null }>> =>
       ipcRenderer.invoke('dialog:pickSaveFile', { defaultName }),
-    pickOpenFile: (): Promise<IpcResult<{ path: string | null }>> => ipcRenderer.invoke('dialog:pickOpenFile')
+    pickOpenFile: (imagesOnly = false): Promise<IpcResult<{ path: string | null }>> =>
+      ipcRenderer.invoke('dialog:pickOpenFile', { imagesOnly })
   },
   search: {
     query: (text: string, filters: SearchFilters, page: number): Promise<IpcResult<SearchResultPage>> =>

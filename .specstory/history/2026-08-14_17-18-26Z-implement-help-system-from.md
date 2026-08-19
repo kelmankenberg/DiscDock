@@ -73622,3 +73622,904 @@ They appear in these sections:
   - Help-topic review
 
 The checklist is current enough to track the remaining work. The only distinction is that several detailed items are marked `[~]` because their implementation is partly complete, while the top-level summary intentionally stays higher-level.
+
+---
+
+_**User (2026-08-15 04:10:20Z)**_
+
+[Terminal 2996fffa-c164-468d-9054-eb778e97f78a notification: terminal exited. The terminal process ended before the command could complete normally; further commands cannot be sent to this terminal ID.]
+Terminal output:
+ M electron/scanning/scanEngine.ts
+ M electron/scanning/scanManager.ts
+ M electron/settings/settingsStore.ts
+ M package-lock.json
+ M package.json
+ M shared/types.ts
+ M src/main.tsx
+ M src/styles/global.css
+ M src/views/Dashboard.tsx
+ M src/views/MediaLibrary.tsx
+ M src/views/Settings.tsx
+ M tsconfig.json
+?? electron/logging.ts
+?? electron/scanning/scanEngine.test.ts
+?? src/components/RendererErrorBoundary.tsx
+?? src/renderer-env.d.ts
+?? vitest.config.ts
+main
+origin  https://github.com/kelmankenberg/DiscDock.git (fetch)
+origin  https://github.com/kelmankenberg/DiscDock.git (push)
+kel@kel-EQ-Mint:~/dev/DiscDock$  git add docs/planning-docs/14-release-readiness-checklist.md electron/backup/backupService.ts electron/db/index.ts electron/ipc/scan.ts electron/logging.ts electron/main.ts electron/scanning/scanEngine.test.ts electron/scanning/scanEngine.ts electron/scanning/scanManager.ts electron/settings/settingsStore.ts package-lock.json package.json shared/types.ts src/components/RendererErrorBoundary.tsx src/discdock-api.d.ts src/main.tsx src/renderer-env.d.ts src/styles/global.css src/views/Dashboard.tsx src/views/MediaLibrary.tsx src/views/Settings.tsx tsconfig.json vitest.config.ts && git commit -m "chore: advance release readiness hardening" && git push origin main
+[main 0fdb4a8] chore: advance release readiness hardening
+ 22 files changed, 723 insertions(+), 41 deletions(-)
+ create mode 100644 electron/logging.ts
+ create mode 100644 electron/scanning/scanEngine.test.ts
+ create mode 100644 src/components/RendererErrorBoundary.tsx
+ create mode 100644 src/renderer-env.d.ts
+ create mode 100644 vitest.config.ts
+Enumerating objects: 68, done.
+Counting objects: 100% (68/68), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (32/32), done.
+Writing objects: 100% (37/37), 12.36 KiB | 2.06 MiB/s, done.
+Total 37 (delta 21), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (21/21), completed with 21 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   ef30430..0fdb4a8  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:unit && npm run typecheck && npm run build
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:12:50
+   Duration  344ms (transform 116ms, setup 0ms, import 170ms, tests 50ms, environment 0ms)
+
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+electron/ipc/validation.ts:82:27 - error TS2352: Conversion of type 'Record<string, unknown>' to type 'NotificationSettings' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Record<string, unknown>' is missing the following properties from type 'NotificationSettings': scanCompleted, scanFailed, verificationReminders
+
+82     patch.notifications = notifications as AppSettings['notifications']
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Found 1 error in electron/ipc/validation.ts:82
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:unit && npm run typecheck && npm run build && git diff --check -- electron/ipc docs/planning-docs/14-release-readiness-checklist.md
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:12:59
+   Duration  309ms (transform 115ms, setup 0ms, import 164ms, tests 41ms, environment 0ms)
+
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BeMjYONm.css   19.11 kB │ gzip:  3.91 kB
+dist/assets/index-Bbkibjhj.js   299.01 kB │ gzip: 91.80 kB
+
+✓ built in 320ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  git status --short && git add docs/planning-docs/14-release-readiness-checklist.md electron/ipc/backup.ts electron/ipc/export.ts electron/ipc/search.ts electron/ipc/settings.ts electron/ipc/validation.ts electron/ipc/validation.test.ts && git commit -m "security: validate core IPC payloads" && git push origin main
+ M .specstory/history/2026-08-14_17-18-26Z-implement-help-system-from.md
+ M .specstory/statistics.json
+ M docs/planning-docs/14-release-readiness-checklist.md
+ M electron/ipc/backup.ts
+ M electron/ipc/export.ts
+ M electron/ipc/search.ts
+ M electron/ipc/settings.ts
+?? electron/ipc/validation.test.ts
+?? electron/ipc/validation.ts
+[main c4698cc] security: validate core IPC payloads
+ 7 files changed, 161 insertions(+), 18 deletions(-)
+ create mode 100644 electron/ipc/validation.test.ts
+ create mode 100644 electron/ipc/validation.ts
+Enumerating objects: 23, done.
+Counting objects: 100% (23/23), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (12/12), done.
+Writing objects: 100% (13/13), 3.36 KiB | 1.68 MiB/s, done.
+Total 13 (delta 9), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (9/9), completed with 9 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   0fdb4a8..c4698cc  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:unit && npm run typecheck && npm run build
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:13:37
+   Duration  330ms (transform 126ms, setup 0ms, import 180ms, tests 47ms, environment 0ms)
+
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BeMjYONm.css   19.11 kB │ gzip:  3.91 kB
+dist/assets/index-Bbkibjhj.js   299.01 kB │ gzip: 91.80 kB
+
+✓ built in 299ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  git add docs/planning-docs/14-release-readiness-checklist.md electron/ipc/collections.ts electron/ipc/customFields.ts electron/ipc/duplicates.ts electron/ipc/tags.ts electron/ipc/validation.ts && git commit -m "security: harden CRUD IPC validation" && git push origin main
+[main 72210c6] security: harden CRUD IPC validation
+ 6 files changed, 41 insertions(+), 25 deletions(-)
+Enumerating objects: 23, done.
+Counting objects: 100% (23/23), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (11/11), done.
+Writing objects: 100% (12/12), 2.22 KiB | 2.22 MiB/s, done.
+Total 12 (delta 9), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (9/9), completed with 9 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   c4698cc..72210c6  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:unit && npm run typecheck && npm run build
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:14:10
+   Duration  302ms (transform 116ms, setup 0ms, import 166ms, tests 41ms, environment 0ms)
+
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BeMjYONm.css   19.11 kB │ gzip:  3.91 kB
+dist/assets/index-Bbkibjhj.js   299.01 kB │ gzip: 91.80 kB
+
+✓ built in 277ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  git add docs/planning-docs/14-release-readiness-checklist.md electron/ipc/devices.ts electron/ipc/dialogs.ts electron/ipc/files.ts && git commit -m "security: validate operational IPC payloads" && git push origin main
+[main 4b11ce7] security: validate operational IPC payloads
+ 4 files changed, 40 insertions(+), 35 deletions(-)
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (9/9), done.
+Writing objects: 100% (10/10), 1.63 KiB | 1.63 MiB/s, done.
+Total 10 (delta 8), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (8/8), completed with 8 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   72210c6..4b11ce7  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:unit && npm run typecheck && npm run build
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:14:40
+   Duration  276ms (transform 95ms, setup 0ms, import 134ms, tests 36ms, environment 0ms)
+
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BeMjYONm.css   19.11 kB │ gzip:  3.91 kB
+dist/assets/index-Bbkibjhj.js   299.01 kB │ gzip: 91.80 kB
+
+✓ built in 269ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  git add docs/planning-docs/14-release-readiness-checklist.md electron/ipc/media.ts && git commit -m "security: validate media IPC payloads" && git push origin main
+[main bfc1eea] security: validate media IPC payloads
+ 2 files changed, 30 insertions(+), 16 deletions(-)
+Enumerating objects: 15, done.
+Counting objects: 100% (15/15), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (7/7), done.
+Writing objects: 100% (8/8), 1.34 KiB | 1.34 MiB/s, done.
+Total 8 (delta 6), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (6/6), completed with 6 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   4b11ce7..bfc1eea  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  git status --short && git log -5 --oneline
+ M .specstory/history/2026-08-14_17-18-26Z-implement-help-system-from.md
+ M .specstory/statistics.json
+bfc1eea (HEAD -> main, origin/main) security: validate media IPC payloads
+4b11ce7 security: validate operational IPC payloads
+72210c6 security: harden CRUD IPC validation
+c4698cc security: validate core IPC payloads
+0fdb4a8 chore: advance release readiness hardening
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:unit && npm run typecheck && npm run build
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:19:18
+   Duration  289ms (transform 112ms, setup 0ms, import 162ms, tests 37ms, environment 0ms)
+
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BeMjYONm.css   19.11 kB │ gzip:  3.91 kB
+dist/assets/index-Bbkibjhj.js   299.01 kB │ gzip: 91.80 kB
+
+✓ built in 246ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  git add docs/planning-docs/14-release-readiness-checklist.md electron/ipc/backup.ts electron/ipc/export.ts electron/ipc/search.ts electron/ipc/settings.ts electron/ipc/scan.ts electron/ipc/validation.ts && git commit -m "security: enforce trusted IPC origins" && git push origin main
+[main 7689d9d] security: enforce trusted IPC origins
+ 7 files changed, 47 insertions(+), 29 deletions(-)
+Enumerating objects: 25, done.
+Counting objects: 100% (25/25), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (12/12), done.
+Writing objects: 100% (13/13), 2.15 KiB | 2.15 MiB/s, done.
+Total 13 (delta 11), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (11/11), completed with 11 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   bfc1eea..7689d9d  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:unit
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+ ❯ electron/db/index.test.ts (2 tests | 2 failed) 14ms
+     × creates the current schema with WAL and FTS support 11ms
+     × keeps file search triggers synchronized with file records 2ms
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  electron/db/index.test.ts > database migrations > creates the current schema with WAL and FTS support
+Error: The module '/home/kel/dev/DiscDock/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 145. This version of Node.js requires
+NODE_MODULE_VERSION 115. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+ ❯ bindings node_modules/bindings/bindings.js:112:48
+ ❯ new Database node_modules/better-sqlite3/lib/database.js:48:64
+ ❯ Module.getDb electron/db/index.ts:197:8
+    195|   const dbPath = path.join(userDataDir, 'discdock.sqlite3')
+    196|
+    197|   db = new Database(dbPath)
+       |        ^
+    198|   runMigrations(db)
+    199|
+ ❯ electron/db/index.test.ts:26:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  electron/db/index.test.ts > database migrations > keeps file search triggers synchronized with file records
+Error: Module did not self-register: '/home/kel/dev/DiscDock/node_modules/better-sqlite3/build/Release/better_sqlite3.node'.
+ ❯ bindings node_modules/bindings/bindings.js:112:48
+ ❯ new Database node_modules/better-sqlite3/lib/database.js:48:64
+ ❯ Module.getDb electron/db/index.ts:197:8
+    195|   const dbPath = path.join(userDataDir, 'discdock.sqlite3')
+    196|
+    197|   db = new Database(dbPath)
+       |        ^
+    198|   runMigrations(db)
+    199|
+ ❯ electron/db/index.test.ts:37:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  2 failed | 8 passed (10)
+   Start at  13:19:53
+   Duration  311ms (transform 180ms, setup 0ms, import 297ms, tests 55ms, environment 0ms)
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:unit && npm run typecheck && npm run build
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:20:04
+   Duration  316ms (transform 134ms, setup 0ms, import 180ms, tests 49ms, environment 0ms)
+
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BeMjYONm.css   19.11 kB │ gzip:  3.91 kB
+dist/assets/index-Bbkibjhj.js   299.01 kB │ gzip: 91.80 kB
+
+✓ built in 647ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  git status --short && git add docs/planning-docs/14-release-readiness-checklist.md && git commit -m "test: document sqlite ABI test blocker" && git push origin main
+ M .specstory/history/2026-08-14_17-18-26Z-implement-help-system-from.md
+ M .specstory/statistics.json
+ M docs/planning-docs/14-release-readiness-checklist.md
+[main 89c400a] test: document sqlite ABI test blocker
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+Enumerating objects: 9, done.
+Counting objects: 100% (9/9), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (5/5), 597 bytes | 597.00 KiB/s, done.
+Total 5 (delta 3), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (3/3), completed with 3 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   7689d9d..89c400a  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:integration
+
+> discdock@0.1.0 test:integration
+> npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/dbIntegration.js
+
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+/home/kel/dev/DiscDock/dist-electron/electron/tests/dbIntegration.js:28
+void electron_1.app.whenReady()
+                    ^
+
+TypeError: Cannot read properties of undefined (reading 'whenReady')
+    at Object.<anonymous> (/home/kel/dev/DiscDock/dist-electron/electron/tests/dbIntegration.js:28:21)
+    at Module._compile (node:internal/modules/cjs/loader:1838:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1971:10)
+    at Module.load (node:internal/modules/cjs/loader:1560:32)
+    at Module._load (node:internal/modules/cjs/loader:1362:12)
+    at c._load (node:electron/js2c/node_init:2:18060)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:262:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:169:5)
+    at node:internal/main/run_main_module:33:47
+
+Node.js v24.15.0
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:integration
+
+> discdock@0.1.0 test:integration
+> npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/dbIntegration.js
+
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ [
++   {
++     journal_mode: 'wal'
++   }
++ ]
+- 'wal'
+
+    at main (/home/kel/dev/DiscDock/dist-electron/electron/tests/dbIntegration.js:23:22)
+    at Object.<anonymous> (/home/kel/dev/DiscDock/dist-electron/electron/tests/dbIntegration.js:33:6)
+    at Module._compile (node:internal/modules/cjs/loader:1838:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1971:10)
+    at Module.load (node:internal/modules/cjs/loader:1560:32)
+    at Module._load (node:internal/modules/cjs/loader:1362:12)
+    at c._load (node:electron/js2c/node_init:2:18060)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:262:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:169:5)
+    at node:internal/main/run_main_module:33:47 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [Array],
+  expected: 'wal',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:integration
+
+> discdock@0.1.0 test:integration
+> npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/dbIntegration.js
+
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+Database integration checks passed
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm test && npm run typecheck && npm run build && git diff --check -- electron/tests package.json docs/planning-docs/14-release-readiness-checklist.md
+
+> discdock@0.1.0 test
+> npm run test:unit && npm run test:integration
+
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:21:46
+   Duration  301ms (transform 101ms, setup 0ms, import 149ms, tests 45ms, environment 0ms)
+
+
+> discdock@0.1.0 test:integration
+> npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/dbIntegration.js
+
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+Database integration checks passed
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BeMjYONm.css   19.11 kB │ gzip:  3.91 kB
+dist/assets/index-Bbkibjhj.js   299.01 kB │ gzip: 91.80 kB
+
+✓ built in 510ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  git add docs/planning-docs/14-release-readiness-checklist.md electron/tests/dbIntegration.ts package.json && git commit -m "test: add Electron database integration runner" && git push origin main
+[main c5f562f] test: add Electron database integration runner
+ 3 files changed, 48 insertions(+), 2 deletions(-)
+ create mode 100644 electron/tests/dbIntegration.ts
+Enumerating objects: 15, done.
+Counting objects: 100% (15/15), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (7/7), done.
+Writing objects: 100% (9/9), 1.75 KiB | 1.75 MiB/s, done.
+Total 9 (delta 5), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (5/5), completed with 5 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   89c400a..c5f562f  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:integration
+
+> discdock@0.1.0 test:integration
+> npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/dbIntegration.js
+
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+Database integration checks passed
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm test && npm run typecheck && npm run build
+
+> discdock@0.1.0 test
+> npm run test:unit && npm run test:integration
+
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:22:45
+   Duration  300ms (transform 121ms, setup 0ms, import 175ms, tests 37ms, environment 0ms)
+
+
+> discdock@0.1.0 test:integration
+> npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/dbIntegration.js
+
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+Database integration checks passed
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BeMjYONm.css   19.11 kB │ gzip:  3.91 kB
+dist/assets/index-Bbkibjhj.js   299.01 kB │ gzip: 91.80 kB
+
+✓ built in 420ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  git add docs/planning-docs/14-release-readiness-checklist.md electron/db/index.ts electron/tests/dbIntegration.ts && git commit -m "test: cover database relationships and foreign keys" && git push origin main
+[main 73fea10] test: cover database relationships and foreign keys
+ 3 files changed, 14 insertions(+), 2 deletions(-)
+Enumerating objects: 19, done.
+Counting objects: 100% (19/19), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (8/8), done.
+Writing objects: 100% (10/10), 1.30 KiB | 1.30 MiB/s, done.
+Total 10 (delta 7), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (7/7), completed with 7 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   c5f562f..73fea10  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run test:integration
+
+> discdock@0.1.0 test:integration
+> npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/dbIntegration.js
+
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+Database integration checks passed
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm test && npm run typecheck && npm run build
+
+> discdock@0.1.0 test
+> npm run test:unit && npm run test:integration
+
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:24:28
+   Duration  296ms (transform 122ms, setup 0ms, import 178ms, tests 40ms, environment 0ms)
+
+
+> discdock@0.1.0 test:integration
+> npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/dbIntegration.js
+
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+Database integration checks passed
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BeMjYONm.css   19.11 kB │ gzip:  3.91 kB
+dist/assets/index-Bbkibjhj.js   299.01 kB │ gzip: 91.80 kB
+
+✓ built in 436ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  git add docs/planning-docs/14-release-readiness-checklist.md electron/tests/dbIntegration.ts && git commit -m "test: cover backup and restore integration" && git push origin main
+[main 6687fda] test: cover backup and restore integration
+ 2 files changed, 17 insertions(+), 3 deletions(-)
+Enumerating objects: 15, done.
+Counting objects: 100% (15/15), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (6/6), done.
+Writing objects: 100% (8/8), 1.14 KiB | 1.14 MiB/s, done.
+Total 8 (delta 5), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (5/5), completed with 5 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   73fea10..6687fda  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm install --save-dev eslint @eslint/js typescript-eslint
+npm error code ERESOLVE
+npm error ERESOLVE unable to resolve dependency tree
+npm error
+npm error While resolving: discdock@0.1.0
+npm error Found: typescript@7.0.2
+npm error node_modules/typescript
+npm error   dev typescript@"^7.0.2" from the root project
+npm error
+npm error Could not resolve dependency:
+npm error peer typescript@">=4.8.4 <6.1.0" from typescript-eslint@8.67.0
+npm error node_modules/typescript-eslint
+npm error   dev typescript-eslint@"*" from the root project
+npm error
+npm error Fix the upstream dependency conflict, or retry this command with --force or --legacy-peer-deps to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error /home/kel/.npm/_logs/2026-08-14T18_24_49_810Z-eresolve-report.txt
+npm error A complete log of this run can be found in: /home/kel/.npm/_logs/2026-08-14T18_24_49_810Z-debug-0.log
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm view typescript-eslint@canary peerDependencies version
+peerDependencies = {
+  eslint: '^8.57.0 || ^9.0.0 || ^10.0.0',
+  typescript: '>=4.8.4 <6.1.0'
+}
+version = '8.67.1-alpha.4'
+kel@kel-EQ-Mint:~/dev/DiscDock$  git add docs/planning-docs/14-release-readiness-checklist.md && git commit -m "docs: record lint toolchain blocker" && git push origin main
+[main 2ed93e0] docs: record lint toolchain blocker
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+Enumerating objects: 9, done.
+Counting objects: 100% (9/9), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (5/5), 563 bytes | 563.00 KiB/s, done.
+Total 5 (delta 3), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (3/3), completed with 3 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   6687fda..2ed93e0  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  git diff --check -- README.md docs/planning-docs/14-release-readiness-checklist.md && git add README.md docs/planning-docs/14-release-readiness-checklist.md && git commit -m "docs: retain TypeScript 7 decision" && git push origin main
+[main 7bb53ce] docs: retain TypeScript 7 decision
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+Enumerating objects: 11, done.
+Counting objects: 100% (11/11), done.
+Delta compression using up to 16 threads
+Compressing objects: 100% (5/5), done.
+Writing objects: 100% (6/6), 823 bytes | 823.00 KiB/s, done.
+Total 6 (delta 4), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (4/4), completed with 4 local objects.
+To https://github.com/kelmankenberg/DiscDock.git
+   2ed93e0..7bb53ce  main -> main
+kel@kel-EQ-Mint:~/dev/DiscDock$  ruby -e "require 'yaml'; YAML.load_file('.github/workflows/ci.yml'); puts 'CI YAML valid'" && npm test && npm run typecheck && npm run build
+Command 'ruby' not found, but can be installed with:
+sudo apt install ruby
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm test && npm run typecheck && npm run build
+
+> discdock@0.1.0 test
+> npm run test:unit && npm run test:integration
+
+
+> discdock@0.1.0 test:unit
+> vitest run --config vitest.config.ts
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v4.1.10 /home/kel/dev/DiscDock
+
+
+ Test Files  2 passed (2)
+      Tests  8 passed (8)
+   Start at  13:32:52
+   Duration  299ms (transform 108ms, setup 0ms, import 161ms, tests 42ms, environment 0ms)
+
+
+> discdock@0.1.0 test:integration
+> npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/dbIntegration.js
+
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+Database integration checks passed
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-BeMjYONm.css   19.11 kB │ gzip:  3.91 kB
+dist/assets/index-Bbkibjhj.js   299.01 kB │ gzip: 91.80 kB
+
+✓ built in 349ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  node -e "const fs=require('fs'); const s=fs.readFileSync('.github/workflows/ci.yml','utf8'); for (const key of ['name: CI','runs-on: ubuntu-latest','npm ci','npm test','npm run typecheck','npm run build']) if (!s.includes(key)) throw new Error('missing '+key); console.log('CI workflow structure valid')" && git diff --check -- .github/workflows/ci.yml
+bash: !s.includes: event not found
+kel@kel-EQ-Mint:~/dev/DiscDock$ 

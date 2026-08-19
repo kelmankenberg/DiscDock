@@ -6,6 +6,7 @@
   "main": "dist-electron/electron/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron .\"",
+    "dev:desktop": "npm run dev",
     "build:renderer": "vite build",
     "build:electron": "tsc -p electron/tsconfig.json",
     "build": "npm run build:renderer && npm run build:electron",
@@ -57,7 +58,8 @@
     "lucide-react": "^1.31.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "sharp": "^0.35.3"
   },
   "allowScripts": {
     "better-sqlite3@12.11.1": true,

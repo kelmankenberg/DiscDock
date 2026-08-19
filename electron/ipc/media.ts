@@ -1,5 +1,8 @@
 import { ipcMain } from 'electron'
+import { app, nativeImage } from 'electron'
 import fs from 'node:fs/promises'
+import path from 'node:path'
+import sharp from 'sharp'
 import {
   createMediaItem,
   deleteMediaItem,
@@ -7,6 +10,7 @@ import {
   listMediaItems,
   markMediaVerified,
   retireMediaItem,
+  setMediaCoverPath,
   updateMediaItem
 } from '../db/mediaRepository'
 import { MEDIA_TYPES } from '../../shared/types'
@@ -73,6 +77,39 @@ function validateMediaItemPatch(patch: unknown): Partial<MediaItemInput> {
 function toErrorResult(err: unknown): IpcResult<never> {
   const message = err instanceof Error ? err.message : 'Unknown error'
   return { ok: false, error: { code: 'media_error', message } }
+}
+
+function isLikelyAnimatedWebp(source: Buffer): boolean {
+  // Animated WebP files typically include ANIM/ANMF chunks in the RIFF payload.
+  const probe = source.subarray(0, Math.min(source.length, 64 * 1024)).toString('latin1')
+  return probe.includes('ANIM') || probe.includes('ANMF')
+}
+
+async function decodeImageToPngBytes(source: Buffer): Promise<Buffer> {
+  const image = nativeImage.createFromBuffer(source)
+  if (!image.isEmpty()) return image.toPNG()
+  if (isLikelyAnimatedWebp(source)) {
+    // Some animated WebP files cannot be decoded by nativeImage, but can be flattened by sharp.
+    try {
+      return await sharp(source, { animated: true }).png().toBuffer()
+    } catch {
+      throw new Error('Animated WebP is not supported for cover images. Please use a static image.')
+    }
+  }
+  try {
+    return await sharp(source, { animated: true }).png().toBuffer()
+  } catch {
+    throw new Error('Image could not be decoded')
+  }
+}
+
+async function writeCoverPngForMedia(mediaId: number, png: Buffer): Promise<string> {
+  const coversDir = path.join(app.getPath('userData'), 'covers')
+  await fs.mkdir(coversDir, { recursive: true })
+  const coverPath = path.join(coversDir, `${mediaId}.png`)
+  await fs.writeFile(coverPath, png)
+  setMediaCoverPath(mediaId, coverPath)
+  return coverPath
 }
 
 export function registerMediaIpc(): void {
@@ -150,6 +187,107 @@ export function registerMediaIpc(): void {
       const id = isRecord(payload) ? payload.id : undefined
       if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
       return { ok: true, data: markMediaVerified(id) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:setCoverFromFile', async (event, payload: unknown): Promise<IpcResult<MediaItem>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const candidate = isRecord(payload) ? payload : {}
+      const id = candidate.id
+      const sourcePath = candidate.sourcePath
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+      if (!isNonEmptyString(sourcePath)) throw new Error('A source image path is required')
+
+      const existing = getMediaItem(id)
+      if (!existing) throw new Error(`Media item ${id} not found`)
+
+      const absolutePath = path.resolve(sourcePath)
+      const source = await fs.readFile(absolutePath)
+      let png: Buffer
+      try {
+        png = await decodeImageToPngBytes(source)
+      } catch (err) {
+        const fallback = nativeImage.createFromPath(absolutePath)
+        if (!fallback.isEmpty()) {
+          png = fallback.toPNG()
+        } else {
+          throw err
+        }
+      }
+
+      await writeCoverPngForMedia(id, png)
+
+      const updated = getMediaItem(id)
+      if (!updated) throw new Error(`Media item ${id} not found`)
+      return { ok: true, data: updated }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:clearCover', async (event, payload: unknown): Promise<IpcResult<MediaItem>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+
+      const existing = getMediaItem(id)
+      if (!existing) throw new Error(`Media item ${id} not found`)
+
+      if (existing.coverPath) {
+        await fs.rm(existing.coverPath, { force: true })
+      }
+      setMediaCoverPath(id, null)
+
+      const updated = getMediaItem(id)
+      if (!updated) throw new Error(`Media item ${id} not found`)
+      return { ok: true, data: updated }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:setCoverFromUrl', async (event, payload: unknown): Promise<IpcResult<MediaItem>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const candidate = isRecord(payload) ? payload : {}
+      const id = candidate.id
+      const imageUrl = candidate.imageUrl
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+      if (!isNonEmptyString(imageUrl)) throw new Error('An image URL is required')
+
+      const existing = getMediaItem(id)
+      if (!existing) throw new Error(`Media item ${id} not found`)
+
+      let parsed: URL
+      try {
+        parsed = new URL(imageUrl)
+      } catch {
+        throw new Error('Image URL is invalid')
+      }
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        throw new Error('Only http(s) image URLs are allowed')
+      }
+
+      const response = await fetch(parsed.toString(), { redirect: 'follow' })
+      if (!response.ok) {
+        throw new Error(`Image download failed: ${response.status} ${response.statusText}`)
+      }
+      const contentType = response.headers.get('content-type')
+      if (contentType && !contentType.toLowerCase().startsWith('image/')) {
+        throw new Error(`Downloaded URL is not an image (content-type: ${contentType})`)
+      }
+      const downloaded = Buffer.from(await response.arrayBuffer())
+      const png = await decodeImageToPngBytes(downloaded)
+
+      await writeCoverPngForMedia(id, png)
+
+      const updated = getMediaItem(id)
+      if (!updated) throw new Error(`Media item ${id} not found`)
+      return { ok: true, data: updated }
     } catch (err) {
       return toErrorResult(err)
     }

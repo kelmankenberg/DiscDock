@@ -46,6 +46,8 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
   const [editingValue, setEditingValue] = useState('')
   const [fileActionMessage, setFileActionMessage] = useState<string | null>(null)
   const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null)
+  const [coverActionMessage, setCoverActionMessage] = useState<string | null>(null)
+  const [coverUrlInput, setCoverUrlInput] = useState('')
 
   useEffect(() => {
     void window.discdock.media.cover(mediaId).then((result) => {
@@ -64,6 +66,82 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
     setFileActionMessage(null)
     void window.discdock.files.reveal(mediaId, filePath).then((result) => {
       if (!result.ok) setFileActionMessage(result.error.message)
+    })
+  }
+
+  const setCoverFromFile = (): void => {
+    if (typeof window.discdock.media.setCoverFromFile !== 'function') {
+      setCoverActionMessage('Cover upload is unavailable in this desktop process. Rebuild/restart Electron to load the latest preload API.')
+      return
+    }
+    setCoverActionMessage(null)
+    void window.discdock.dialogs.pickOpenFile(true).then((pick) => {
+      if (!pick.ok) {
+        setCoverActionMessage(`Could not open file picker: ${pick.error.message}`)
+        return
+      }
+      if (!pick.data.path) return
+      void window.discdock.media.setCoverFromFile(mediaId, pick.data.path).then((result) => {
+        if (!result.ok) {
+          setCoverActionMessage(`Could not set cover image: ${result.error.message}`)
+          return
+        }
+        setItem(result.data)
+        setCoverActionMessage('Cover image updated.')
+      })
+    })
+  }
+
+  const setCoverFromDroppedPath = (sourcePath: string): void => {
+    if (typeof window.discdock.media.setCoverFromFile !== 'function') {
+      setCoverActionMessage('Cover upload is unavailable in this desktop process. Rebuild/restart Electron to load the latest preload API.')
+      return
+    }
+    setCoverActionMessage(null)
+    void window.discdock.media.setCoverFromFile(mediaId, sourcePath).then((result) => {
+      if (!result.ok) {
+        setCoverActionMessage(`Could not set cover image: ${result.error.message}`)
+        return
+      }
+      setItem(result.data)
+      setCoverActionMessage('Cover image updated.')
+    })
+  }
+
+  const setCoverFromUrl = (): void => {
+    if (typeof window.discdock.media.setCoverFromUrl !== 'function') {
+      setCoverActionMessage('URL cover download is unavailable in this desktop process. Rebuild/restart Electron to load the latest preload API.')
+      return
+    }
+    const trimmed = coverUrlInput.trim()
+    if (!trimmed) {
+      setCoverActionMessage('Enter an image URL first.')
+      return
+    }
+    setCoverActionMessage(null)
+    void window.discdock.media.setCoverFromUrl(mediaId, trimmed).then((result) => {
+      if (!result.ok) {
+        setCoverActionMessage(`Could not download cover image: ${result.error.message}`)
+        return
+      }
+      setItem(result.data)
+      setCoverActionMessage('Cover image updated from URL.')
+    })
+  }
+
+  const clearCover = (): void => {
+    if (typeof window.discdock.media.clearCover !== 'function') {
+      setCoverActionMessage('Cover removal is unavailable in this desktop process. Rebuild/restart Electron to load the latest preload API.')
+      return
+    }
+    setCoverActionMessage(null)
+    void window.discdock.media.clearCover(mediaId).then((result) => {
+      if (!result.ok) {
+        setCoverActionMessage(`Could not remove cover image: ${result.error.message}`)
+        return
+      }
+      setItem(result.data)
+      setCoverActionMessage('Cover image removed.')
     })
   }
 
@@ -196,9 +274,58 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
 
       {tab === 'overview' && (
         <div className="media-detail__overview">
-          {coverDataUrl && (
-            <img className="media-detail__cover" src={coverDataUrl} alt={`${item.label} cover art`} />
-          )}
+          <div
+            className={coverDataUrl ? 'media-detail__cover-dropzone' : 'media-detail__cover-dropzone media-detail__cover-dropzone--empty'}
+            onDragOver={(event) => {
+              event.preventDefault()
+            }}
+            onDrop={(event) => {
+              event.preventDefault()
+              const firstItem = event.dataTransfer.items?.[0] as
+                | (DataTransferItem & { getAsFile(): (File & { path?: string }) | null })
+                | undefined
+              const droppedFile = firstItem?.getAsFile() as (File & { path?: string }) | null | undefined
+              const droppedPath = droppedFile?.path
+              if (!droppedPath) {
+                setCoverActionMessage('Drop an image file from your file manager.')
+                return
+              }
+              setCoverFromDroppedPath(droppedPath)
+            }}
+          >
+            {coverDataUrl ? (
+              <img className="media-detail__cover" src={coverDataUrl} alt={`${item.label} cover art`} />
+            ) : (
+              <p className="media-detail__cover-placeholder">No cover image yet</p>
+            )}
+            <p className="media-detail__cover-drop-hint">Drop an image file here to set cover art.</p>
+          </div>
+          <div className="media-detail__cover-actions">
+            <button type="button" className="button button--small" onClick={setCoverFromFile}>
+              {coverDataUrl ? 'Replace Cover Image…' : 'Add Cover Image…'}
+            </button>
+            {coverDataUrl && (
+              <button type="button" className="button button--small" onClick={clearCover}>
+                Remove Cover Image
+              </button>
+            )}
+          </div>
+          <div className="media-detail__cover-url">
+            <label htmlFor="cover-url-input">Image URL</label>
+            <div className="media-detail__cover-url-controls">
+              <input
+                id="cover-url-input"
+                type="url"
+                value={coverUrlInput}
+                onChange={(event) => setCoverUrlInput(event.target.value)}
+                placeholder="https://example.com/cover.jpg"
+              />
+              <button type="button" className="button button--small" onClick={setCoverFromUrl}>
+                Download and Set
+              </button>
+            </div>
+          </div>
+          {coverActionMessage && <p className="media-detail__status">{coverActionMessage}</p>}
           <p>Capacity: {item.capacityBytes ? formatBytes(item.capacityBytes) : 'Unknown'}</p>
           <p>Last scanned: {item.lastScannedAt ?? 'Never'}</p>
           <p>Last verified: {item.lastVerifiedAt ?? 'Never'}</p>

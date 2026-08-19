@@ -30,9 +30,26 @@ export function registerDialogIpc(win: BrowserWindow): void {
     }
   )
 
-  ipcMain.handle('dialog:pickOpenFile', async (event): Promise<IpcResult<{ path: string | null }>> => {
+  ipcMain.handle('dialog:pickOpenFile', async (event, payload: unknown): Promise<IpcResult<{ path: string | null }>> => {
     if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
-    const result = await dialog.showOpenDialog(win, { properties: ['openFile'] })
+    const candidate = isRecord(payload) ? payload : {}
+    const imagesOnly = candidate.imagesOnly
+    if (imagesOnly !== undefined && typeof imagesOnly !== 'boolean') {
+      return { ok: false, error: { code: 'invalid_input', message: 'imagesOnly must be a boolean' } }
+    }
+
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile'],
+      filters:
+        imagesOnly === true
+          ? [
+              {
+                name: 'Images',
+                extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp', 'tif', 'tiff']
+              }
+            ]
+          : undefined
+    })
     if (result.canceled || result.filePaths.length === 0) {
       return { ok: true, data: { path: null } }
     }
