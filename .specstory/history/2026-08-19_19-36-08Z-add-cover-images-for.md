@@ -7325,3 +7325,1119 @@ _**Agent (copilot/auto)**_
 
 Created 5 todos
 </details></tool-use>
+
+---
+
+_**User (2026-08-19 20:20:32Z)**_
+
+after isntallation, the app does not run. I execute the app, but nothing shows. Is there anything in teh code that would help troubleshoot?
+
+---
+
+_**Agent (copilot/auto)**_
+
+<think><details><summary>Thought Process</summary>
+I found the exact blocker: packaged app crashes at startup because `sharp` is loaded at module import time and fails to load its native library (`libvips`). I’m patching this to lazy-load `sharp` only when needed, with a safe fallback so the app launches normally.
+
+The crash output is from an older packaged build (it still has top-level `sharp` import); I’ll regenerate the Linux package with the new code and retest the packaged binary.
+</details></think>
+
+_**Agent (copilot/auto)**_
+
+I’ll inspect startup paths and logging hooks in the Electron main process, then check where runtime logs are written so you can capture the exact failure on installed builds.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `package.json`
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/home/kel/dev/DiscDock/package.json`
+- startLine: `1`
+
+**Result:**
+
+```
+{
+  "name": "discdock",
+  "version": "0.1.0",
+  "description": "Catalog and search your external/removable media collection",
+  "desktopName": "DiscDock",
+  "main": "dist-electron/electron/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && npm run build:electron && cross-env NODE_ENV=development electron .\"",
+    "dev:desktop": "npm run dev",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p electron/tsconfig.json",
+    "build": "npm run build:renderer && npm run build:electron",
+    "typecheck": "tsc --noEmit && tsc -p electron/tsconfig.json --noEmit",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "test:integration": "npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/dbIntegration.js",
+    "benchmark:scan": "npm run build:electron && ELECTRON_RUN_AS_NODE=1 electron dist-electron/electron/tests/scanPerformance.js",
+    "test": "npm run test:unit && npm run test:integration",
+    "start": "electron .",
+    "package": "npm run build && electron-builder",
+    "package:linux": "npm run build && electron-builder --linux deb AppImage",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kelmankenberg/DiscDock.git"
+  },
+  "keywords": [],
+  "author": {
+    "name": "DiscDock contributors",
+    "email": "kelmankenberg@users.noreply.github.com"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kelmankenberg/DiscDock/issues"
+  },
+  "homepage": "https://github.com/kelmankenberg/DiscDock#readme",
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.2.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "concurrently": "^9.2.4",
+    "cross-env": "^10.1.0",
+    "electron": "^41.10.5",
+    "electron-builder": "^26.15.3",
+    "typescript": "^7.
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `createWindow.ts`
+
+**Input:**
+
+- endLine: `260`
+- filePath: `/home/kel/dev/DiscDock/electron/window/createWindow.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, shell } from 'electron'
+import path from 'node:path'
+import { loadWindowState, trackWindowState } from './windowState'
+
+const isDev = process.env.NODE_ENV === 'development'
+
+export function createMainWindow(): BrowserWindow {
+  const savedState = loadWindowState()
+
+  const win = new BrowserWindow({
+    width: savedState.width,
+    height: savedState.height,
+    x: savedState.x,
+    y: savedState.y,
+    minWidth: 900,
+    minHeight: 600,
+    // Frameless: DiscDock renders its own title bar/toolbar and window controls.
+    frame: false,
+    backgroundColor: '#1e1e1e',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, '../preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  win.once('ready-to-show', () => {
+    if (savedState.maximized) win.maximize()
+    win.show()
+  })
+
+  trackWindowState(win)
+
+  // Never allow navigation to or opening of remote content from the renderer.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url)
+    return { action: 'deny' }
+  })
+
+  // DevTools are not opened automatically; toggle manually with Ctrl+Shift+I.
+  // Restart is bound to Ctrl+Shift+R. Only react to keyDown — before-input-event also fires
+  // on keyUp, which would otherwise double-fire (e.g. toggle open then immediately close again).
+  win.webContents.on('before-input-event', (_event, input) => {
+    if (input.type !== 'keyDown' || !input.control || !input.shift) return
+    const key = input.key.toLowerCase()
+    if (key === 'i') {
+      win.webContents.toggleDevTools()
+    } else if (key === 'r') {
+      app.relaunch()
+      app.exit(0)
+    }
+  })
+
+  if (isDev) {
+    void win.loadURL('http://localhost:5173')
+  } else {
+    void win.loadFile(path.join(__dirname, '../../../dist/index.html'))
+  }
+
+  return win
+}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `logging.ts`
+
+**Input:**
+
+- endLine: `260`
+- filePath: `/home/kel/dev/DiscDock/electron/logging.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import log from 'electron-log/main'
+import fs from 'node:fs'
+import path from 'node:path'
+import { app } from 'electron'
+
+export function initializeLogging(): void {
+  const logsDirectory = path.join(app.getPath('userData'), 'logs')
+  fs.mkdirSync(logsDirectory, { recursive: true })
+  log.transports.file.resolvePathFn = () => path.join(logsDirectory, 'main.log')
+  log.transports.file.level = 'info'
+  log.info('DiscDock starting', { version: app.getVersion(), platform: process.platform })
+
+  process.on('uncaughtException', (error) => {
+    log.error('Uncaught main-process exception', error)
+  })
+  process.on('unhandledRejection', (reason) => {
+    log.error('Unhandled main-process rejection', reason)
+  })
+}
+
+export function logShutdown(): void {
+  log.info('DiscDock shutting down')
+}
+
+export { log }
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `main.ts`
+
+**Input:**
+
+- endLine: `300`
+- filePath: `/home/kel/dev/DiscDock/electron/main.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, BrowserWindow, ipcMain, Notification } from 'electron'
+import { createMainWindow } from './window/createWindow'
+import { registerWindowControlIpc } from './ipc/windowControls'
+import { registerDashboardIpc } from './ipc/dashboard'
+import { registerMediaIpc } from './ipc/media'
+import { registerDeviceIpc, startDeviceWatcher, stopDeviceWatcher } from './ipc/devices'
+import { registerScanIpc } from './ipc/scan'
+import { registerDialogIpc } from './ipc/dialogs'
+import { registerSearchIpc } from './ipc/search'
+import { registerDuplicatesIpc } from './ipc/duplicates'
+import { registerFilesIpc } from './ipc/files'
+import { registerSettingsIpc } from './ipc/settings'
+import { registerDesktopShortcutIpc } from './ipc/desktopShortcut'
+import { registerBackupIpc } from './ipc/backup'
+import { registerTagsIpc } from './ipc/tags'
+import { registerCollectionsIpc } from './ipc/collections'
+import { registerExportIpc } from './ipc/export'
+import { registerCustomFieldsIpc } from './ipc/customFields'
+import { initScanManager } from './scanning/scanManager'
+import { initAutoUpdater, registerUpdateIpc } from './updates/autoUpdater'
+import { countMediaNeedingVerification } from './db/mediaRepository'
+import { getSettings } from './settings/settingsStore'
+import { getDb, closeDb } from './db'
+import type { IpcResult } from '../shared/types'
+import { initializeLogging, log, logShutdown } from './logging'
+import { isTrustedRendererEvent } from './ipc/validation'
+
+let mainWindow: BrowserWindow | null = null
+
+function showVerificationReminder(): void {
+  const settings = getSettings()
+  if (!settings.notifications.verificationReminders) return
+  const count = countMediaNeedingVerification(settings.verificationThresholdMonths)
+  if (count === 0) return
+  new Notification({
+    title: 'DiscDock',
+    body: `${count} media item${count === 1 ? '' : 's'} ${count === 1 ? 'has' : 'have'} not been verified in the last ${settings.verificationThresholdMonths} months.`
+  }).show()
+}
+
+func
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `electron-builder.yml`
+
+**Input:**
+
+- endLine: `260`
+- filePath: `/home/kel/dev/DiscDock/electron-builder.yml`
+- startLine: `1`
+
+**Result:**
+
+```
+appId: com.discdock.app
+productName: DiscDock
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+linux:
+  # Rendered verbatim into Categories=; the nested `desktop.entry` form is ignored by electron-builder.
+  category: Utility;FileTools
+  icon: build/icon.png
+  target:
+    - target: deb
+      arch: [x64]
+    - target: AppImage
+      arch: [x64]
+protocols:
+  - name: DiscDock
+    schemes:
+      - discdock
+# electron-updater supports the AppImage target; .deb installs update via the distro package.
+publish:
+  provider: github
+  owner: kelmankenberg
+  repo: DiscDock
+deb:
+  depends:
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libgtk-3-0
+  packageCategory: utils
+appImage:
+  license: LICENSE.txt
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Next I’ll run the packaged binary from terminal and inspect runtime logs, which should reveal whether startup is failing before the window appears.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` command -v discdock || true; command -v DiscDock || true; ls -la release | h...`
+
+Check installed binary availability and packaged artifacts present in release folder.
+
+```bash
+command -v discdock || true; command -v DiscDock || true; ls -la release | head -n 40
+```
+
+**Result:**
+
+```
+/usr/bin/discdock
+total 238452
+drwxr-xr-x  3 kel kel      4096 Aug 19 15:11 .
+drwxrwxr-x 15 kel kel      4096 Aug 14 13:40 ..
+-rw-rw-r--  1 kel kel       888 Aug 19 15:11 builder-debug.yml
+-rw-rw-r--  1 kel kel       634 Aug 19 15:09 builder-effective-config.yaml
+-rw-rw-r--  1 kel kel 107917960 Aug 19 15:11 discdock_0.1.0_amd64.deb
+-rwxr-xr-x  1 kel kel 136217106 Aug 19 15:10 DiscDock-0.1.0.AppImage
+-rw-rw-r--  1 kel kel       523 Aug 19 15:11 latest-linux.yml
+drwxrwxr-x  4 kel kel      4096 Aug 19 15:09 linux-unpacked
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ./release/linux-unpacked/discdock --no-sandbox`
+
+Attempt to launch the packaged binary directly from terminal to capture startup behavior.
+
+```bash
+./release/linux-unpacked/discdock --no-sandbox
+```
+
+**Result:**
+
+```
+Note: This terminal execution was moved to the background using the ID 1707acb0-6843-442a-a8ef-810a5758c684
+Note: The command produced no new output for an extended period and was moved to background terminal ID 1707acb0-6843-442a-a8ef-810a5758c684; the process is still running and has not been killed. You will be automatically notified on your next turn when it completes.
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="1707acb0-6843-442a-a8ef-810a5758c684" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="1707acb0-6843-442a-a8ef-810a5758c684" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+  3. Producing no output for an extended period does not mean the command failed — call get_terminal_output with id="1707acb0-6843-442a-a8ef-810a5758c684" to continue polling. Only call kill_terminal if the command is genuinely hung and you need to retry with a different approach.
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  ./release/linux-unpacked/discdock --no-sandbox
+A JavaScript error occurred in the main process
+Uncaught Exception:
+Error: Could not load the "sharp" module using the linux-x64 runtime
+ERR_DLOPEN_FAILED: libvips-cpp.so.8.18.3: cannot open shared object file: No such file or directory
+Possible solutions:
+- Ensure optional dependencies can be installed:
+   
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+I found the exact blocker: packaged app crashes at startup because  is loaded at module import time and fails to load its native library (`libvips`). I’m patching this to lazy-load  only when needed, with a safe fallback so the app launches normally.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **media.ts**</summary>
+
+@@ lines 1-329 @@
+
+```
+import { ipcMain } from 'electron'
+import { app, nativeImage } from 'electron'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import {
+  createMediaItem,
+  deleteMediaItem,
+  getMediaItem,
+  listMediaItems,
+  markMediaVerified,
+  retireMediaItem,
+  setMediaCoverPath,
+  updateMediaItem
+} from '../db/mediaRepository'
+import { MEDIA_TYPES } from '../../shared/types'
+import type { IpcResult, MediaItem, MediaItemInput } from '../../shared/types'
+import { isNonEmptyString, isPositiveInteger, isRecord, isTrustedRendererEvent } from './validation'
+
+const VALID_MEDIA_TYPES = new Set(MEDIA_TYPES.map((t) => t.value))
+
+function validateMediaItemInput(input: unknown): MediaItemInput {
+  if (!isRecord(input)) {
+    throw new Error('Invalid media item payload')
+  }
+  const candidate = input as Record<string, unknown>
+
+  const label = typeof candidate.label === 'string' ? candidate.label.trim() : ''
+  if (!label) throw new Error('Label is required')
+
+  const mediaType = candidate.mediaType
+  if (typeof mediaType !== 'string' || !VALID_MEDIA_TYPES.has(mediaType as MediaItemInput['mediaType'])) {
+    throw new Error('A valid media type is required')
+  }
+
+  const capacityBytes =
+    typeof candidate.capacityBytes === 'number' && Number.isFinite(candidate.capacityBytes)
+      ? candidate.capacityBytes
+      : null
+
+  const physicalLocation =
+    typeof candidate.physicalLocation === 'string' && candidate.physicalLocation.trim()
+      ? candidate.physicalLocation.trim()
+      : null
+
+  const notes =
+    typeof candidate.notes === 'string' && candidate.notes.trim() ? candidate.notes.trim() : null
+
+  const deviceFingerprint =
+    typeof candidate.deviceFingerprint === 'string' && candidate.deviceFingerprint.trim()
+      ? candidate.deviceFingerprint.trim()
+      : null
+
+  return {
+    label,
+    mediaType: mediaType as MediaItemInput['mediaType'],
+    capacityBytes,
+    physicalLocation,
+    notes,
+    deviceFingerprint
+  }
+}
+
+function validateMediaItemPatch(patch: unknown): Partial<MediaItemInput> {
+  if (!isRecord(patch)) throw new Error('Invalid media update payload')
+  const allowed = new Set(['label', 'mediaType', 'capacityBytes', 'physicalLocation', 'notes', 'deviceFingerprint'])
+  if (Object.keys(patch).some((key) => !allowed.has(key))) throw new Error('Unknown media update field')
+  if (patch.label !== undefined && !isNonEmptyString(patch.label)) throw new Error('Label must be a non-empty string')
+  if (patch.mediaType !== undefined && !isNonEmptyString(patch.mediaType)) throw new Error('Media type must be a non-empty string')
+  if (patch.capacityBytes !== undefined && patch.capacityBytes !== null && (typeof patch.capacityBytes !== 'number' || !Number.isFinite(patch.capacityBytes) || patch.capacityBytes < 0)) throw new Error('Capacity must be a non-negative number')
+  for (const key of ['physicalLocation', 'notes', 'deviceFingerprint'] as const) {
+    if (patch[key] !== undefined && patch[key] !== null && typeof patch[key] !== 'string') throw new Error(`${key} must be a string or null`)
+  }
+  return patch as Partial<MediaItemInput>
+}
+
+function toErrorResult(err: unknown): IpcResult<never> {
+  const message = err instanceof Error ? err.message : 'Unknown error'
+  return { ok: false, error: { code: 'media_error', message } }
+}
+
+function isLikelyAnimatedWebp(source: Buffer): boolean {
+  // Animated WebP files typically include ANIM/ANMF chunks in the RIFF payload.
+  const probe = source.subarray(0, Math.min(source.length, 64 * 1024)).toString('latin1')
+  return probe.includes('ANIM') || probe.includes('ANMF')
+}
+
+let cachedSharp: (typeof import('sharp')) | null | undefined
+
+function getSharpModule(): (typeof import('sharp')) | null {
+  if (cachedSharp !== undefined) return cachedSharp
+  try {
+    const loaded = require('sharp') as typeof import('sharp')
+    cachedSharp = loaded
+  } catch {
+    cachedSharp = null
+  }
+  return cachedSharp
+}
+
+async function decodeImageToPngBytes(source: Buffer): Promise<Buffer> {
+  const image = nativeImage.createFromBuffer(source)
+  if (!image.isEmpty()) return image.toPNG()
+  const sharp = getSharpModule()
+  if (isLikelyAnimatedWebp(source)) {
+    // Some animated WebP files cannot be decoded by nativeImage, but can be flattened by sharp.
+    if (!sharp) {
+      throw new Error('Animated WebP is not supported in this build. Please use a static PNG/JPG/WebP image.')
+    }
+    try {
+      return await sharp(source, { animated: true }).png().toBuffer()
+    } catch {
+      throw new Error('Animated WebP is not supported for cover images. Please use a static image.')
+    }
+  }
+  if (!sharp) throw new Error('Image could not be decoded')
+  try {
+    return await sharp(source, { animated: true }).png().toBuffer()
+  } catch {
+    throw new Error('Image could not be decoded')
+  }
+}
+
+async function writeCoverPngForMedia(mediaId: number, png: Buffer): Promise<string> {
+  const coversDir = path.join(app.getPath('userData'), 'covers')
+  await fs.mkdir(coversDir, { recursive: true })
+  const coverPath = path.join(coversDir, `${mediaId}.png`)
+  await fs.writeFile(coverPath, png)
+  setMediaCoverPath(mediaId, coverPath)
+  return coverPath
+}
+
+export function registerMediaIpc(): void {
+  ipcMain.handle('media:list', (event): IpcResult<MediaItem[]> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      return { ok: true, data: listMediaItems() }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:get', (event, payload: unknown): IpcResult<MediaItem> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+      const item = getMediaItem(id)
+      if (!item) throw new Error(`Media item ${id} not found`)
+      return { ok: true, data: item }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:create', (event, payload: unknown): IpcResult<MediaItem> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const input = validateMediaItemInput(payload)
+      return { ok: true, data: createMediaItem(input) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:update', (event, payload: unknown): IpcResult<MediaItem> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const candidate = isRecord(payload) ? payload : {}
+      const { id, patch } = candidate
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+      const partial = validateMediaItemPatch(patch)
+      return { ok: true, data: updateMediaItem(id, partial) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:retire', (event, payload: unknown): IpcResult<MediaItem> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+      return { ok: true, data: retireMediaItem(id) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:delete', (event, payload: unknown): IpcResult<{ deleted: true }> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+      deleteMediaItem(id)
+      return { ok: true, data: { deleted: true } }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:markVerified', (event, payload: unknown): IpcResult<MediaItem> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+      return { ok: true, data: markMediaVerified(id) }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:setCoverFromFile', async (event, payload: unknown): Promise<IpcResult<MediaItem>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const candidate = isRecord(payload) ? payload : {}
+      const id = candidate.id
+      const sourcePath = candidate.sourcePath
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+      if (!isNonEmptyString(sourcePath)) throw new Error('A source image path is required')
+
+      const existing = getMediaItem(id)
+      if (!existing) throw new Error(`Media item ${id} not found`)
+
+      const absolutePath = path.resolve(sourcePath)
+      const source = await fs.readFile(absolutePath)
+      let png: Buffer
+      try {
+        png = await decodeImageToPngBytes(source)
+      } catch (err) {
+        const fallback = nativeImage.createFromPath(absolutePath)
+        if (!fallback.isEmpty()) {
+          png = fallback.toPNG()
+        } else {
+          throw err
+        }
+      }
+
+      await writeCoverPngForMedia(id, png)
+
+      const updated = getMediaItem(id)
+      if (!updated) throw new Error(`Media item ${id} not found`)
+      return { ok: true, data: updated }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:clearCover', async (event, payload: unknown): Promise<IpcResult<MediaItem>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+
+      const existing = getMediaItem(id)
+      if (!existing) throw new Error(`Media item ${id} not found`)
+
+      if (existing.coverPath) {
+        await fs.rm(existing.coverPath, { force: true })
+      }
+      setMediaCoverPath(id, null)
+
+      const updated = getMediaItem(id)
+      if (!updated) throw new Error(`Media item ${id} not found`)
+      return { ok: true, data: updated }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  ipcMain.handle('media:setCoverFromUrl', async (event, payload: unknown): Promise<IpcResult<MediaItem>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const candidate = isRecord(payload) ? payload : {}
+      const id = candidate.id
+      const imageUrl = candidate.imageUrl
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+      if (!isNonEmptyString(imageUrl)) throw new Error('An image URL is required')
+
+      const existing = getMediaItem(id)
+      if (!existing) throw new Error(`Media item ${id} not found`)
+
+      let parsed: URL
+      try {
+        parsed = new URL(imageUrl)
+      } catch {
+        throw new Error('Image URL is invalid')
+      }
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        throw new Error('Only http(s) image URLs are allowed')
+      }
+
+      const response = await fetch(parsed.toString(), { redirect: 'follow' })
+      if (!response.ok) {
+        throw new Error(`Image download failed: ${response.status} ${response.statusText}`)
+      }
+      const contentType = response.headers.get('content-type')
+      if (contentType && !contentType.toLowerCase().startsWith('image/')) {
+        throw new Error(`Downloaded URL is not an image (content-type: ${contentType})`)
+      }
+      const downloaded = Buffer.from(await response.arrayBuffer())
+      const png = await decodeImageToPngBytes(downloaded)
+
+      await writeCoverPngForMedia(id, png)
+
+      const updated = getMediaItem(id)
+      if (!updated) throw new Error(`Media item ${id} not found`)
+      return { ok: true, data: updated }
+    } catch (err) {
+      return toErrorResult(err)
+    }
+  })
+
+  // Covers live outside the app bundle, so they are returned as a data URL rather than a file path.
+  ipcMain.handle('media:cover', async (event, payload: unknown): Promise<IpcResult<string | null>> => {
+    if (!isTrustedRendererEvent(event)) return { ok: false, error: { code: 'forbidden', message: 'Untrusted renderer' } }
+    try {
+      const id = isRecord(payload) ? payload.id : undefined
+      if (!isPositiveInteger(id)) throw new Error('A positive numeric id is required')
+      const item = getMediaItem(id)
+      if (!item?.coverPath) return { ok: true, data: null }
+      const png = await fs.readFile(item.coverPath)
+      return { ok: true, data: `data:image/png;base64,${png.toString('base64')}` }
+    } catch {
+      return { ok: true, data: null }
+    }
+  })
+}
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run typecheck`
+
+Verify lazy-load sharp change compiles cleanly.
+
+```bash
+npm run typecheck
+```
+
+**Result:**
+
+```
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run build:electron`
+
+Rebuild Electron bundle so startup crash fix is included.
+
+```bash
+npm run build:electron
+```
+
+**Result:**
+
+```
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+I’m doing one final launch test of the packaged binary to confirm the startup crash is gone before I give you the troubleshooting checklist.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ./release/linux-unpacked/discdock --no-sandbox`
+
+Smoke-test packaged binary startup after lazy-loading sharp to ensure it no longer crashes on launch.
+
+```bash
+./release/linux-unpacked/discdock --no-sandbox
+```
+
+**Result:**
+
+```
+Note: This terminal execution was moved to the background using the ID a0e0a140-3dc1-459c-aa98-5dc490233f3e
+Note: Command timed out after 120000ms. The command may still be running in terminal ID a0e0a140-3dc1-459c-aa98-5dc490233f3e. You will be automatically notified on your next turn when it completes.
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="a0e0a140-3dc1-459c-aa98-5dc490233f3e" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="a0e0a140-3dc1-459c-aa98-5dc490233f3e" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+  3. A timeout does not mean the command failed — call get_terminal_output with id="a0e0a140-3dc1-459c-aa98-5dc490233f3e" to continue polling. Only call kill_terminal if the command is genuinely hung and you need to retry with a different approach.
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  ./release/linux-unpacked/discdock --no-sandbox
+A JavaScript error occurred in the main process
+Uncaught Exception:
+Error: Could not load the "sharp" module using the linux-x64 runtime
+ERR_DLOPEN_FAILED: libvips-cpp.so.8.18.3: cannot open shared object file: No such file or directory
+Possible solutions:
+- Ensure optional dependencies can be installed:
+    npm install --include=optional sharp
+- Ensure your package manager supports multi-platform installatio
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+The crash output is from an older packaged build (it still has top-level  import); I’ll regenerate the Linux package with the new code and retest the packaged binary.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` npm run package:linux`
+
+Rebuild and repackage Linux artifacts so linux-unpacked contains the latest lazy-sharp startup fix.
+
+```bash
+npm run package:linux
+```
+
+**Result:**
+
+```
+
+> discdock@0.1.0 package:linux
+> npm run build && electron-builder --linux deb AppImage
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'nativ
+e'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` e
+xtension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-DPqY7b2w.css   21.61 kB │ gzip:  4.30 kB
+dist/assets/index-DoV8rmGx.js   307.59 kB │ gzip: 93.60 kB
+
+✓ built in 437ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+  • electron-builder  version=26.15.3 os=7.0.0-29-generic
+  • loaded configuration  file=/home/kel/dev/DiscDock/electron-builder.yml
+  • writing effective config  file=release/builder-effective-config.yaml
+  • executing @electron/rebuild  electronVersion=41.10.5 arch=x64 buildFromSourc
+e=false workspaceRoot=/home/kel/dev/DiscDock projectDir=./ appDir=./
+  • installing native dependencies  arch=x64
+  • preparing       moduleName=better-sqlite3 arch=x64
+  • finished        moduleName=better-sqlite3 arch=x64
+  • completed installing native dependencies
+  • packaging       platform=linux arch=x64 electron=41.10.5 appOutDir=release/l
+inux-unpacked
+  • downloading     label=electron
+    [==========================================================] 100% | electron
+  • downloaded electron zip extracted successfully  output=/home/kel/dev/DiscDoc
+k/release/linux-unpacked
+  • searching for node modules  pm=npm searchDir=/home/kel/dev/DiscDock
+  • duplicate dependency references  dependencies=["once@1.4.0","once@1.4.0","pu
+mp@3.0.4","strin
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` ./release/linux-unpacked/discdock --no-sandbox`
+
+Run freshly packaged linux-unpacked binary to verify startup no longer crashes.
+
+```bash
+./release/linux-unpacked/discdock --no-sandbox
+```
+
+**Result:**
+
+```
+Note: This terminal execution was moved to the background using the ID a5ea8c50-03a5-449f-8f14-31ef7686c4d7
+Note: Command timed out after 120000ms. The command may still be running in terminal ID a5ea8c50-03a5-449f-8f14-31ef7686c4d7. You will be automatically notified on your next turn when it completes.
+This note is not a signal to end the turn — pick one of the actions below and continue.
+  1. If the command may still be producing output or the shell prompt has not returned, call get_terminal_output with id="a5ea8c50-03a5-449f-8f14-31ef7686c4d7" to continue polling. This is the default and safest action when unsure.
+  2. Only if the output clearly ends with a real non-secret input prompt (Continue? (y/n), Enter selection, etc. — a normal shell prompt like `$` or `#` does NOT count), call the vscode_askQuestions tool to ask the user, then send each answer using send_to_terminal with id="a5ea8c50-03a5-449f-8f14-31ef7686c4d7" (which returns the next few lines of output). Repeat one prompt at a time. NEVER route secret prompts (passwords, passphrases, tokens, API keys, etc.) through vscode_askQuestions — answers to that tool are sent through the model. For secret prompts, tell the user to type the value directly into the terminal and stop.
+  3. A timeout does not mean the command failed — call get_terminal_output with id="a5ea8c50-03a5-449f-8f14-31ef7686c4d7" to continue polling. Only call kill_terminal if the command is genuinely hung and you need to retry with a different approach.
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  ./release/linux-unpacked/discdock --no-sandbox
+15:31:10.737 › DiscDock starting { version: '0.1.0', platform: 'linux' }
+15:31:10.860 › Electron ready
+15:31:10.922 › Device watcher starting
+Checking for update
+15:31:11.155 › Device watcher poll completed { deviceCount: 0 }
+Error: Error: No published versions on GitHub
+    at newError (/home/kel/dev/DiscDock/release/linux-unpacked/resources/app.asar/node_modules/builder-util-runtime/out/error.js:5:19)
+    a
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="kill_terminal"><details>
+<summary>Tool use: **kill_terminal**</summary>
+
+Killed terminal
+
+**Input:**
+
+- id: `a5ea8c50-03a5-449f-8f14-31ef7686c4d7`
+
+**Result:**
+
+```
+Successfully killed persistent terminal a5ea8c50-03a5-449f-8f14-31ef7686c4d7. Final output before termination:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run package:linux
+
+> discdock@0.1.0 package:linux
+> npm run build && electron-builder --linux deb AppImage
+
+
+> discdock@0.1.0 build
+> npm run build:renderer && npm run build:electron
+
+
+> discdock@0.1.0 build:renderer
+> vite build
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vite.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+vite v8.2.1 building client environment for production...
+✓ 1850 modules transformed.
+computing gzip size...
+dist/index.html                   0.63 kB │ gzip:  0.38 kB
+dist/assets/index-DPqY7b2w.css   21.61 kB │ gzip:  4.30 kB
+dist/assets/index-DoV8rmGx.js   307.59 kB │ gzip: 93.60 kB
+
+✓ built in 437ms
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+  • electron-builder  version=26.15.3 os=7.0.0-29-generic
+  • loaded configuration  file=/home/kel/dev/DiscDock/electron-builder.yml
+  • writing effective config  file=release/builder-effective-config.yaml
+  • executing @electron/rebuild  electronVersion=41.10.5 arch=x64 buildFromSource=false workspaceRoot=/home/kel/dev/DiscDock projectDir=./ appDir=./
+  • installing native dependencies  arch=x64
+  • preparing       moduleName=better-sqlite3 arch=x64
+  • finished        moduleName=better-sqlite3 arch=x64
+  • completed installing native dependencies
+  • packaging       platform=linux arch=x64 electron=41.10.5 appOutDir=release/linux-unpacked
+  • downloading     label=electron
+    [==========================================================] 100% | electron
+  • downloaded electron zip extracted successfully  output=/home/kel/dev/DiscDock/release/linux-unpacked
+  • sear
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+I confirmed a concrete startup failure and fixed it in code; I’ll do one quick check of window-state restore too, since an off-screen saved position can also look like “app didn’t open.”
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `windowState.ts`
+
+**Input:**
+
+- endLine: `260`
+- filePath: `/home/kel/dev/DiscDock/electron/window/windowState.ts`
+- startLine: `1`
+
+**Result:**
+
+```
+import { app, screen } from 'electron'
+import type { BrowserWindow } from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
+
+interface SavedWindowState {
+  width: number
+  height: number
+  x?: number
+  y?: number
+  maximized: boolean
+}
+
+const DEFAULT_STATE: SavedWindowState = { width: 1280, height: 800, maximized: false }
+const SAVE_DEBOUNCE_MS = 400
+
+function statePath(): string {
+  return path.join(app.getPath('userData'), 'window-state.json')
+}
+
+function isOnScreen(x: number, y: number, width: number, height: number): boolean {
+  return screen.getAllDisplays().some((display) => {
+    const area = display.workArea
+    return x >= area.x && y >= area.y && x + width <= area.x + area.width && y + height <= area.y + area.height
+  })
+}
+
+export function loadWindowState(): SavedWindowState {
+  try {
+    const raw = fs.readFileSync(statePath(), 'utf-8')
+    const parsed = JSON.parse(raw) as Partial<SavedWindowState>
+    const state: SavedWindowState = { ...DEFAULT_STATE, ...parsed }
+
+    // Ignore stale bounds from a display that's no longer connected (e.g. laptop undocked).
+    if (state.x !== undefined && state.y !== undefined && !isOnScreen(state.x, state.y, state.width, state.height)) {
+      return { ...state, x: undefined, y: undefined }
+    }
+    return state
+  } catch {
+    return DEFAULT_STATE
+  }
+}
+
+/** Debounced persistence of window bounds/maximized state, called on resize/move/maximize/unmaximize. */
+export function trackWindowState(win: BrowserWindow): void {
+  let saveTimer: NodeJS.Timeout | null = null
+
+  const save = (): void => {
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => {
+      const maximized = win.isMaximized()
+      // While maximized, getBounds() reflects the maximized size — persist the last known
+      // restored bounds instead so un-maximizing later returns to the expected size/position.
+      const bounds = maximized ? win.getNormalBounds() : win.getBounds()
+      const state: SavedWindowState = 
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Yes. There is useful built-in troubleshooting in the code, and I just verified the actual failure mode for your installed build.
+
+What I found:
+1. Your installed package was crashing in the main process before UI could appear.
+2. The crash was from loading sharp at startup:
+   Error: Could not load the sharp module ... libvips-cpp.so... not found
+3. That explains “I launch it, nothing shows.”
+
+Where the troubleshooting hooks already exist:
+- Main-process logging setup: `electron/logging.ts`
+- App startup path and lifecycle: `electron/main.ts`
+- Window creation/load behavior: `electron/window/createWindow.ts`
+
+What I changed to fix startup crash:
+- Made sharp load lazily only when cover decoding needs it, so app startup no longer depends on sharp native libs being present.
+- File changed: `electron/ipc/media.ts`
+
+Validation I ran:
+- Rebuilt and repackaged Linux build.
+- Launched packaged binary from release/linux-unpacked.
+- It starts and runs now (device watcher logs continue normally).
+- I do see updater warning “No published versions on GitHub,” but that is non-fatal and should not prevent window startup.
+
+What to do next:
+1. Install the newly built package (old installed build still has the crash).
+2. If it still appears blank, launch from terminal with:
+   /usr/bin/discdock
+   and capture output.
+3. Check runtime log file at:
+   ~/.config/discdock/logs/main.log
+   (or the app userData logs folder on your distro).
+
+If you want, I can also add one more startup safety improvement: log BrowserWindow events (ready-to-show, did-fail-load, render-process-gone) so blank-window cases are diagnosed immediately from logs.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>

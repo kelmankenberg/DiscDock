@@ -2,7 +2,6 @@ import { ipcMain } from 'electron'
 import { app, nativeImage } from 'electron'
 import fs from 'node:fs/promises'
 import path from 'node:path'
-import sharp from 'sharp'
 import {
   createMediaItem,
   deleteMediaItem,
@@ -85,17 +84,35 @@ function isLikelyAnimatedWebp(source: Buffer): boolean {
   return probe.includes('ANIM') || probe.includes('ANMF')
 }
 
+let cachedSharp: (typeof import('sharp')) | null | undefined
+
+function getSharpModule(): (typeof import('sharp')) | null {
+  if (cachedSharp !== undefined) return cachedSharp
+  try {
+    const loaded = require('sharp') as typeof import('sharp')
+    cachedSharp = loaded
+  } catch {
+    cachedSharp = null
+  }
+  return cachedSharp
+}
+
 async function decodeImageToPngBytes(source: Buffer): Promise<Buffer> {
   const image = nativeImage.createFromBuffer(source)
   if (!image.isEmpty()) return image.toPNG()
+  const sharp = getSharpModule()
   if (isLikelyAnimatedWebp(source)) {
     // Some animated WebP files cannot be decoded by nativeImage, but can be flattened by sharp.
+    if (!sharp) {
+      throw new Error('Animated WebP is not supported in this build. Please use a static PNG/JPG/WebP image.')
+    }
     try {
       return await sharp(source, { animated: true }).png().toBuffer()
     } catch {
       throw new Error('Animated WebP is not supported for cover images. Please use a static image.')
     }
   }
+  if (!sharp) throw new Error('Image could not be decoded')
   try {
     return await sharp(source, { animated: true }).png().toBuffer()
   } catch {
