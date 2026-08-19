@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Play } from 'lucide-react'
 import { MEDIA_TYPES } from '../../shared/types'
 import type {
   AppSettings,
@@ -11,6 +12,7 @@ import type {
 } from '../../shared/types'
 import './MediaDetail.css'
 import HelpButton from '../components/HelpButton'
+import { usePlayer } from '../player/PlayerContext'
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return '0 B'
@@ -48,6 +50,23 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
   const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null)
   const [coverActionMessage, setCoverActionMessage] = useState<string | null>(null)
   const [coverUrlInput, setCoverUrlInput] = useState('')
+  const player = usePlayer()
+
+  const playAudioEntry = (path: string): void => {
+    const audioEntries = entries.filter((e) => !e.isDirectory && e.kind === 'audio')
+    const startIndex = audioEntries.findIndex((e) => e.path === path)
+    if (startIndex === -1 || !item) return
+    player.play(
+      audioEntries.map((e) => ({
+        mediaId,
+        mediaLabel: item.label,
+        path: e.path,
+        name: e.name,
+        durationSeconds: e.durationSeconds
+      })),
+      startIndex
+    )
+  }
 
   useEffect(() => {
     void window.discdock.media.cover(mediaId).then((result) => {
@@ -466,6 +485,17 @@ export default function MediaDetail({ mediaId, onBack }: MediaDetailProps): JSX.
                         )}
                       </td>
                       <td className="media-detail__file-actions">
+                        {!entry.isDirectory && entry.kind === 'audio' && (
+                          <button
+                            type="button"
+                            className="button button--small button--icon-only"
+                            title="Play"
+                            aria-label={`Play ${entry.name}`}
+                            onClick={() => playAudioEntry(entry.path)}
+                          >
+                            <Play size={14} aria-hidden="true" />
+                          </button>
+                        )}
                         {!entry.isDirectory && (
                           <button
                             type="button"

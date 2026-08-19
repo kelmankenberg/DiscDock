@@ -5,6 +5,7 @@ interface FileRow {
   path: string
   name: string
   kind: string
+  extension: string | null
   is_directory: number
   size_bytes: number
   directory_file_count: number
@@ -23,7 +24,7 @@ export function listFolderContents(mediaItemId: number, folderPath: string): Fil
 
   const rows = getDb()
     .prepare(
-      `SELECT fr.path, fr.name, fr.kind, fr.is_directory, fr.size_bytes, fr.modified_at_src, fr.duration_seconds,
+      `SELECT fr.path, fr.name, fr.kind, fr.extension, fr.is_directory, fr.size_bytes, fr.modified_at_src, fr.duration_seconds,
               CASE WHEN fr.is_directory = 1 THEN (
                 SELECT COUNT(*) FROM file_record child
                 WHERE child.media_item_id = fr.media_item_id AND child.is_directory = 0
@@ -52,6 +53,7 @@ export function listFolderContents(mediaItemId: number, folderPath: string): Fil
     path: row.path,
     name: row.name,
     kind: row.kind,
+    extension: row.extension,
     isDirectory: row.is_directory === 1,
     sizeBytes: row.size_bytes,
     directoryFileCount: row.directory_file_count,
@@ -59,4 +61,25 @@ export function listFolderContents(mediaItemId: number, folderPath: string): Fil
     modifiedAtSrc: row.modified_at_src,
     durationSeconds: row.duration_seconds
   }))
+}
+
+/**
+ * Looks up a single cataloged file's playback-relevant metadata. CDDA tracks have kind 'audio'
+ * but no underlying file — callers use extension/trackNumber/sizeBytes to route them through
+ * live ripping instead of the normal mounted-filesystem path.
+ */
+export function getFileMeta(
+  mediaItemId: number,
+  filePath: string
+): { kind: string; extension: string | null; trackNumber: number | null; sizeBytes: number } | null {
+  const row = getDb()
+    .prepare(
+      `SELECT kind, extension, track_number, size_bytes FROM file_record
+       WHERE media_item_id = @mediaItemId AND path = @filePath AND is_directory = 0`
+    )
+    .get({ mediaItemId, filePath }) as
+    | { kind: string; extension: string | null; track_number: number | null; size_bytes: number }
+    | undefined
+  if (!row) return null
+  return { kind: row.kind, extension: row.extension, trackNumber: row.track_number, sizeBytes: row.size_bytes }
 }

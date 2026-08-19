@@ -1,4 +1,5 @@
-import { execFile } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
+import type { ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { promisify } from 'node:util'
 import { nativeImage } from 'electron'
@@ -10,6 +11,11 @@ const CDDA_BYTES_PER_SECTOR = 2352
 const CDDA_SECTORS_PER_SECOND = 75
 // Audio CD track offsets are expressed from the start of the disc, which begins at sector 150.
 const CDDA_LEADIN_SECTORS = 150
+
+// Fixed by the Red Book CD-DA spec — every audio CD track is 44.1kHz/16-bit/stereo PCM.
+export const CDDA_SAMPLE_RATE = 44100
+export const CDDA_CHANNELS = 2
+export const CDDA_BITS_PER_SAMPLE = 16
 
 const MISSING_TOOLS_MESSAGE =
   'Reading audio CDs needs a CD tool that DiscDock does not bundle. Install one, then try again:\n' +
@@ -134,6 +140,38 @@ export async function readAudioCdToc(devicePath: string): Promise<AudioCdToc> {
 
   if (sawEmptyDrive) throw new Error(NO_DISC_MESSAGE)
   throw new Error('No tracks found — the disc may be empty, unreadable, or not an audio CD.')
+}
+
+/** Builds a canonical 44-byte PCM WAV header. dataSizeBytes is known upfront from the disc's TOC. */
+export function buildWavHeader(dataSizeBytes: number): Buffer {
+  const header = Buffer.alloc(44)
+  const byteRate = CDDA_SAMPLE_RATE * CDDA_CHANNELS * (CDDA_BITS_PER_SAMPLE / 8)
+  const blockAlign = CDDA_CHANNELS * (CDDA_BITS_PER_SAMPLE / 8)
+
+  header.write('RIFF', 0, 'ascii')
+  header.writeUInt32LE(36 + dataSizeBytes, 4)
+  header.write('WAVE', 8, 'ascii')
+  header.write('fmt ', 12, 'ascii')
+  header.writeUInt32LE(16, 16)
+  header.writeUInt16LE(1, 20) // PCM
+  header.writeUInt16LE(CDDA_CHANNELS, 22)
+  header.writeUInt32LE(CDDA_SAMPLE_RATE, 24)
+  header.writeUInt32LE(byteRate, 28)
+  header.writeUInt16LE(blockAlign, 32)
+  header.writeUInt16LE(CDDA_BITS_PER_SAMPLE, 34)
+  header.write('data', 36, 'ascii')
+  header.writeUInt32LE(dataSizeBytes, 40)
+  return header
+}
+
+/**
+ * Spawns cdparanoia ripping one track as raw PCM to stdout so playback can start as bytes
+ * arrive, instead of waiting for the whole track to be ripped to a file first. The caller owns
+ * the process: it must consume/pipe stdout, watch stderr/'error'/'exit' for failures, and kill
+ * it on client disconnect.
+ */
+export function spawnCddaTrackStream(devicePath: string, trackNumber: number): ChildProcessWithoutNullStreams {
+  return spawn('cdparanoia', ['-r', '-d', devicePath, String(trackNumber), '-'])
 }
 
 /**

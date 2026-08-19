@@ -8441,3 +8441,149 @@ _**Agent (copilot/auto)**_
 
 Created 2 todos
 </details></tool-use>
+
+---
+
+_**User (2026-08-19 20:36:03Z)**_
+
+[Terminal 1707acb0-6843-442a-a8ef-810a5758c684 notification: terminal exited. The terminal process ended before the command could complete normally; further commands cannot be sent to this terminal ID.]
+Terminal output:
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run typecheck
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run typecheck
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+src/views/MediaDetail.tsx:268:66 - error TS2339: Property 'path' does not exist on type 'File'.
+
+268               const droppedPath = event.dataTransfer.files?.[0]?.path
+                                                                     ~~~~
+
+
+Found 1 error in src/views/MediaDetail.tsx:268
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run typecheck
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+src/views/MediaDetail.tsx:271:59 - error TS2339: Property 'path' does not exist on type 'File'.
+
+271               const droppedPath = firstItem?.getAsFile()?.path
+                                                              ~~~~
+
+
+Found 1 error in src/views/MediaDetail.tsx:271
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run typecheck
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run typecheck
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run build:electron
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run typecheck
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run typecheck
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run build:electron
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm install sharp
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@electron-internal/extract-zip@1.0.5',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '11.16.0' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@electron/get@5.1.0',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '11.16.0' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: '@electron/rebuild@4.2.0',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '11.16.0' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'electron@41.10.5',
+npm warn EBADENGINE   required: { node: '>= 22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '11.16.0' }
+npm warn EBADENGINE }
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'node-abi@4.33.0',
+npm warn EBADENGINE   required: { node: '>=22.12.0' },
+npm warn EBADENGINE   current: { node: 'v20.20.2', npm: '11.16.0' }
+npm warn EBADENGINE }
+
+added 4 packages, and audited 443 packages in 4s
+
+75 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run typecheck
+
+> discdock@0.1.0 typecheck
+> tsc --noEmit && tsc -p electron/tsconfig.json --noEmit
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  npm run build:electron
+
+> discdock@0.1.0 build:electron
+> tsc -p electron/tsconfig.json
+
+kel@kel-EQ-Mint:~/dev/DiscDock$  command -v discdock || true; command -v DiscDock || true; ls -la release | head -n 40
+/usr/bin/discdock
+total 238452
+drwxr-xr-x  3 kel kel      4096 Aug 19 15:11 .
+drwxrwxr-x 15 kel kel      4096 Aug 14 13:40 ..
+-rw-rw-r--  1 kel kel       888 Aug 19 15:11 builder-debug.yml
+-rw-rw-r--  1 kel kel       634 Aug 19 15:09 builder-effective-config.yaml
+-rw-rw-r--  1 kel kel 107917960 Aug 19 15:11 discdock_0.1.0_amd64.deb
+-rwxr-xr-x  1 kel kel 136217106 Aug 19 15:10 DiscDock-0.1.0.AppImage
+-rw-rw-r--  1 kel kel       523 Aug 19 15:11 latest-linux.yml
+drwxrwxr-x  4 kel kel      4096 Aug 19 15:09 linux-unpacked
+kel@kel-EQ-Mint:~/dev/DiscDock$  ./release/linux-unpacked/discdock --no-sandbox
+A JavaScript error occurred in the main process
+Uncaught Exception:
+Error: Could not load the "sharp" module using the linux-x64 runtime
+ERR_DLOPEN_FAILED: libvips-cpp.so.8.18.3: cannot open shared object file: No such file or directory
+Possible solutions:
+- Ensure optional dependencies can be installed:
+    npm install --include=optional sharp
+- Ensure your package manager supports multi-platform installation:
+    See https://sharp.pixelplumbing.com/install#cross-platform
+- Add platform-specific dependencies:
+    npm install --os=linux --cpu=x64 sharp
+- Consult the installation documentation:
+    See https://sharp.pixelplumbing.com/install
+    at Object.<anonymous> (/home/kel/dev/DiscDock/release/linux-unpacked/resources/app.asar/node_modules/sharp/dist/sharp.cjs:171:9)
+    at Module._compile (node:internal/modules/cjs/loader:1879:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:2012:10)
+    at Module.load (node:internal/modules/cjs/loader:1601:32)
+    at Module._load (node:internal/modules/cjs/loader:1403:12)
+    at c._load (node:electron/js2c/node_init:2:18060)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:262:19)
+    at Module.require (node:internal/modules/cjs/loader:1624:12)
+    at require (node:internal/modules/helpers:153:16)
+    at Object.<anonymous> (/home/kel/dev/DiscDock/release/linux-unpacked/resources/app.asar/node_modules/sharp/dist/constructor.cjs:10:1)

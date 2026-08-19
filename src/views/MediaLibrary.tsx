@@ -11,13 +11,15 @@ import {
   MoreVertical,
   AlertTriangle,
   ShieldCheck,
-  QrCode
+  QrCode,
+  Play
 } from 'lucide-react'
 import { MEDIA_TYPES } from '../../shared/types'
 import type { DetectedDevice, MediaItem, MediaItemInput, MediaType, ScanProgress } from '../../shared/types'
 import LabelSheet from '../components/LabelSheet'
 import './MediaLibrary.css'
 import HelpButton from '../components/HelpButton'
+import { usePlayer } from '../player/PlayerContext'
 
 const EMPTY_FORM: MediaItemInput = {
   label: '',
@@ -114,6 +116,28 @@ export default function MediaLibrary({
   const [, setPendingAudioCdPath] = useState<string | null>(null)
   const [coversByMedia, setCoversByMedia] = useState<Record<number, string>>({})
   const focusedRowRef = useRef<HTMLTableRowElement>(null)
+  const player = usePlayer()
+
+  const handlePlayMedia = (item: MediaItem): void => {
+    void window.discdock.files.list(item.id, '').then((result) => {
+      if (!result.ok) return
+      const audioEntries = result.data.filter((e) => !e.isDirectory && e.kind === 'audio')
+      if (audioEntries.length === 0) {
+        setEjectMessage(`"${item.label}" has no playable audio files.`)
+        return
+      }
+      player.play(
+        audioEntries.map((e) => ({
+          mediaId: item.id,
+          mediaLabel: item.label,
+          path: e.path,
+          name: e.name,
+          durationSeconds: e.durationSeconds
+        })),
+        0
+      )
+    })
+  }
 
   useEffect(() => {
     const withCovers = items.filter((item) => item.coverPath)
@@ -1121,6 +1145,20 @@ export default function MediaLibrary({
                     }}
                   >
                     <Disc3 size={14} aria-hidden="true" /> Scan Audio CD Tracks
+                  </button>
+                </li>
+              )}
+              {item.status === 'active' && !scan && item.lastScannedAt && (
+                <li>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setContextMenu(null)
+                      handlePlayMedia(item)
+                    }}
+                  >
+                    <Play size={14} aria-hidden="true" /> Play Audio
                   </button>
                 </li>
               )}

@@ -13,6 +13,8 @@ import PlaceholderView from './views/PlaceholderView'
 import { NAV_ITEMS } from './components/Sidebar'
 import HelpPanel from './components/HelpPanel'
 import { HelpProvider, useHelp } from './help/HelpContext'
+import { PlayerProvider } from './player/PlayerContext'
+import PlayerBar from './components/PlayerBar'
 import type { ViewId } from './help/types'
 
 const VIEW_TITLES: Record<string, string> = Object.fromEntries(
@@ -112,14 +114,16 @@ export default function App(): JSX.Element {
 
   return (
     <HelpProvider>
-      <AppShell
-        sidebarCollapsed={sidebarCollapsed}
-        toggleSidebarCollapsed={toggleSidebarCollapsed}
-        activeView={activeView}
-        selectedMediaId={selectedMediaId}
-        handleSelectNav={handleSelectNav}
-        renderView={renderView}
-      />
+      <PlayerProvider>
+        <AppShell
+          sidebarCollapsed={sidebarCollapsed}
+          toggleSidebarCollapsed={toggleSidebarCollapsed}
+          activeView={activeView}
+          selectedMediaId={selectedMediaId}
+          handleSelectNav={handleSelectNav}
+          renderView={renderView}
+        />
+      </PlayerProvider>
     </HelpProvider>
   )
 }
@@ -168,6 +172,7 @@ function AppShell({
         <main className="app-content">{renderView()}</main>
         <HelpPanel />
       </div>
+      <PlayerBar />
     </div>
   )
 }

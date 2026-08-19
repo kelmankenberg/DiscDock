@@ -221,6 +221,7 @@ export interface FileEntry {
   path: string
   name: string
   kind: string
+  extension: string | null
   isDirectory: boolean
   sizeBytes: number
   directoryFileCount?: number

@@ -21,7 +21,7 @@ const invalidInput = (message: string): IpcResult<never> => ({
  * Maps a catalog-relative path back onto the live filesystem via the media item's currently
  * mounted device. Rejects paths that escape the mount point.
  */
-async function resolveLivePath(mediaId: number, filePath: string): Promise<string> {
+export async function resolveLivePath(mediaId: number, filePath: string): Promise<string> {
   const item = getMediaItem(mediaId)
   if (!item) throw new Error(`Media item ${mediaId} not found`)
   if (!item.deviceFingerprint) throw new Error(`"${item.label}" is not linked to a device`)

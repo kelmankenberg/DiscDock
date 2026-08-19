@@ -130,7 +130,8 @@ async function runAudioCdScan(jobId: number, mediaItemId: number, devicePath: st
         modifiedAtSrc: null,
         hashAlgo: null,
         hashValue: null,
-        durationSeconds: track.durationSeconds
+        durationSeconds: track.durationSeconds,
+        trackNumber: track.trackNumber
       })
       if (outcome === 'added') filesAdded += 1
       else if (outcome === 'modified') filesModified += 1

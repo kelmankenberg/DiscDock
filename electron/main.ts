@@ -16,6 +16,7 @@ import { registerTagsIpc } from './ipc/tags'
 import { registerCollectionsIpc } from './ipc/collections'
 import { registerExportIpc } from './ipc/export'
 import { registerCustomFieldsIpc } from './ipc/customFields'
+import { registerAudioStreamSchemePrivileges, registerAudioStreamProtocol } from './ipc/mediaStream'
 import { initScanManager } from './scanning/scanManager'
 import { initAutoUpdater, registerUpdateIpc } from './updates/autoUpdater'
 import { countMediaNeedingVerification } from './db/mediaRepository'
@@ -83,6 +84,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 initializeLogging()
+registerAudioStreamSchemePrivileges()
 
 app.whenReady().then(() => {
   log.info('Electron ready')
@@ -106,6 +108,7 @@ app.whenReady().then(() => {
   registerCollectionsIpc()
   registerExportIpc()
   registerCustomFieldsIpc()
+  registerAudioStreamProtocol()
   initScanManager(mainWindow)
   startDeviceWatcher(mainWindow)
 

@@ -162,6 +162,13 @@ const MIGRATIONS: { version: number; sql: string }[] = [
     sql: `
       ALTER TABLE media_item ADD COLUMN cover_path TEXT;
     `
+  },
+  {
+    version: 7,
+    sql: `
+      -- Lets CDDA playback map a cataloged track back to its physical track number for ripping.
+      ALTER TABLE file_record ADD COLUMN track_number INTEGER;
+    `
   }
 ]
 

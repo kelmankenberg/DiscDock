@@ -124,6 +124,7 @@ export interface WalkedFile {
   hashAlgo: string | null
   hashValue: string | null
   durationSeconds?: number | null
+  trackNumber?: number | null
 }
 
 interface ExistingFileRow {
@@ -152,14 +153,15 @@ export function upsertFileRecord(
     db.prepare(
       `INSERT INTO file_record
          (media_item_id, path, name, extension, kind, size_bytes, created_at_src, modified_at_src,
-          hash_algo, hash_value, is_directory, last_seen_scan_id, duration_seconds)
+          hash_algo, hash_value, is_directory, last_seen_scan_id, duration_seconds, track_number)
        VALUES (@mediaItemId, @path, @name, @extension, @kind, @sizeBytes, @createdAtSrc, @modifiedAtSrc,
-               @hashAlgo, @hashValue, @isDirectory, @scanJobId, @durationSeconds)`
+               @hashAlgo, @hashValue, @isDirectory, @scanJobId, @durationSeconds, @trackNumber)`
     ).run({
       mediaItemId,
       scanJobId,
       ...file,
       durationSeconds: file.durationSeconds ?? null,
+      trackNumber: file.trackNumber ?? null,
       isDirectory: file.isDirectory ? 1 : 0
     })
     return 'added'
@@ -174,9 +176,9 @@ export function upsertFileRecord(
     `UPDATE file_record
      SET size_bytes = @sizeBytes, created_at_src = @createdAtSrc, modified_at_src = @modifiedAtSrc,
          hash_algo = @hashAlgo, hash_value = @hashValue, last_seen_scan_id = @scanJobId,
-         duration_seconds = @durationSeconds
+         duration_seconds = @durationSeconds, track_number = @trackNumber
      WHERE id = @id`
-  ).run({ id: existing.id, scanJobId, ...file, durationSeconds: file.durationSeconds ?? null })
+  ).run({ id: existing.id, scanJobId, ...file, durationSeconds: file.durationSeconds ?? null, trackNumber: file.trackNumber ?? null })
 
   return changed ? 'modified' : 'unchanged'
 }
