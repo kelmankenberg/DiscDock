@@ -1,7 +1,7 @@
 # Roadmap & Release Plan
 
 ## Phase 0 — Foundations (Pre-MVP)
-- Project scaffolding: Electron + React + TypeScript + Vite, electron-builder pipeline producing installable `.deb`/`.AppImage` (even with a blank window) to de-risk packaging early.
+- Project scaffolding: Electron + React + TypeScript + Vite, electron-builder pipeline producing installable `.deb`, `.AppImage`, and Arch `.pacman` packages to de-risk packaging early.
 - SQLite integration with migration runner and base schema (`media_item`, `file_record`, `scan_job`).
 - Preload/contextBridge IPC skeleton with the discriminated result pattern.
 
@@ -18,7 +18,7 @@ Scope: the minimum feature set that makes DiscDock genuinely useful end-to-end.
 - Dashboard with summary stats and attention panel — FR-8.1
 - Settings: scan defaults, theme, notifications — FR-8.2
 - Backup/restore of the whole database — FR-7.2
-- `.deb` + `.AppImage` packaging finalized with QA checklist passed — Packaging doc §7
+- `.deb`, `.AppImage`, and `.pacman` packaging finalized with QA checklist passed — Packaging doc §7
 
 **MVP exit criteria:** a user can register a drive, scan it, search across multiple scanned drives without connecting them, and back up/restore their catalog.
 

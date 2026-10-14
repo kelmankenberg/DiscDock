@@ -72,6 +72,6 @@ Numbered `FR-x.y` for traceability to user stories and test cases.
 
 ## FR-9: Packaging & Platform
 
-- **FR-9.1** The system shall build distributable Linux packages: a `.deb` package installable via `dpkg`/`apt`, and a portable `.AppImage`.
+- **FR-9.1** The system shall build distributable Linux packages: a `.deb` package installable via `dpkg`/`apt`, a portable `.AppImage`, and an Arch `.pacman` package installable via `pacman`.
 - **FR-9.2** The system shall store its database and configuration under the XDG-compliant user data directory (e.g., `~/.config/DiscDock` / `~/.local/share/DiscDock`).
-- **FR-9.3** The application shall register a desktop entry (`.desktop` file) with icon, for both packaging formats.
+- **FR-9.3** The application shall register a desktop entry (`.desktop` file) with icon in all package formats.

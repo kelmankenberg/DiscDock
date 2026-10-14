@@ -8,7 +8,7 @@ Related: [Roadmap & Release Plan](11-roadmap.md), [Functional Requirements](03-f
 
 This document is the working gate for the first public Linux release of DiscDock. It records the remaining work found during the holistic application audit and defines the evidence required before release.
 
-The initial release is Linux-first and targets `.deb` and `.AppImage`. Post-MVP enhancements and explicitly deferred ideas are not release blockers unless they affect the MVP workflows or release safety.
+The initial release is Linux-first and targets `.deb`, `.AppImage`, and Arch `.pacman`. Post-MVP enhancements and explicitly deferred ideas are not release blockers unless they affect the MVP workflows or release safety.
 
 ## Status Legend
 
@@ -62,7 +62,7 @@ These are useful improvements, but should not delay the first release if the MVP
 - [ ] Add IPC tests for malformed payloads and structured error responses.
 - [ ] Add renderer tests for the primary registration, scan, search, backup, restore, and Help workflows.
 - [!] Add `lint`, `typecheck`, and `test` scripts that fail on errors. `typecheck` and `test` pass. Decision: retain TypeScript 7; ESLint remains blocked until a compatible parser is available, or an alternative lint strategy is selected.
-- [~] Add a CI workflow that runs `npm ci`, dependency audit, lint, typecheck, tests, renderer build, Electron build, and packaging. A GitHub Actions workflow now runs `npm ci`, `npm test`, `npm run typecheck`, `npm run build`, and a dependent Linux package job that uploads `.deb`/`.AppImage` artifacts on Node 24; audit, lint, and package smoke-test jobs remain open.
+- [~] Add a CI workflow that runs `npm ci`, dependency audit, lint, typecheck, tests, renderer build, Electron build, and packaging. GitHub Actions runs the verification and Ubuntu package jobs on Node 24, plus an Arch container job that builds and uploads `.pacman`; audit, lint, and package smoke-test jobs remain open.
 - [~] Keep the lockfile committed and fail CI on new high or critical dependency vulnerabilities, with documented exceptions when necessary. Electron 41.10.5 now produces `npm audit --audit-level=high` with zero vulnerabilities, and CI includes the audit step; future vulnerability-policy exceptions remain a release-process concern.
 
 **Exit evidence:** A clean checkout passes every required command without manual intervention.
@@ -169,6 +169,8 @@ These are useful improvements, but should not delay the first release if the MVP
 ## P1 - Packaging and Distribution QA
 
 - [x] Confirm `electron-builder` produces valid `.deb` and `.AppImage` artifacts from the current checkout. `npm run package:linux` produced both artifacts successfully.
+- [x] Build and inspect the Arch `.pacman` artifact on Omarchy. `npm run package:arch` produced a package recognized by `pacman -Qip`, with repository-available dependencies.
+- [ ] Install the `.pacman` artifact with `pacman -U` and verify launch, desktop entry, icon, upgrade, and removal behavior on Arch/Omarchy.
 - [x] Add and verify the application icon referenced by the package configuration. The Debian package contains the DiscDock icon and desktop entry.
 - [x] Add and verify the license file referenced by the AppImage configuration. `LICENSE.txt` is embedded in the generated AppImage and Debian artifact.
 - [ ] Test `.deb` installation on a current Ubuntu LTS image with `apt install ./package.deb` and `dpkg -i`.

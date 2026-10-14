@@ -20,6 +20,7 @@
 - **NFR-3.1** Supported OS (v1): Linux distributions using glibc, tested against at least one Debian-based (Ubuntu LTS) and one RPM-based or Arch-based distro for AppImage compatibility.
 - **NFR-3.2** `.deb` package shall declare correct dependency metadata and install cleanly via `dpkg -i` / `apt install ./package.deb`.
 - **NFR-3.3** `.AppImage` shall run without installation on distros supporting FUSE (or `--appimage-extract-and-run` fallback documented).
+- **NFR-3.4** The Arch `.pacman` package shall install through `pacman` on a supported Arch-based distribution.
 - **NFR-3.4** Device detection shall degrade gracefully (manual folder picker) on systems lacking `udisks2`.
 
 ## 4. Usability & Accessibility

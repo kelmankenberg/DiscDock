@@ -4,7 +4,7 @@
 
 **Product:** DiscDock
 **Type:** Electron desktop application
-**Target OS (v1):** Linux (`.deb` package, `.AppImage`)
+**Target OS (v1):** Linux (`.deb`, `.AppImage`, and Arch `.pacman` packages)
 **Elevator Pitch:** DiscDock lets you scan any external or removable media once, catalog everything on it, and then search, browse, and locate files across your entire physical media collection — without ever having to plug the drive or disc back in.
 
 ## 2. Problem Statement
@@ -26,7 +26,7 @@ DiscDock solves this by building a searchable local catalog (index) of file meta
 4. Detect duplicate files across media using content hashing.
 5. Track the physical location of media items (e.g., "Box 3, Shelf B") for easy retrieval.
 6. Notify users about aging/unverified media that may need to be re-checked for read errors (bit rot, degraded optical media).
-7. Package cleanly for Linux as both `.deb` and `.AppImage` with no non-Linux distribution required for v1.
+7. Package cleanly for Linux as `.deb`, `.AppImage`, and Arch `.pacman` formats with no non-Linux distribution required for v1.
 
 ## 4. Non-Goals (v1)
 
@@ -64,7 +64,7 @@ DiscDock solves this by building a searchable local catalog (index) of file meta
 - Time to catalog a 50GB drive with 20,000 files completes within acceptable UX (progress shown, cancellable, resumable).
 - Search returns results across 100+ catalogued media items in under 500ms for typical queries (indexed DB).
 - Zero data loss on catalog database across app updates (migrations tested).
-- Successful `.deb` install and `.AppImage` execution on at least two major Linux distros (e.g., Ubuntu LTS, Fedora) for QA.
+- Successful `.deb` installation on Ubuntu LTS, `.AppImage` execution on a non-Debian distro, and `.pacman` installation on Arch/Omarchy.
 
 ## 8. Assumptions & Constraints
 

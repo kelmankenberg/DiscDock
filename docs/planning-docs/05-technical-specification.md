@@ -12,7 +12,7 @@
 | Local database | **SQLite** via `better-sqlite3` | Synchronous, fast, WAL mode enabled |
 | Scanning/hashing workers | Node.js `worker_threads` (or a dedicated Electron **Utility Process**) | Keeps main/renderer responsive |
 | Device detection (Linux) | `udisks2` over D-Bus (`dbus-next` or similar), fallback to `lsblk -J` / `/proc/mounts` parsing | No root required for user-mounted media |
-| Packaging | **electron-builder** | Targets: `deb`, `AppImage` |
+| Packaging | **electron-builder** | Targets: `deb`, `AppImage`, `pacman` |
 | Testing | Vitest/Jest (unit), Playwright (E2E renderer) | Scan/diff logic unit-tested independent of Electron |
 | Logging | `electron-log` or equivalent rotating file logger | Main-process centric |
 
@@ -112,5 +112,5 @@ flowchart LR
 ## 10. Build & Dev Workflow
 
 - Vite dev server for renderer HMR; Electron main/preload compiled via `tsc`/`esbuild` watch.
-- `electron-builder` config (see [Packaging & Deployment](09-packaging-deployment.md)) drives `.deb` and `.AppImage` output from a single build pipeline.
-- CI: lint → unit tests → build renderer + main → package (deb/AppImage) → smoke test artifact.
+- `electron-builder` config (see [Packaging & Deployment](09-packaging-deployment.md)) drives `.deb`, `.AppImage`, and Arch `.pacman` output.
+- CI: lint → unit tests → build renderer + main → package on Ubuntu and Arch → smoke test artifacts.
