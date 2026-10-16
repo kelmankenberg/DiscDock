@@ -121,9 +121,9 @@ export function validateSettingsPatch(value: unknown): Partial<AppSettings> | nu
       patch[key] = value[key]
     }
   }
-  if (value.helpPanelWidthPercent !== undefined) {
-    if (typeof value.helpPanelWidthPercent !== 'number' || !Number.isFinite(value.helpPanelWidthPercent) || value.helpPanelWidthPercent < 25 || value.helpPanelWidthPercent > 40) return null
-    patch.helpPanelWidthPercent = value.helpPanelWidthPercent
+  if (value.sidePanelWidthPercent !== undefined) {
+    if (typeof value.sidePanelWidthPercent !== 'number' || !Number.isFinite(value.sidePanelWidthPercent) || value.sidePanelWidthPercent < 25 || value.sidePanelWidthPercent > 50) return null
+    patch.sidePanelWidthPercent = value.sidePanelWidthPercent
   }
   return patch
 }

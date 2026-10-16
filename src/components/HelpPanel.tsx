@@ -1,110 +1,119 @@
-import { ArrowLeft, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, ChevronDown } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { HELP_TOPICS } from '../help/registry'
-import { MAX_WIDTH, MIN_WIDTH, useHelp } from '../help/HelpContext'
+import { useHelp } from '../help/HelpContext'
+import { HighlightMatches, matchesPanelSearch, PanelSearch } from './PanelSearch'
+import SlideOutPanel from './SlideOutPanel'
+import { useSidePanel } from './SidePanelContext'
 import type { ViewId } from '../help/types'
 
-export default function HelpPanel(): JSX.Element | null {
-  const { isOpen, topicId, widthPercent, close, setWidthPercent, toggle } = useHelp()
-  const headingRef = useRef<HTMLHeadingElement>(null)
+function HelpSection({ title, query, defaultOpen = false, children }: { title: string; query: string; defaultOpen?: boolean; children: ReactNode }): JSX.Element {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+
+  return (
+    <details className="help-panel__section" open={isOpen} onToggle={(event) => setIsOpen(event.currentTarget.open)}>
+      <summary>
+        <span><HighlightMatches text={title} query={query} /></span>
+        <ChevronDown size={16} aria-hidden="true" />
+      </summary>
+      <div className="help-panel__section-content">{children}</div>
+    </details>
+  )
+}
+
+export default function HelpPanel(): JSX.Element {
+  const { topicId, setTopicId } = useHelp()
+  const { activePanel } = useSidePanel()
   const [history, setHistory] = useState<ViewId[]>([])
+  const [query, setQuery] = useState('')
   const topic = HELP_TOPICS[topicId]
+  const normalizedQuery = query.trim()
 
-  useEffect(() => {
-    if (isOpen) headingRef.current?.focus()
-  }, [isOpen, topicId])
+  useEffect(() => setQuery(''), [topicId])
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape' && isOpen) close()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [close, isOpen])
+  const featuresHeadingMatches = normalizedQuery !== '' && matchesPanelSearch('Features', normalizedQuery)
+  const tipsHeadingMatches = normalizedQuery !== '' && matchesPanelSearch('Tips', normalizedQuery)
+  const visibleFeatures = topic.features.filter((feature) =>
+    featuresHeadingMatches || matchesPanelSearch(`${feature.name} ${feature.description}`, normalizedQuery)
+  )
+  const visibleTips = topic.tips.filter((tip) =>
+    tipsHeadingMatches || matchesPanelSearch(tip, normalizedQuery)
+  )
+  const visibleRelated = (topic.seeAlso ?? []).filter((relatedId) =>
+    matchesPanelSearch(HELP_TOPICS[relatedId].title, normalizedQuery)
+  )
+  const showOverview = matchesPanelSearch(`Overview ${topic.overview}`, normalizedQuery)
+  const showFeatures = visibleFeatures.length > 0
+  const showTips = visibleTips.length > 0
+  const showRelated = visibleRelated.length > 0 && topic.seeAlso !== undefined
+  const hasResults = showOverview || showFeatures || showTips || showRelated
 
   const navigate = (nextTopic: ViewId): void => {
     setHistory((previous) => [...previous, topicId])
-    toggle(nextTopic)
+    setTopicId(nextTopic)
   }
 
   return (
-    <aside
-      className={`help-panel${isOpen ? '' : ' help-panel--closed'}`}
-      style={{ width: isOpen ? `${widthPercent}%` : '0%' }}
-      role="complementary"
-      aria-labelledby="help-panel-title"
-      aria-hidden={!isOpen}
-    >
-      <div
-        className="help-panel__resize"
-        role="separator"
-        tabIndex={0}
-        aria-label="Resize help panel"
-        aria-valuemin={MIN_WIDTH}
-        aria-valuemax={MAX_WIDTH}
-        aria-valuenow={widthPercent}
-        onKeyDown={(event) => {
-          if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-            event.preventDefault()
-            setWidthPercent(widthPercent + (event.key === 'ArrowRight' ? 1 : -1))
-          } else if (event.key === 'Home') {
-            setWidthPercent(MIN_WIDTH)
-          } else if (event.key === 'End') {
-            setWidthPercent(MAX_WIDTH)
-          }
-        }}
-        onPointerDown={(event) => {
-          const handle = event.currentTarget
-          const widthContainer = handle.parentElement?.parentElement
-          handle.setPointerCapture(event.pointerId)
-          const startX = event.clientX
-          const startWidth = widthPercent
-          const move = (moveEvent: PointerEvent): void => {
-            const availableWidth = widthContainer?.clientWidth ?? window.innerWidth
-            setWidthPercent(startWidth - ((moveEvent.clientX - startX) / availableWidth) * 100)
-          }
-          const stop = (): void => {
-            handle.removeEventListener('pointermove', move)
-            handle.removeEventListener('pointerup', stop)
-            handle.removeEventListener('pointercancel', stop)
-          }
-          handle.addEventListener('pointermove', move)
-          handle.addEventListener('pointerup', stop)
-          handle.addEventListener('pointercancel', stop)
-        }}
-      />
-      <div className="help-panel__header">
-        <div>
-          {history.length > 0 && (
-            <button type="button" className="button button--small help-panel__back" onClick={() => {
-              const previousTopic = history[history.length - 1]
-              setHistory((previous) => previous.slice(0, -1))
-              toggle(previousTopic)
-            }}>
-              <ArrowLeft size={14} aria-hidden="true" /> Back
-            </button>
-          )}
-          <h2 id="help-panel-title" tabIndex={-1} ref={headingRef}>Help: {topic.title}</h2>
-        </div>
-        <button type="button" className="button button--icon-only" aria-label="Close help" title="Close help" onClick={close}>
-          <X size={18} aria-hidden="true" />
+    <SlideOutPanel
+      panel="help"
+      titleId="help-panel-title"
+      title={`Help: ${topic.title}`}
+      search={<PanelSearch label="Search Help content" placeholder="Search this page's help" value={query} onChange={setQuery} />}
+      leading={history.length > 0 && (
+        <button type="button" className="button button--small slide-panel__back" onClick={() => {
+          const previousTopic = history[history.length - 1]
+          setHistory((previous) => previous.slice(0, -1))
+          setTopicId(previousTopic)
+        }}>
+          <ArrowLeft size={14} aria-hidden="true" /> Back
         </button>
+      )}
+    >
+      <div className="help-panel__content" hidden={activePanel !== 'help'}>
+        {!hasResults ? (
+          <p className="help-panel__empty">No Help content matches “{query}”.</p>
+        ) : (
+          <>
+            {showOverview && (
+              <HelpSection key={`${topicId}-overview`} title="Overview" query={normalizedQuery} defaultOpen>
+                <p><HighlightMatches text={topic.overview} query={normalizedQuery} /></p>
+              </HelpSection>
+            )}
+            {showFeatures && (
+              <HelpSection key={`${topicId}-features`} title="Features" query={normalizedQuery} defaultOpen>
+                <dl className="help-panel__features">
+                  {visibleFeatures.map((feature) => (
+                    <div key={feature.name}>
+                      <dt><HighlightMatches text={feature.name} query={normalizedQuery} /></dt>
+                      <dd><HighlightMatches text={feature.description} query={normalizedQuery} /></dd>
+                    </div>
+                  ))}
+                </dl>
+              </HelpSection>
+            )}
+            {showTips && (
+              <HelpSection key={`${topicId}-tips`} title="Tips" query={normalizedQuery}>
+                <ul className="help-panel__tips">
+                  {visibleTips.map((tip) => <li key={tip}><HighlightMatches text={tip} query={normalizedQuery} /></li>)}
+                </ul>
+              </HelpSection>
+            )}
+            {showRelated && (
+              <HelpSection key={`${topicId}-related`} title="See also" query={normalizedQuery}>
+                <ul className="help-panel__links">
+                  {visibleRelated.map((relatedId) => (
+                    <li key={relatedId}>
+                      <button type="button" onClick={() => navigate(relatedId)}>
+                        <HighlightMatches text={HELP_TOPICS[relatedId].title} query={normalizedQuery} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </HelpSection>
+            )}
+          </>
+        )}
       </div>
-      <div className="help-panel__content">
-        <section>
-          <h3>Overview</h3>
-          <p>{topic.overview}</p>
-        </section>
-        <section>
-          <h3>Features</h3>
-          <dl>{topic.features.map((feature) => <div key={feature.name}><dt>{feature.name}</dt><dd>{feature.description}</dd></div>)}</dl>
-        </section>
-        <section>
-          <h3>Tips</h3>
-          <ul>{topic.tips.map((tip) => <li key={tip}>{tip}</li>)}</ul>
-        </section>
-        {topic.seeAlso && <section><h3>See also</h3><ul className="help-panel__links">{topic.seeAlso.map((relatedId) => <li key={relatedId}><button type="button" onClick={() => navigate(relatedId)}>{HELP_TOPICS[relatedId].title}</button></li>)}</ul></section>}
-      </div>
-    </aside>
+    </SlideOutPanel>
   )
 }

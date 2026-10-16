@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoUpdateEnabled: false,
   audioCdMetadataEnabled: false,
   helpPanelOpen: false,
-  helpPanelWidthPercent: 30
+  sidePanelWidthPercent: 30
 }
 
 let cached: AppSettings | null = null
@@ -33,7 +33,13 @@ export function getSettings(): AppSettings {
   if (cached) return cached
   try {
     const raw = fs.readFileSync(settingsPath(), 'utf-8')
-    cached = { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as Partial<AppSettings>) }
+    const persisted = JSON.parse(raw) as Partial<AppSettings> & { helpPanelWidthPercent?: number }
+    const { helpPanelWidthPercent, ...settings } = persisted
+    cached = {
+      ...DEFAULT_SETTINGS,
+      ...settings,
+      sidePanelWidthPercent: settings.sidePanelWidthPercent ?? helpPanelWidthPercent ?? DEFAULT_SETTINGS.sidePanelWidthPercent
+    }
   } catch {
     cached = { ...DEFAULT_SETTINGS }
   }

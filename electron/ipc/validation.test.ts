@@ -14,9 +14,10 @@ describe('IPC validation', () => {
   it('rejects malformed settings and validates nested notifications', () => {
     expect(validateSettingsPatch({ maxConcurrentScans: 0 })).toBeNull()
     expect(validateSettingsPatch({ notifications: { scanCompleted: true } })).toBeNull()
-    expect(validateSettingsPatch({ theme: 'dark', helpPanelWidthPercent: 35 })).toEqual({
+    expect(validateSettingsPatch({ theme: 'dark', sidePanelWidthPercent: 50 })).toEqual({
       theme: 'dark',
-      helpPanelWidthPercent: 35
+      sidePanelWidthPercent: 50
     })
+    expect(validateSettingsPatch({ sidePanelWidthPercent: 51 })).toBeNull()
   })
 })

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Disc3, Minus, Square, Copy, X, PanelLeftClose, PanelLeftOpen, MoreVertical, RefreshCw, Bug } from 'lucide-react'
+import { Disc3, Minus, Square, Copy, X, PanelLeftClose, PanelLeftOpen, MoreVertical, RefreshCw, Bug, ScrollText } from 'lucide-react'
 import './TitleBar.css'
 
 interface WindowState {
@@ -9,13 +9,15 @@ interface WindowState {
 interface TitleBarProps {
   sidebarCollapsed: boolean
   onToggleSidebar: () => void
+  onShowChangelog: (opener: HTMLButtonElement) => void
 }
 
 // Custom title bar replacing the OS-native one, since the BrowserWindow is created with frame: false.
-export default function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBarProps): JSX.Element {
+export default function TitleBar({ sidebarCollapsed, onToggleSidebar, onShowChangelog }: TitleBarProps): JSX.Element {
   const [maximized, setMaximized] = useState(false)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const moreMenuRef = useRef<HTMLDivElement>(null)
+  const moreButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     void window.discdock.window.isMaximized().then((result) => {
@@ -62,6 +64,7 @@ export default function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBar
           <button
             type="button"
             className="title-bar__button"
+            ref={moreButtonRef}
             aria-label="More"
             aria-haspopup="menu"
             aria-expanded={moreMenuOpen}
@@ -71,6 +74,18 @@ export default function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBar
           </button>
           {moreMenuOpen && (
             <div className="title-bar__menu" role="menu">
+              <button
+                type="button"
+                className="title-bar__menu-item"
+                role="menuitem"
+                onClick={(event) => {
+                  setMoreMenuOpen(false)
+                  onShowChangelog(moreButtonRef.current ?? event.currentTarget)
+                }}
+              >
+                <ScrollText size={14} aria-hidden="true" />
+                <span className="title-bar__menu-item-label">Changelog</span>
+              </button>
               <button
                 type="button"
                 className="title-bar__menu-item"

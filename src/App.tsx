@@ -13,6 +13,8 @@ import PlaceholderView from './views/PlaceholderView'
 import { NAV_ITEMS } from './components/Sidebar'
 import HelpPanel from './components/HelpPanel'
 import { HelpProvider, useHelp } from './help/HelpContext'
+import ChangelogPanel from './components/ChangelogPanel'
+import { SidePanelProvider, useSidePanel } from './components/SidePanelContext'
 import { PlayerProvider } from './player/PlayerContext'
 import PlayerBar from './components/PlayerBar'
 import type { ViewId } from './help/types'
@@ -113,18 +115,20 @@ export default function App(): JSX.Element {
   }
 
   return (
-    <HelpProvider>
-      <PlayerProvider>
-        <AppShell
-          sidebarCollapsed={sidebarCollapsed}
-          toggleSidebarCollapsed={toggleSidebarCollapsed}
-          activeView={activeView}
-          selectedMediaId={selectedMediaId}
-          handleSelectNav={handleSelectNav}
-          renderView={renderView}
-        />
-      </PlayerProvider>
-    </HelpProvider>
+    <SidePanelProvider>
+      <HelpProvider>
+        <PlayerProvider>
+          <AppShell
+            sidebarCollapsed={sidebarCollapsed}
+            toggleSidebarCollapsed={toggleSidebarCollapsed}
+            activeView={activeView}
+            selectedMediaId={selectedMediaId}
+            handleSelectNav={handleSelectNav}
+            renderView={renderView}
+          />
+        </PlayerProvider>
+      </HelpProvider>
+    </SidePanelProvider>
   )
 }
 
@@ -143,35 +147,42 @@ function AppShell({
   handleSelectNav: (key: string) => void
   renderView: () => JSX.Element
 }): JSX.Element {
-  const help = useHelp()
+  const { activePanel, toggle } = useSidePanel()
+  const { setTopicId } = useHelp()
   const previousHelpRoute = useRef(`${activeView}:${selectedMediaId ?? ''}`)
 
   useEffect(() => {
     const route = `${activeView}:${selectedMediaId ?? ''}`
     if (route === previousHelpRoute.current) return
     previousHelpRoute.current = route
-    if (!help.isOpen) return
-    help.show((activeView === 'media-library' && selectedMediaId !== null ? 'media-detail' : activeView) as ViewId)
-  }, [activeView, help.isOpen, selectedMediaId])
+    if (activePanel !== 'help') return
+    setTopicId((activeView === 'media-library' && selectedMediaId !== null ? 'media-detail' : activeView) as ViewId)
+  }, [activePanel, activeView, selectedMediaId, setTopicId])
 
   useEffect(() => {
     const handleHelpShortcut = (event: KeyboardEvent): void => {
       if (event.key !== 'F1') return
       event.preventDefault()
-      help.toggle((activeView === 'media-library' && selectedMediaId !== null ? 'media-detail' : activeView) as ViewId)
+      setTopicId((activeView === 'media-library' && selectedMediaId !== null ? 'media-detail' : activeView) as ViewId)
+      toggle('help')
     }
     window.addEventListener('keydown', handleHelpShortcut)
     return () => window.removeEventListener('keydown', handleHelpShortcut)
-  }, [activeView, help, selectedMediaId])
+  }, [activeView, selectedMediaId, setTopicId, toggle])
 
   return (
     <div className="app-shell">
-      <TitleBar sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebarCollapsed} />
+      <TitleBar
+        sidebarCollapsed={sidebarCollapsed}
+        onToggleSidebar={toggleSidebarCollapsed}
+        onShowChangelog={(opener) => toggle('changelog', opener)}
+      />
       <div className="app-body">
         <Sidebar active={activeView} onSelect={handleSelectNav} collapsed={sidebarCollapsed} />
         <main className="app-content">{renderView()}</main>
-        <HelpPanel />
       </div>
+      <HelpPanel />
+      <ChangelogPanel />
       <PlayerBar />
     </div>
   )

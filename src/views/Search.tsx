@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
+import { SlidersHorizontal, X } from 'lucide-react'
 import { FILE_KINDS, MEDIA_TYPES } from '../../shared/types'
 import type { FileSearchResult, MediaItem, MediaType, FileKind, SearchFilters } from '../../shared/types'
 import './Search.css'
@@ -16,6 +16,7 @@ function formatBytes(bytes: number): string {
 
 export default function Search(): JSX.Element {
   const [text, setText] = useState('')
+  const [filtersVisible, setFiltersVisible] = useState(true)
   const [mediaType, setMediaType] = useState<MediaType | ''>('')
   const [kind, setKind] = useState<FileKind | ''>('')
   const [tag, setTag] = useState('')
@@ -111,6 +112,17 @@ export default function Search(): JSX.Element {
             placeholder="Filter by file name or path…"
             className="search-form__input"
           />
+          <button
+            type="button"
+            className="button button--icon-only search-form__filter-toggle"
+            aria-label={filtersVisible ? 'Hide search filters' : 'Show search filters'}
+            aria-expanded={filtersVisible}
+            aria-controls="search-filters"
+            title={filtersVisible ? 'Hide search filters' : 'Show search filters'}
+            onClick={() => setFiltersVisible((visible) => !visible)}
+          >
+            <SlidersHorizontal size={16} aria-hidden="true" />
+          </button>
           {text && (
             <button
               type="button"
@@ -123,51 +135,53 @@ export default function Search(): JSX.Element {
             </button>
           )}
         </div>
-        <select value={mediaType} onChange={(e) => setMediaType(e.target.value as MediaType | '')}>
-          <option value="">All media types</option>
-          {MEDIA_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
-        <select value={kind} onChange={(e) => setKind(e.target.value as FileKind | '')}>
-          <option value="">All file kinds</option>
-          {FILE_KINDS.map((k) => (
-            <option key={k} value={k}>
-              {k}
-            </option>
-          ))}
-        </select>
-        <select value={mediaItemId} onChange={(e) => setMediaItemId(e.target.value)}>
-          <option value="">All media items</option>
-          {mediaItems.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-        </select>
-        {tagNames.length > 0 && (
-          <select value={tag} onChange={(e) => setTag(e.target.value)}>
-            <option value="">All file tags</option>
-            {tagNames.map((name) => (
-              <option key={name} value={name}>
-                {name}
+        <div id="search-filters" className="search-form__filters" hidden={!filtersVisible}>
+          <select value={mediaType} onChange={(e) => setMediaType(e.target.value as MediaType | '')}>
+            <option value="">All media types</option>
+            {MEDIA_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
               </option>
             ))}
           </select>
-        )}
-        <input type="number" min="0" placeholder="Min bytes" value={minSize} onChange={(e) => setMinSize(e.target.value)} />
-        <input type="number" min="0" placeholder="Max bytes" value={maxSize} onChange={(e) => setMaxSize(e.target.value)} />
-        <label className="search-form__date">Modified after <input type="date" value={modifiedAfter} onChange={(e) => setModifiedAfter(e.target.value)} /></label>
-        <label className="search-form__date">Modified before <input type="date" value={modifiedBefore} onChange={(e) => setModifiedBefore(e.target.value)} /></label>
-        <select value={scanStatus} onChange={(e) => setScanStatus(e.target.value)}>
-          <option value="">Any scan status</option>
-          <option value="completed">Completed scan</option>
-          <option value="incomplete">Incomplete scan</option>
-          <option value="failed">Failed scan</option>
-        </select>
-        <select value={verificationStatus} onChange={(e) => setVerificationStatus(e.target.value)}>
-          <option value="">Any verification status</option>
-          <option value="verified">Verified</option>
-          <option value="needs-verification">Needs verification</option>
-        </select>
+          <select value={kind} onChange={(e) => setKind(e.target.value as FileKind | '')}>
+            <option value="">All file kinds</option>
+            {FILE_KINDS.map((k) => (
+              <option key={k} value={k}>
+                {k}
+              </option>
+            ))}
+          </select>
+          <select value={mediaItemId} onChange={(e) => setMediaItemId(e.target.value)}>
+            <option value="">All media items</option>
+            {mediaItems.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+          </select>
+          {tagNames.length > 0 && (
+            <select value={tag} onChange={(e) => setTag(e.target.value)}>
+              <option value="">All file tags</option>
+              {tagNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          )}
+          <input type="number" min="0" placeholder="Min bytes" value={minSize} onChange={(e) => setMinSize(e.target.value)} />
+          <input type="number" min="0" placeholder="Max bytes" value={maxSize} onChange={(e) => setMaxSize(e.target.value)} />
+          <label className="search-form__date">Modified after <input type="date" value={modifiedAfter} onChange={(e) => setModifiedAfter(e.target.value)} /></label>
+          <label className="search-form__date">Modified before <input type="date" value={modifiedBefore} onChange={(e) => setModifiedBefore(e.target.value)} /></label>
+          <select value={scanStatus} onChange={(e) => setScanStatus(e.target.value)}>
+            <option value="">Any scan status</option>
+            <option value="completed">Completed scan</option>
+            <option value="incomplete">Incomplete scan</option>
+            <option value="failed">Failed scan</option>
+          </select>
+          <select value={verificationStatus} onChange={(e) => setVerificationStatus(e.target.value)}>
+            <option value="">Any verification status</option>
+            <option value="verified">Verified</option>
+            <option value="needs-verification">Needs verification</option>
+          </select>
+        </div>
       </div>
 
       {loading ? (

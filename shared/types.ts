@@ -256,7 +256,7 @@ export interface AppSettings {
   autoUpdateEnabled: boolean
   audioCdMetadataEnabled: boolean
   helpPanelOpen: boolean
-  helpPanelWidthPercent: number
+  sidePanelWidthPercent: number
 }
 
 export interface DesktopShortcutStatus {
