@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, Notification } from 'electron'
+import path from 'node:path'
 import { createMainWindow } from './window/createWindow'
 import { registerWindowControlIpc } from './ipc/windowControls'
 import { registerDashboardIpc } from './ipc/dashboard'
@@ -27,6 +28,11 @@ import { initializeLogging, log, logShutdown } from './logging'
 import { isTrustedRendererEvent } from './ipc/validation'
 
 let mainWindow: BrowserWindow | null = null
+const isDev = process.env.NODE_ENV === 'development'
+
+if (isDev) {
+  app.setPath('userData', path.join(app.getPath('appData'), 'DiscDock-dev'))
+}
 
 function showVerificationReminder(): void {
   const settings = getSettings()
@@ -73,7 +79,9 @@ function handleDeepLinkFromArgv(argv: string[]): void {
   if (url) handleDeepLink(url)
 }
 
-if (!app.requestSingleInstanceLock()) {
+const hasSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (!hasSingleInstanceLock) {
   app.quit()
 } else {
   app.on('second-instance', (_event, argv) => handleDeepLinkFromArgv(argv))
@@ -87,6 +95,8 @@ initializeLogging()
 registerAudioStreamSchemePrivileges()
 
 app.whenReady().then(() => {
+  if (!hasSingleInstanceLock) return
+
   log.info('Electron ready')
   getDb() // initialize database + run migrations before the window is shown
 
@@ -115,7 +125,7 @@ app.whenReady().then(() => {
   registerUpdateIpc()
   initAutoUpdater(mainWindow)
 
-  app.setAsDefaultProtocolClient('discdock')
+  if (!isDev) app.setAsDefaultProtocolClient('discdock')
   mainWindow.webContents.once('did-finish-load', () => handleDeepLinkFromArgv(process.argv))
 
   showVerificationReminder()
