@@ -26,7 +26,7 @@ pkgbase = discdock
 	options = !strip
 	source = discdock-0.2.0.pacman::https://github.com/kelmankenberg/DiscDock/releases/download/v0.2.0/discdock-0.2.0.pacman
 	source = LICENSE.txt::https://raw.githubusercontent.com/kelmankenberg/DiscDock/v0.2.0/LICENSE.txt
-	sha256sums = 5592bad96812d197a8b0ce5026ef22b77c65240cba75e162abc877abdf14ed62
+	sha256sums = 79e8208ebe64934369a8c9c794833cf0c8b8b57529105f82d947be63218f8120
 	sha256sums = ce8363e777df3862780647ca92ad50cedda89f83149eca6987f3aae19574fc2d
 
 pkgname = discdock

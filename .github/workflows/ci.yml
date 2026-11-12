@@ -83,7 +83,7 @@ jobs:
       image: archlinux:base-devel
     steps:
       - name: Install Git
-        run: pacman -Syu --noconfirm git
+        run: pacman -Syu --noconfirm git libxcrypt-compat
 
       - name: Check out repository
         uses: actions/checkout@v4
