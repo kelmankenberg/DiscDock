@@ -65,7 +65,9 @@ jobs:
       - name: Verify AppImage extraction fallback
         run: |
           chmod +x release/*.AppImage
-          timeout 30s ./release/*.AppImage --appimage-extract-and-run --version || test $? -eq 124
+          sudo apt-get update
+          sudo apt-get install --yes xvfb
+          timeout 30s xvfb-run -a ./release/*.AppImage --appimage-extract-and-run --no-sandbox --disable-gpu || test $? -eq 124
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
@@ -129,9 +131,8 @@ jobs:
 
       - name: Verify AUR metadata
         run: |
-          cd packaging/aur/discdock
-          makepkg --printsrcinfo > /tmp/discdock-srcinfo
-          diff -u .SRCINFO /tmp/discdock-srcinfo
+          su packagebuilder --shell /bin/bash --command "cd '$GITHUB_WORKSPACE/packaging/aur/discdock' && makepkg --printsrcinfo > /tmp/discdock-srcinfo"
+          diff -u packaging/aur/discdock/.SRCINFO /tmp/discdock-srcinfo
 
       - name: Upload Arch artifact
         uses: actions/upload-artifact@v4
