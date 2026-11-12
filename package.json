@@ -1,6 +1,6 @@
 {
   "name": "discdock",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Catalog and search your external/removable media collection",
   "desktopName": "DiscDock",
   "main": "dist-electron/electron/main.js",
@@ -18,7 +18,7 @@
     "start": "electron .",
     "package": "npm run build && electron-builder",
     "package:linux": "npm run build && electron-builder --linux deb AppImage",
-    "package:arch": "npm run build && electron-builder --linux pacman",
+    "package:arch": "npm run build && electron-builder --linux pacman && cp LICENSE.txt release/ && cd packaging/aur/discdock && mkdir -p ../../../release/aur-build && SRCDEST=\"$(realpath ../../../release)\" BUILDDIR=\"$(realpath ../../../release/aur-build)\" PKGDEST=\"$(realpath ../../../release)\" makepkg --noconfirm --cleanbuild --nodeps --skipchecksums --force",
     "postinstall": "electron-builder install-app-deps"
   },
   "repository": {
@@ -45,7 +45,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "concurrently": "^9.2.4",
     "cross-env": "^10.1.0",
-    "electron": "^41.10.5",
+    "electron": "^45.3.1",
     "electron-builder": "^26.15.3",
     "typescript": "^7.0.2",
     "vite": "^8.2.1",
@@ -53,7 +53,7 @@
     "wait-on": "^9.1.0"
   },
   "dependencies": {
-    "better-sqlite3": "^12.11.1",
+    "better-sqlite3": "^13.1.1",
     "electron-log": "^5.4.4",
     "electron-updater": "^6.8.9",
     "lucide-react": "^1.31.0",
@@ -63,8 +63,8 @@
     "sharp": "^0.35.3"
   },
   "allowScripts": {
-    "better-sqlite3@12.11.1": true,
-    "electron@41.10.5": true,
-    "electron-winstaller@5.4.0": true
+    "electron-winstaller@5.4.0": true,
+    "electron@45.3.1": true,
+    "better-sqlite3@13.1.1": true
   }
 }

@@ -125,7 +125,8 @@ app.whenReady().then(() => {
   registerUpdateIpc()
   initAutoUpdater(mainWindow)
 
-  if (!isDev) app.setAsDefaultProtocolClient('discdock')
+  // Linux protocol association comes from the packaged .desktop file.
+  if (!isDev && process.platform !== 'linux') app.setAsDefaultProtocolClient('discdock')
   mainWindow.webContents.once('did-finish-load', () => handleDeepLinkFromArgv(process.argv))
 
   showVerificationReminder()

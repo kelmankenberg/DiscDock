@@ -1,0 +1,54 @@
+# Maintainer: DiscDock contributors <kelmankenberg@users.noreply.github.com>
+pkgname=discdock
+pkgver=0.2.0
+pkgrel=1
+pkgdesc='Catalog and search removable media'
+arch=('x86_64')
+url='https://github.com/kelmankenberg/DiscDock'
+license=('ISC')
+options=('!debug' '!strip')
+depends=(
+  'c-ares'
+  'ffmpeg'
+  'gtk3'
+  'libevent'
+  'libnotify'
+  'libvpx'
+  'libxslt'
+  'libxss'
+  'minizip'
+  'nss'
+  're2'
+  'snappy'
+  'util-linux'
+)
+optdepends=(
+  'udisks2: safely unmount and power off removable media'
+  'libcdio: read audio CD tables of contents'
+  'cdparanoia: catalog and play audio CD tracks'
+)
+install=discdock.install
+source=(
+  "discdock-${pkgver}.pacman::${url}/releases/download/v${pkgver}/discdock-${pkgver}.pacman"
+  "LICENSE.txt::https://raw.githubusercontent.com/kelmankenberg/DiscDock/v${pkgver}/LICENSE.txt"
+)
+sha256sums=(
+  '5592bad96812d197a8b0ce5026ef22b77c65240cba75e162abc877abdf14ed62'
+  'ce8363e777df3862780647ca92ad50cedda89f83149eca6987f3aae19574fc2d'
+)
+
+package() {
+  local extracted="${srcdir}/package-root"
+  mkdir -p "$extracted"
+  bsdtar -xpf "${srcdir}/discdock-${pkgver}.pacman" \
+    -C "$extracted" \
+    --exclude='.PKGINFO' \
+    --exclude='.MTREE' \
+    --exclude='.INSTALL'
+
+  cp -a "$extracted/." "$pkgdir/"
+  install -d "$pkgdir/usr/bin"
+  ln -s /opt/DiscDock/discdock "$pkgdir/usr/bin/discdock"
+  install -Dm644 "$srcdir/LICENSE.txt" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

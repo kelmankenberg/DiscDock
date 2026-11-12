@@ -6,7 +6,7 @@ Planning documentation: [docs/planning-docs](docs/planning-docs/README.md)
 
 ## Status
 
-v0.1.0 — Linux-first cataloging application with media registration, removable-device detection, scanning, hashing, search, duplicate reports, tags, collections, backup/restore, export, contextual Help, and `.deb`, `AppImage`, and Arch `.pacman` packaging. Initial-release hardening is tracked in the [release-readiness checklist](docs/planning-docs/14-release-readiness-checklist.md).
+v0.2.0 — Linux-first cataloging application with media registration, removable-device detection, scanning, hashing, search, duplicate reports, tags, collections, backup/restore, export, contextual Help, and `.deb`, `AppImage`, and installable Arch packaging. Release hardening is tracked in the [release-readiness checklist](docs/planning-docs/14-release-readiness-checklist.md).
 
 ## Development
 
@@ -24,12 +24,12 @@ Linux development and device workflows use `lsblk`; safe removal uses `udisksctl
 ```bash
 npm run build          # Compile renderer (Vite) and main/preload (tsc)
 npm run package:linux   # Build + package as .deb and .AppImage (release/)
-npm run package:arch    # Build + package as .pacman on Arch Linux (release/)
+npm run package:arch    # Build an Arch package on Arch Linux (release/)
 npm test               # Unit tests plus Electron-runtime database integration tests
 npm run typecheck      # Renderer and Electron TypeScript checks
 ```
 
-On Arch/Omarchy, install the generated package with `sudo pacman -U release/discdock-0.1.0.pacman`. Pacman package builds require Arch Linux packaging tools from `base-devel`.
+On Arch/Omarchy, install the generated package with `sudo pacman -U release/discdock-0.2.0-1-x86_64.pkg.tar.zst`. The `.pacman` file is an intermediate payload used to produce this installable Arch package. Arch package builds require `base-devel`.
 
 Native modules (`better-sqlite3`) are rebuilt for Electron's ABI automatically via the `postinstall` script (`electron-builder install-app-deps`).
 

@@ -2,13 +2,14 @@
 
 Notable features, enhancements, and fixes for each DiscDock release.
 
-## 0.2.0 - Unreleased
+## 0.2.0 - 2026-11-12
 
 ### Features
 
 - Added audio playback for catalogued audio files.
 - Added Linux desktop shortcut creation.
 - Added an in-app changelog panel.
+- Added the app version label to the top toolbar.
 - Unified Help and Changelog in a shared slide-out panel with a persistent, adjustable 25–50% width.
 - Added page-specific Help coverage for the features on each view.
 - Added isolated development data so the Arch/Omarchy development build can run beside an installed copy.
@@ -16,13 +17,15 @@ Notable features, enhancements, and fixes for each DiscDock release.
 ### Enhancements
 
 - Improved image decoding and dashboard statistics.
+- Added an AUR package recipe and generated installable Arch packages with correct ownership metadata.
+- Updated Electron and the native SQLite addon to current compatible releases.
 - Expanded Search with a full-width query field, wrapping filters, and a filter visibility toggle.
 - Added collapsible Help sections and live Help/Changelog search with highlighted matches.
 - Refactored application modules for easier maintenance.
 
 ### Fixes
 
-- No additional fixes recorded for this version yet.
+- Avoided noisy Linux protocol-handler registration; the packaged desktop entry already registers the scheme.
 
 ## 0.1.0
 

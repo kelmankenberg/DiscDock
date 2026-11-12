@@ -104,10 +104,39 @@ jobs:
           su packagebuilder --shell /bin/bash --command "cd '$GITHUB_WORKSPACE' && PATH='$PATH' npm run package:arch"
 
       - name: Inspect Arch package metadata
-        run: pacman -Qip release/*.pacman
+        run: |
+          pacman -Qip release/*.pacman
+          pacman -Qip release/*.pkg.tar.zst
+
+      - name: Smoke-test Arch install and removal
+        run: |
+          pacman -S --noconfirm desktop-file-utils
+          pacman -U --noconfirm --nodeps --noscriptlet release/*.pkg.tar.zst
+          test -x /opt/DiscDock/discdock
+          test -x /usr/bin/discdock
+          test -s /usr/share/icons/hicolor/256x256/apps/discdock.png
+          desktop-file-validate /usr/share/applications/discdock.desktop
+          pacman -Qkk discdock | grep -q '0 altered files'
+          pacman -U --noconfirm --nodeps release/*.pkg.tar.zst
+          if unshare --user true; then
+            test "$(stat -c '%a' /opt/DiscDock/chrome-sandbox)" = 755
+          else
+            test "$(stat -c '%a' /opt/DiscDock/chrome-sandbox)" = 4755
+          fi
+          pacman -Rns --noconfirm --nodeps discdock
+          test ! -e /opt/DiscDock/discdock
+          test ! -e /usr/bin/discdock
+
+      - name: Verify AUR metadata
+        run: |
+          cd packaging/aur/discdock
+          makepkg --printsrcinfo > /tmp/discdock-srcinfo
+          diff -u .SRCINFO /tmp/discdock-srcinfo
 
       - name: Upload Arch artifact
         uses: actions/upload-artifact@v4
         with:
           name: discdock-arch
-          path: release/*.pacman
+          path: |
+            release/*.pacman
+            release/*.pkg.tar.zst

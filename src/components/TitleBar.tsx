@@ -15,9 +15,27 @@ interface TitleBarProps {
 // Custom title bar replacing the OS-native one, since the BrowserWindow is created with frame: false.
 export default function TitleBar({ sidebarCollapsed, onToggleSidebar, onShowChangelog }: TitleBarProps): JSX.Element {
   const [maximized, setMaximized] = useState(false)
+  const [version, setVersion] = useState<string | null>(null)
   const [moreMenuOpen, setMoreMenuOpen] = useState(false)
   const moreMenuRef = useRef<HTMLDivElement>(null)
   const moreButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void window.discdock.app.getVersion().then((result) => {
+      if (cancelled) return
+      if (!result.ok) {
+        console.error('Failed to load app version for title bar', result.error)
+        return
+      }
+      setVersion(result.data)
+    }).catch((error: unknown) => {
+      if (!cancelled) console.error('Failed to load app version for title bar', error)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     void window.discdock.window.isMaximized().then((result) => {
@@ -58,6 +76,7 @@ export default function TitleBar({ sidebarCollapsed, onToggleSidebar, onShowChan
         </button>
         <Disc3 size={16} className="title-bar__icon" aria-hidden="true" />
         <span className="title-bar__title">DiscDock</span>
+        {version && <span className="title-bar__version" title={`Version ${version}`}>v{version}</span>}
       </div>
       <div className="title-bar__controls">
         <div className="title-bar__more" ref={moreMenuRef}>

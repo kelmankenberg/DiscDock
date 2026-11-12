@@ -7,6 +7,7 @@ files:
   - dist/**
   - dist-electron/**
   - package.json
+  - LICENSE.txt
 linux:
   # Rendered verbatim into Categories=; the nested `desktop.entry` form is ignored by electron-builder.
   category: Utility;FileTools
@@ -52,4 +53,5 @@ pacman:
     - re2
     - snappy
     - libnotify
+    - util-linux
   compression: zstd

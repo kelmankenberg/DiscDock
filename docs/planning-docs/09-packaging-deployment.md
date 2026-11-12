@@ -2,8 +2,8 @@
 
 ## 1. Build Tooling
 
-- **electron-builder** as the single packaging tool, configured for `.deb`, `.AppImage`, and `pacman` targets. The Arch target is built on Arch Linux.
-- Targets (Linux): `deb`, `AppImage`, and `pacman`.
+- **electron-builder** builds `.deb`, `.AppImage`, and the intermediate Arch payload. The Arch payload is repackaged with `makepkg` so package ownership metadata is correct.
+- Targets (Linux): `deb`, `AppImage`, and an installable Arch `.pkg.tar.zst` produced from the electron-builder `.pacman` payload.
 
 ## 2. Example `electron-builder` Configuration (`electron-builder.yml`)
 
@@ -54,6 +54,7 @@ pacman:
     - re2
     - snappy
     - libnotify
+    - util-linux
   compression: zstd
 ```
 
@@ -76,8 +77,8 @@ These follow the `XDG_DATA_HOME` / `XDG_CONFIG_HOME` conventions (falling back t
 2. Lint (`eslint`) and type-check (`tsc --noEmit`).
 3. Run unit/integration test suite.
 4. Build renderer (Vite) and compile main/preload (TypeScript).
-5. Run `electron-builder` on Ubuntu to produce `.deb` and `.AppImage` artifacts; run `npm run package:arch` on Arch Linux to produce `.pacman`.
-6. Smoke test: install `.deb` in a clean container image (`dpkg -i` + launch headless check); run `.AppImage` with `--appimage-extract-and-run`; inspect Arch package metadata with `pacman -Qip` and verify installation on Arch.
+5. Run `electron-builder` on Ubuntu to produce `.deb` and `.AppImage` artifacts; run `npm run package:arch` on Arch Linux to produce the intermediate `.pacman` payload and installable `.pkg.tar.zst`.
+6. Smoke test: install `.deb` in a clean container image (`dpkg -i` + launch headless check); run `.AppImage` with `--appimage-extract-and-run`; inspect the Arch package metadata with `pacman -Qip`, then verify installation and removal on Arch.
 7. Publish artifacts (GitHub Releases or internal artifact store) tagged with version.
 
 ## 5. Versioning
@@ -95,6 +96,6 @@ These follow the `XDG_DATA_HOME` / `XDG_CONFIG_HOME` conventions (falling back t
 - [ ] `.deb` registers a working desktop menu entry and icon.
 - [ ] `.AppImage` runs on at least one non-Debian-based distro (e.g., Fedora) with FUSE available.
 - [ ] `.AppImage` documented fallback (`--appimage-extract-and-run`) verified on a distro without FUSE.
-- [ ] `.pacman` installs with `pacman -U` on Arch/Omarchy and registers the desktop entry and icon.
+- [ ] The generated `.pkg.tar.zst` installs with `pacman -U` on Arch/Omarchy and registers the desktop entry and icon.
 - [ ] Application data directories created correctly on first run for all package types.
 - [ ] Uninstalling the `.deb` does not delete user data directories (data persists per XDG norms unless the user explicitly resets).

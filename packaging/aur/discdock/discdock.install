@@ -1,0 +1,21 @@
+post_install() {
+  if [[ -L /proc/self/ns/user ]] && unshare --user true; then
+    chmod 0755 /opt/DiscDock/chrome-sandbox
+  else
+    chmod 4755 /opt/DiscDock/chrome-sandbox
+  fi
+
+  if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database -q /usr/share/applications
+  fi
+}
+
+post_upgrade() {
+  post_install
+}
+
+post_remove() {
+  if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database -q /usr/share/applications
+  fi
+}
